@@ -2,8 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"go-chat-react/internal/database"
 	"log"
 	"net/http"
+	"strconv"
 
 	"fmt"
 	"time"
@@ -20,6 +22,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/health", s.healthHandler)
 
 	mux.HandleFunc("/websocket", s.websocketHandler)
+
+	mux.HandleFunc("/user", s.GetUserHandler)
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
@@ -44,8 +48,42 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
+	userid_str := "1" //r.URL.Query().Get("userid")
+	userid, err := strconv.Atoi(userid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
+		return
+	}
+	if userid <= 0 {
+		http.Error(w, "invalid request: invalid userid", http.StatusBadRequest)
+		return
+	}
+
+	user, err := s.db.GetUser(database.Id(userid))
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	resp := map[string]string{"username": user.UserName}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
 func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	resp := map[string]string{"message": "Hello World"}
+	username, err := s.db.GetUser(1)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	resp := map[string]string{"message": "Hello World", "username": username.UserName}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)

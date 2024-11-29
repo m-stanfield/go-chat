@@ -15,6 +15,10 @@ run:
 	@npm install --prefix ./frontend
 	@npm run dev --prefix ./frontend
 
+front:
+	@npm install --prefix ./frontend
+	@npm run dev --prefix ./frontend
+
 # Test the application
 test:
 	@echo "Testing..."
@@ -42,4 +46,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch
+.PHONY: all build run test clean watch front
