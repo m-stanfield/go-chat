@@ -5,7 +5,7 @@ function App() {
   const [message, setMessage] = useState<string>('')
 
   const fetchData = () => {
-    fetch('http://localhost:8080/user')
+    fetch('http://localhost:8080/api/user/1')
       .then(response => response.text())
       .then(data => setMessage(data))
       .catch(error => console.error('Error fetching data:', error))

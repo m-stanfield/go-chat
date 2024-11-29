@@ -44,7 +44,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.HandleFunc("/websocket", s.websocketHandler)
 
-	mux.HandleFunc("/user", s.GetUserHandler)
+	mux.HandleFunc("GET /api/user/{id}", s.GetUserHandler)
+	mux.HandleFunc("GET /api/server/{serverid}/members", s.GetServerMembersHandler)
+	mux.HandleFunc("GET /api/user/{userid}/servers", s.GetMemberServers)
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
@@ -69,8 +71,65 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func (s *Server) GetMemberServers(w http.ResponseWriter, r *http.Request) {
+	userid_str := r.PathValue("userid") //r.URL.Query().Get("userid")
+	userid, err := strconv.Atoi(userid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	if userid <= 0 {
+		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+
+	servers, err := s.db.GetServersOfUser(database.Id(userid))
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	resp := map[string]interface{}{"servers": servers, "userid": userid}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
+func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request) {
+	serverid_str := r.PathValue("serverid") //r.URL.Query().Get("serverid")
+	serverid, err := strconv.Atoi(serverid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	if serverid <= 0 {
+		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+
+	users, err := s.db.GetUsersOfServer(database.Id(serverid))
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	resp := map[string]interface{}{"users": users, "serverid": serverid}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
 func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	userid_str := "1" //r.URL.Query().Get("userid")
+	userid_str := r.PathValue("id") //r.URL.Query().Get("userid")
 	userid, err := strconv.Atoi(userid_str)
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
