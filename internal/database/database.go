@@ -19,6 +19,22 @@ type Service interface {
 	// The keys and values in the map are service-specific.
 	Health() map[string]string
 	Atomic(context.Context, AtomicCallback) error
+	GetUserIDFromUserName(username string) (Id, error)
+	UpdateUserSessionToken(userid Id) (string, time.Time, error)
+	GetUserLoginInfo(userid Id) (UserLoginInfo, error)
+	GetUser(userid Id) (User, error)
+	AddUser(username string) (Id, error)
+	UpdateUserName(userid Id, username string) error
+	GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry, error)
+	GetUsersOfServer(serverid Id) ([]User, error)
+	GetServersOfUser(userid Id) ([]Server, error)
+	GetChannelsOfServer(serverid Id) ([]Channel, error)
+	AddChannel(serverid Id, channelname string) (Id, error)
+	GetChannel(channelid Id) (Channel, error)
+	UpdateChannelName(userid Id, username string) error
+	GetMessage(messageid Id) (Message, error)
+	AddMessage(channelid Id, userid Id, message string) (Id, error)
+	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
 
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
