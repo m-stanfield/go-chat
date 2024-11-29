@@ -13,6 +13,27 @@ import (
 	"github.com/coder/websocket"
 )
 
+type Message struct {
+	UserName  string      `json:"username"`
+	UserId    database.Id `json:"userid"`
+	MessageID database.Id `json:"messageid"`
+	ChannelId database.Id `json:"channelid"`
+	Message   string      `json:"message"`
+	Date      string      `json:"date"`
+}
+
+type User struct {
+	UserID   database.Id `json:"userid"`
+	UserName string      `json:"username"`
+}
+
+type SubmittedMessage struct {
+	UserID    string      `json:"userid"`
+	ChannelId database.Id `json:"channelid"`
+	Token     string      `json:"token"`
+	Message   string      `json:"message"`
+}
+
 func (s *Server) RegisterRoutes() http.Handler {
 	mux := http.NewServeMux()
 
