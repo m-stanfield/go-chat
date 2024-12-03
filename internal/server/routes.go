@@ -38,12 +38,12 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux := http.NewServeMux()
 
 	// Register routes
-	mux.HandleFunc("/", s.HelloWorldHandler)
 
 	mux.HandleFunc("/health", s.healthHandler)
 
 	mux.HandleFunc("/websocket", s.websocketHandler)
 
+	mux.HandleFunc("POST /api/login", s.loginHandler)
 	mux.HandleFunc("GET /api/user/{id}", s.GetUserHandler)
 	mux.HandleFunc("GET /api/server/{serverid}/members", s.GetServerMembersHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.GetMemberServers)
@@ -71,8 +71,93 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func (s *Server) validSession(userinfo database.UserLoginInfo, usertoken string) bool {
+	if time.Now().After(userinfo.TokenExpireTime) {
+		return false
+	}
+	return userinfo.Token == usertoken
+}
+
+func (s *Server) comparePassword(userinfo database.UserLoginInfo, password string) bool {
+	return (password + userinfo.Salt) == (userinfo.PasswordHash + userinfo.Salt)
+}
+
+func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse form data (default for HTML form submission)
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Unable to parse form", http.StatusBadRequest)
+		return
+	}
+
+	loginData := struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&loginData)
+	username := loginData.Username
+	password := loginData.Password
+	userid, err := s.db.GetUserIDFromUserName(username)
+	if err != nil {
+		http.Error(w, "unable to locate username", http.StatusBadRequest)
+		return
+	}
+	passwordInfo, err := s.db.GetUserLoginInfo(userid)
+	if err != nil {
+		http.Error(w, "unable to locate password", http.StatusBadRequest)
+		return
+	}
+
+	if !s.comparePassword(passwordInfo, password) {
+		http.Error(w, "invalid password", http.StatusBadRequest)
+		return
+	}
+
+	token, expire_time, err := s.db.UpdateUserSessionToken(userid)
+	if err != nil {
+		http.Error(w, "unable to update session token", http.StatusBadRequest)
+		return
+	}
+
+	// Set a cookie (you can modify the cookie as needed)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		Expires:  expire_time,
+		HttpOnly: false,
+		Secure:   false, // Use false for local development, true for production with HTTPS
+	})
+
+	// Set a cookie (you can modify the cookie as needed)
+	useridCookie := strconv.Itoa(int(userid))
+	http.SetCookie(w, &http.Cookie{
+		Name:     "userid",
+		Value:    useridCookie,
+		Path:     "/",
+		Expires:  expire_time,
+		HttpOnly: false,
+		Secure:   false, // Use false for local development, true for production with HTTPS
+	})
+
+	// Redirect the user to /chat
+	w.Header().Set("Content-Type", "application/json")
+	resp := map[string]interface{}{"status": "success"}
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		http.Error(w, "internal error: unable to send encoded response", http.StatusInternalServerError)
+		return
+	}
+
+}
+
 func (s *Server) GetMemberServers(w http.ResponseWriter, r *http.Request) {
-	userid_str := r.PathValue("userid") //r.URL.Query().Get("userid")
+	userid_str := r.PathValue("userid")
 	userid, err := strconv.Atoi(userid_str)
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
