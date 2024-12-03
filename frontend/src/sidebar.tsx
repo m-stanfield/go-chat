@@ -22,22 +22,24 @@ const Sidebar: React.FC = () => {
             className={`fixed left-0 top-0 z-40 flex h-screen transition-all duration-300 ease-in-out ${isOpen ? "w-64" : "w-16"
                 }`}
         >
-            <div className="flex h-full w-full flex-col bg-gray-800 text-white">
-                <button
-                    className="absolute right-4 top-4 text-white focus:outline-none"
-                    onClick={toggleSidebar}
-                    aria-label={isOpen ? "Close Sidebar" : "Open Sidebar"}
-                >
-                    {isOpen ? "✕" : "☰"}
-                </button>
-                <nav className="mt-16 flex flex-col space-y-2 p-2">
+            <div className="relative flex h-full w-full flex-col bg-gray-800 text-white">
+                <nav className="flex flex-col space-y-2 p-2">
+                    <button
+                        className="mb-6 flex h-12 w-12 items-center justify-center text-2xl focus:outline-none"
+                        onClick={toggleSidebar}
+                        aria-label={isOpen ? "Close Sidebar" : "Open Sidebar"}
+                    >
+                        {isOpen ? "✕" : "☰"}
+                    </button>
                     {navItems.map((item) => (
                         <a
                             key={item.label}
                             href={item.href}
-                            className="flex items-center rounded-md p-2 transition-colors duration-200 hover:bg-gray-700"
+                            className="flex h-12 items-center rounded-md p-2 transition-colors duration-200 hover:bg-gray-700"
                         >
-                            <span className="mr-2 text-xl">{item.icon}</span>
+                            <span className="mr-2 flex w-8 items-center justify-center text-xl">
+                                {item.icon}
+                            </span>
                             <span className={`${isOpen ? "inline-block" : "hidden"}`}>
                                 {item.label}
                             </span>
