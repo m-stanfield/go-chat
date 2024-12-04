@@ -10,33 +10,19 @@ import MockMessages from "./MockMessages";
 function ChatPage() {
     const [messages, setMessages] = useState(MockMessages);
     const ws = useRef<WebSocket | null>(null);
-    useEffect(() => {
-        ws.current = new WebSocket("ws://localhost:8080/websocket");
-        ws.current.onopen = () => {
-            console.log("opening ws");
-        };
-        ws.current.onmessage = function(event) {
-            const json = JSON.parse(event.data);
-            try {
-                const newMessage = new MessageData({});
-                newMessage.id = json.messageid;
-                newMessage.message = json.message;
-                newMessage.date = new Date(json.date);
-                newMessage.author = json.username;
-                setMessages((messages) => [...messages, newMessage]);
-            } catch (err) {
-                console.log(err);
-            }
-        };
-        ws.current.onclose = () => console.log("ws closed");
-        return () => {
-            ws.current?.close();
-        };
-    }, []);
+    const onmessage = function(event: MessageEvent) {
+        const json = JSON.parse(event.data);
+        try {
+            const newMessage = new MessageData({});
+            newMessage.id = json.messageid;
+            newMessage.message = json.message;
+            newMessage.date = new Date(json.date);
+            newMessage.author = json.username;
+            setMessages((messages) => [...messages, newMessage]);
+        } catch (err) {
+            console.log(err);
+        }
 
-    const dummy = useRef<HTMLDivElement | null>(null);
-    const [focusMessageWindow, setFocuseMessageWindow] = useState(false);
-    useEffect(() => {
         if (focusMessageWindow) {
             console.log("updating focus message: " + focusMessageWindow);
             setFocuseMessageWindow(false);
@@ -44,13 +30,28 @@ function ChatPage() {
                 dummy.current.scrollIntoView({ behavior: "smooth" });
             }
         }
-    }, [messages]);
+    };
 
-    const [inputValue, setInputValue] = useState("");
-    const onSubmit = (t: SyntheticEvent) => {
+    useEffect(() => {
+        ws.current = new WebSocket("ws://localhost:8080/websocket");
+        ws.current.onopen = () => {
+            console.log("opening ws");
+        };
+        ws.current.onmessage = onmessage;
+        ws.current.onclose = () => console.log("ws closed");
+
+        return () => {
+            ws.current?.close();
+        };
+    }, []);
+
+    const dummy = useRef<HTMLDivElement | null>(null);
+    const [focusMessageWindow, setFocuseMessageWindow] = useState(false);
+
+    const onSubmit = (t: SyntheticEvent, inputValue: string) => {
         t.preventDefault();
         if (inputValue.length === 0) {
-            return;
+            return false;
         }
         setFocuseMessageWindow(true);
         const goMessage = class {
@@ -66,13 +67,10 @@ function ChatPage() {
         });
         if (ws?.current === null || ws?.current.readyState === WebSocket.CLOSED) {
             console.log("can't send ws closed");
-            return;
+            return false;
         }
         ws?.current.send(stringified);
-        setInputValue("");
-    };
-    const onInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setInputValue(e.target.value);
+        return true;
     };
     return (
         <>
@@ -82,11 +80,7 @@ function ChatPage() {
                     <MessageView messages={messages} />
                 </div>
                 <div className=" bottom-0 flex w-full p-3  ">
-                    <MessageSubmitWindow
-                        onSubmit={onSubmit}
-                        inputValue={inputValue}
-                        onInputChange={onInputChange}
-                    />
+                    <MessageSubmitWindow onSubmit={onSubmit} />
                 </div>
             </div>
         </>
