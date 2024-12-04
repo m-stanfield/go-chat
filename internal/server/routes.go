@@ -7,10 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"fmt"
-	"time"
-
 	"github.com/coder/websocket"
+	"time"
 )
 
 type Message struct {
@@ -268,7 +266,8 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
-	socket, err := websocket.Accept(w, r, nil)
+	opts := websocket.AcceptOptions{InsecureSkipVerify: true}
+	socket, err := websocket.Accept(w, r, &opts)
 	if err != nil {
 		http.Error(w, "Failed to open websocket", http.StatusInternalServerError)
 		return
@@ -278,9 +277,24 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	socketCtx := socket.CloseRead(ctx)
 
+	counter := 1000
 	for {
-		payload := fmt.Sprintf("server timestamp: %d", time.Now().UnixNano())
-		if err := socket.Write(socketCtx, websocket.MessageText, []byte(payload)); err != nil {
+		payload := Message{
+			UserName:  "User Name",
+			UserId:    1,
+			MessageID: database.Id(counter),
+			ChannelId: 0,
+			Message:   "message" + strconv.Itoa(counter),
+			Date:      time.Now().Format(time.UnixDate),
+		}
+		counter = counter + 1
+		jsonResp, err := json.Marshal(payload)
+		if err != nil {
+			http.Error(w, "Failed to open websocket", http.StatusInternalServerError)
+			return
+		}
+
+		if err := socket.Write(socketCtx, websocket.MessageText, jsonResp); err != nil {
 			log.Printf("Failed to write to socket: %v", err)
 			break
 		}

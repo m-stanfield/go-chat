@@ -1,25 +1,25 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
-interface NavItem {
+type NavItem = {
     icon: string;
     label: string;
     href: string;
+};
+
+export interface NavItemProp {
+    items: NavItem[];
+    min_width: string;
 }
 
-const navItems: NavItem[] = [
-    { icon: "🏠", label: "Home", href: "#" },
-    { icon: "⚙️", label: "Settings", href: "#" },
-    { icon: "❓", label: "Help", href: "#" },
-];
-
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<NavItemProp> = ({ items, min_width }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleSidebar = () => setIsOpen(!isOpen);
+    const width = "w-" + min_width;
 
     return (
         <div
-            className={`fixed left-0 top-0 z-40 flex h-screen transition-all duration-300 ease-in-out ${isOpen ? "w-64" : "w-16"
+            className={`fixed left-0 top-0 z-40 flex h-screen transition-all duration-300 ease-in-out ${isOpen ? "w-64" : width
                 }`}
         >
             <div className="  relative flex h-full w-full flex-col bg-gray-800 text-white">
@@ -31,17 +31,22 @@ const Sidebar: React.FC = () => {
                     >
                         {isOpen ? "✕" : "☰"}
                     </button>
-                    {navItems.map((item) => (
+                    {items.map((item: NavItem) => (
                         <a
                             key={item.label}
                             href={item.href}
-                            className=" h-12 flex items-center rounded-md p-2 transition-colors duration-200 hover:bg-gray-700"
+                            className="h-12 flex items-center rounded-md p-2 transition-colors duration-200 hover:bg-gray-700 "
                         >
-                            <div className=" grid-cols-2">
-                                <span className=" mr-2  w-96 items-center justify-left text-xl">
+                            <div className="flex w-full items-center">
+                                {/* First span: icon */}
+                                <span className="w-10 flex-shrink-0 flex items-center justify-center text-xl">
                                     {item.icon}
                                 </span>
-                                <span className={` ${isOpen ? "inline-block" : "hidden"} `}>
+
+                                {/* Second span: label */}
+                                <span
+                                    className={`${isOpen ? "inline-block" : "hidden"} ml-4 text-base`}
+                                >
                                     {item.label}
                                 </span>
                             </div>
@@ -52,5 +57,5 @@ const Sidebar: React.FC = () => {
         </div>
     );
 };
-
+export type { NavItem as NavItemType };
 export default Sidebar;

@@ -8,19 +8,17 @@ import { SyntheticEvent, useEffect, useRef, useState } from "react";
 import MockMessages from "./MockMessages";
 
 function ChatPage() {
-    const [messages, setMessages] = useState(MockMessages.slice(0, 8));
-    const [focusMessageWindow, setFocuseMessageWindow] = useState(false);
+    const [messages, setMessages] = useState(MockMessages);
     const ws = useRef<WebSocket | null>(null);
     useEffect(() => {
-        ws.current = new WebSocket("ws://localhost:8080/echo");
-        ws.current.onopen = (event) => {
+        ws.current = new WebSocket("ws://localhost:8080/websocket");
+        ws.current.onopen = () => {
             console.log("opening ws");
         };
         ws.current.onmessage = function(event) {
             const json = JSON.parse(event.data);
-            console.log(json);
             try {
-                let newMessage = new MessageData({});
+                const newMessage = new MessageData({});
                 newMessage.id = json.messageid;
                 newMessage.message = json.message;
                 newMessage.date = new Date(json.date);
@@ -37,8 +35,10 @@ function ChatPage() {
     }, []);
 
     const dummy = useRef<HTMLDivElement | null>(null);
+    const [focusMessageWindow, setFocuseMessageWindow] = useState(false);
     useEffect(() => {
         if (focusMessageWindow) {
+            console.log("updating focus message: " + focusMessageWindow);
             setFocuseMessageWindow(false);
             if (dummy.current) {
                 dummy.current.scrollIntoView({ behavior: "smooth" });
@@ -61,9 +61,8 @@ function ChatPage() {
                 this.message = Message;
             }
         };
-        let mess = new goMessage("me", inputValue);
-        let stringified = JSON.stringify({
-            ...mess,
+        const stringified = JSON.stringify({
+            ...new goMessage("me", inputValue),
         });
         if (ws?.current === null || ws?.current.readyState === WebSocket.CLOSED) {
             console.log("can't send ws closed");
@@ -79,7 +78,6 @@ function ChatPage() {
         <>
             <div className=" flex h-full w-full flex-col ">
                 <div className="flex w-full flex-grow flex-col-reverse overflow-y-scroll rounded-lg">
-
                     <div ref={dummy}></div>
                     <MessageView messages={messages} />
                 </div>

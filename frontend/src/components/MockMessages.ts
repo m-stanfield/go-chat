@@ -15,6 +15,21 @@ const data = [
   { id: 13, author: "abcd4", date: 32, message: "message" },
   { id: 14, author: "abcd3", date: 23, message: "message" },
   { id: 15, author: "abcd4", date: 34, message: "message" },
+  { id: 16, author: "abcd1", date: 0, message: "message" },
+  { id: 17, author: "abcd1", date: 1, message: "message" },
+  { id: 18, author: "abcd1", date: 2, message: "message" },
+  { id: 19, author: "abcd1", date: 3, message: "message" },
+  { id: 20, author: "abcd2", date: 4, message: "message" },
+  { id: 21, author: "abcd3", date: 5, message: "message" },
+  { id: 22, author: "abcd1", date: 6, message: "message" },
+  { id: 23, author: "abcd2", date: 7, message: "message" },
+  { id: 24, author: "abcd3", date: 8, message: "message" },
+  { id: 25, author: "abcd4", date: 9, message: "message" },
+  { id: 26, author: "abcd2", date: 10, message: "message" },
+  { id: 27, author: "abcd3", date: 21, message: "message" },
+  { id: 28, author: "abcd4", date: 32, message: "message" },
+  { id: 29, author: "abcd3", date: 23, message: "message" },
+  { id: 30, author: "abcd4", date: 34, message: "message" },
 ] as any[];
 
 const MockMessages = data.map((d) => new MessageData(d));
