@@ -1,23 +1,26 @@
-"use client";
-
-import MessageView from "./MessageView";
 import MessageSubmitWindow from "./MessageSubmitWindow";
-import { MessageData } from "./Message";
 import { SyntheticEvent, useEffect, useRef, useState } from "react";
+import Message, { MessageData } from "./Message"; // Import your Message component
 
 import MockMessages from "./MockMessages";
+import { useAuth } from "../AuthContext";
 
 function ChatPage() {
-    const [messages, setMessages] = useState(MockMessages);
+    const auth = useAuth();
+    const [messages, setMessages] = useState<MessageData[]>(MockMessages);
     const ws = useRef<WebSocket | null>(null);
+    const dummy = useRef<HTMLDivElement | null>(null);
+    const [focusMessageWindow, setFocuseMessageWindow] = useState(false);
     const onmessage = function(event: MessageEvent) {
         const json = JSON.parse(event.data);
         try {
-            const newMessage = new MessageData({});
-            newMessage.id = json.messageid;
-            newMessage.message = json.message;
-            newMessage.date = new Date(json.date);
-            newMessage.author = json.username;
+            const newMessage: MessageData = {
+                id: json.messageid,
+                message: json.message,
+                date: new Date(json.date),
+                author: json.username,
+                author_id: json.userid,
+            };
             setMessages((messages) => [...messages, newMessage]);
         } catch (err) {
             console.log(err);
@@ -45,39 +48,48 @@ function ChatPage() {
         };
     }, []);
 
-    const dummy = useRef<HTMLDivElement | null>(null);
-    const [focusMessageWindow, setFocuseMessageWindow] = useState(false);
-
-    const onSubmit = (t: SyntheticEvent, inputValue: string) => {
+    const onSubmit = (t: SyntheticEvent, inputValue: string): string => {
         t.preventDefault();
         if (inputValue.length === 0) {
-            return false;
+            return inputValue;
         }
         setFocuseMessageWindow(true);
-        const goMessage = class {
-            username: string;
-            message: string;
-            constructor(UserName: string, Message: string) {
-                this.username = UserName;
-                this.message = Message;
-            }
-        };
         const stringified = JSON.stringify({
-            ...new goMessage("me", inputValue),
+            username: "me",
+            message: inputValue,
         });
         if (ws?.current === null || ws?.current.readyState === WebSocket.CLOSED) {
             console.log("can't send ws closed");
-            return false;
+            return inputValue;
         }
         ws?.current.send(stringified);
-        return true;
+        return "";
     };
+
+    const messageEndRef = useRef(null);
+    useEffect(() => {
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage.author_id == auth.authState.user?.id) {
+            messageEndRef.current?.scrollIntoView({
+                behavior: "smooth",
+            });
+        }
+    }, [messages]);
     return (
         <>
             <div className=" flex h-full w-full flex-col ">
                 <div className="flex w-full flex-grow flex-col-reverse overflow-y-scroll rounded-lg">
-                    <div ref={dummy}></div>
-                    <MessageView messages={messages} />
+                    <ul className="w-full space-y-1  rounded-lg bg-slate-800">
+                        {messages.map((m, index) => (
+                            <li
+                                key={m.id}
+                                className="w-full rounded-lg bg-slate-700 hover:bg-slate-600"
+                                ref={index == messages.length - 1 ? messageEndRef : null}
+                            >
+                                <Message message={m} />
+                            </li>
+                        ))}{" "}
+                    </ul>
                 </div>
                 <div className=" bottom-0 flex w-full p-3  ">
                     <MessageSubmitWindow onSubmit={onSubmit} />

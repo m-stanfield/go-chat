@@ -1,17 +1,10 @@
-export class MessageData {
+export type MessageData = {
     id: number | undefined;
-    author: string = "";
-    date: Date = new Date(Date.now());
-    message: string = "";
-
-    constructor(initializer?: any) {
-        if (!initializer) return;
-        if (initializer.id) this.id = initializer.id;
-        if (initializer.author) this.author = initializer.author;
-        if (initializer.date) this.date = new Date(initializer.date);
-        if (initializer.message) this.message = initializer.message;
-    }
-}
+    author: string;
+    author_id: string;
+    date: Date;
+    message: string;
+};
 
 interface MessageProps {
     message: MessageData;

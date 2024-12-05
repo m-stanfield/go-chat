@@ -3,7 +3,8 @@
 export type User = {
     id: string;
     name: string;
-    email: string;
+    token: string;
+    token_expire_time: string;
 };
 
 export type AuthState = {

@@ -122,30 +122,12 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set a cookie (you can modify the cookie as needed)
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    token,
-		Path:     "/",
-		Expires:  expire_time,
-		HttpOnly: false,
-		Secure:   false, // Use false for local development, true for production with HTTPS
-	})
+	resp := map[string]interface{}{"token": token, "token_expire_time": expire_time, "userid": userid}
 
 	// Set a cookie (you can modify the cookie as needed)
-	useridCookie := strconv.Itoa(int(userid))
-	http.SetCookie(w, &http.Cookie{
-		Name:     "userid",
-		Value:    useridCookie,
-		Path:     "/",
-		Expires:  expire_time,
-		HttpOnly: false,
-		Secure:   false, // Use false for local development, true for production with HTTPS
-	})
 
 	// Redirect the user to /chat
 	w.Header().Set("Content-Type", "application/json")
-	resp := map[string]interface{}{"status": "success"}
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		http.Error(w, "internal error: unable to send encoded response", http.StatusInternalServerError)
@@ -281,7 +263,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		payload := Message{
 			UserName:  "User Name",
-			UserId:    1,
+			UserId:    database.Id(counter % 3),
 			MessageID: database.Id(counter),
 			ChannelId: 0,
 			Message:   "message" + strconv.Itoa(counter),
@@ -298,6 +280,5 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Failed to write to socket: %v", err)
 			break
 		}
-		time.Sleep(2 * time.Second)
 	}
 }

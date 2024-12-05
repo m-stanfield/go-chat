@@ -1,7 +1,7 @@
 import { SyntheticEvent, useState } from "react";
 
 interface MessageSubmitWindowProps {
-    onSubmit: (t: SyntheticEvent, inputValue: string) => boolean;
+    onSubmit: (t: SyntheticEvent, inputValue: string) => string;
 }
 function MessageSubmitWindow(props: MessageSubmitWindowProps) {
     const [inputValue, setInputValue] = useState("");
@@ -17,10 +17,8 @@ function MessageSubmitWindow(props: MessageSubmitWindowProps) {
                 onKeyPress={(event) => {
                     if (event.key === "Enter") {
                         event.preventDefault();
-                        const removeValue = props.onSubmit(event, inputValue);
-                        if (removeValue) {
-                            setInputValue("");
-                        }
+                        const newValue = props.onSubmit(event, inputValue);
+                        setInputValue(newValue);
                     }
                 }}
                 className="overflow-auto text-black flex w-full h-full"

@@ -27,7 +27,13 @@ function Login() {
             // Handle response
             if (response.ok) {
                 const data = await response.json();
-                auth.login({ name: username, id: "", email: "" });
+                console.log(data);
+                auth.login({
+                    name: username,
+                    id: data.userid,
+                    token: data.token,
+                    token_expire_time: data.token_expire_time,
+                });
                 console.log("Login successful:", data);
             } else {
                 auth.logout();
