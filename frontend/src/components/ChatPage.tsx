@@ -11,31 +11,37 @@ function ChatPage() {
     const ws = useRef<WebSocket | null>(null);
     const dummy = useRef<HTMLDivElement | null>(null);
     const [focusMessageWindow, setFocuseMessageWindow] = useState(false);
-    const onmessage = function(event: MessageEvent) {
-        const json = JSON.parse(event.data);
-        try {
-            const newMessage: MessageData = {
-                id: json.messageid,
-                message: json.message,
-                date: new Date(json.date),
-                author: json.username,
-                author_id: json.userid,
-            };
-            setMessages((messages) => [...messages, newMessage]);
-        } catch (err) {
-            console.log(err);
-        }
-
-        if (focusMessageWindow) {
-            console.log("updating focus message: " + focusMessageWindow);
-            setFocuseMessageWindow(false);
-            if (dummy.current) {
-                dummy.current.scrollIntoView({ behavior: "smooth" });
-            }
-        }
-    };
 
     useEffect(() => {
+        const onmessage = function(event: MessageEvent) {
+            const json = JSON.parse(event.data);
+            try {
+                const newMessage: MessageData = {
+                    id: json.messageid,
+                    message: json.message,
+                    date: new Date(json.date),
+                    author: json.username,
+                    author_id: json.userid,
+                };
+                setMessages((messages) => {
+                    console.log(messages.length);
+                    if (messages.length > 200) {
+                        return [...messages.slice(-200), newMessage];
+                    }
+                    return [...messages, newMessage];
+                });
+            } catch (err) {
+                console.log(err);
+            }
+
+            if (focusMessageWindow) {
+                console.log("updating focus message: " + focusMessageWindow);
+                setFocuseMessageWindow(false);
+                if (dummy.current) {
+                    dummy.current.scrollIntoView({ behavior: "smooth" });
+                }
+            }
+        };
         ws.current = new WebSocket("ws://localhost:8080/websocket");
         ws.current.onopen = () => {
             console.log("opening ws");
