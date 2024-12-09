@@ -280,6 +280,6 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Failed to write to socket: %v", err)
 			break
 		}
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 	}
 }
