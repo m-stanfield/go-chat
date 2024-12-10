@@ -43,7 +43,9 @@ function ChatPage() {
                 }
             }
         };
-        ws.current = new WebSocket("ws://localhost:8080/websocket");
+        ws.current = new WebSocket(
+            `ws://localhost:8080/websocket?token=${auth.authState.user?.token}&userid=${auth.authState.user?.id}`,
+        );
         ws.current.onopen = () => {
             console.log("opening ws");
         };
