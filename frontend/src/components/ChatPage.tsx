@@ -85,26 +85,24 @@ function ChatPage() {
         }
     }, [messages]);
     return (
-        <>
-            <div className=" flex h-full w-full flex-col ">
-                <div className="flex w-full flex-grow flex-col-reverse overflow-y-scroll rounded-lg">
-                    <ul className="w-full space-y-1  rounded-lg bg-slate-800">
-                        {messages.map((m, index) => (
-                            <li
-                                key={m.id}
-                                className="w-full rounded-lg bg-slate-700 hover:bg-slate-600"
-                                ref={index == messages.length - 1 ? messageEndRef : null}
-                            >
-                                <Message message={m} />
-                            </li>
-                        ))}{" "}
-                    </ul>
-                </div>
-                <div className=" bottom-0 flex w-full p-3  ">
-                    <MessageSubmitWindow onSubmit={onSubmit} />
-                </div>
+        <div className=" flex h-full w-full flex-col ">
+            <div className="flex w-full flex-grow flex-col-reverse overflow-y-scroll rounded-lg">
+                <ul className="w-full space-y-1  rounded-lg bg-slate-800">
+                    {messages.map((m, index) => (
+                        <li
+                            key={m.id}
+                            className="w-full rounded-lg bg-slate-700 hover:bg-slate-600"
+                            ref={index == messages.length - 1 ? messageEndRef : null}
+                        >
+                            <Message message={m} />
+                        </li>
+                    ))}{" "}
+                </ul>
             </div>
-        </>
+            <div className=" bottom-0 flex w-full p-3  ">
+                <MessageSubmitWindow onSubmit={onSubmit} />
+            </div>
+        </div>
     );
 }
 
