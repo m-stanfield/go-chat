@@ -14,6 +14,12 @@ import (
 	"go-chat-react/internal/database"
 )
 
+var (
+	clients         = make([]chan Message, 0)
+	incomingChannel = make(chan Message)
+	counter         = 0
+)
+
 type Message struct {
 	UserName  string      `json:"username"`
 	UserId    database.Id `json:"userid"`
@@ -36,7 +42,7 @@ type SubmittedMessage struct {
 }
 
 func (s *Server) RegisterRoutes() http.Handler {
-	go s.handleMessages()
+	go s.handleIncomingMessages(incomingChannel)
 	mux := http.NewServeMux()
 
 	// Register routes
@@ -264,12 +270,6 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var (
-	clients   = make(map[*websocket.Conn]int)
-	broadcast = make(chan Message)
-	counter   = 0
-)
-
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	userid_str := r.URL.Query().Get("userid")
@@ -297,13 +297,14 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	opts := websocket.AcceptOptions{InsecureSkipVerify: true}
 	socket, err := websocket.Accept(w, r, &opts)
-	client_number := len(clients) + 1
-	clients[socket] = client_number
 	if err != nil {
 		http.Error(w, "Failed to open websocket", http.StatusInternalServerError)
 		return
 	}
 	defer socket.Close(websocket.StatusGoingAway, "Server closing websocket")
+	outgoingChannel := make(chan Message)
+	go s.handleMessages(socket, outgoingChannel)
+	clients = append(clients, outgoingChannel)
 
 	for {
 		_, message, err := socket.Read(r.Context())
@@ -331,11 +332,20 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			), Message: payload.Message, Date: time.Now().Format(time.UnixDate),
 		}
 		counter = counter + 1
-		broadcast <- msg
+		incomingChannel <- msg
 	}
 }
 
-func (s *Server) handleMessages() {
+func (s *Server) handleIncomingMessages(broadcast chan Message) {
+	for {
+		message := <-broadcast
+		for _, ch := range clients {
+			ch <- message
+		}
+	}
+}
+
+func (s *Server) handleMessages(client *websocket.Conn, broadcast chan Message) {
 	for {
 		msg := <-broadcast
 		jsondata, err := json.Marshal(msg)
@@ -343,13 +353,11 @@ func (s *Server) handleMessages() {
 			fmt.Println(err)
 			continue
 		}
-		for client := range clients {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-			defer cancel()
-			client.Write(ctx, websocket.MessageText, jsondata)
-			if err != nil {
-				fmt.Println(err)
-			}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		client.Write(ctx, websocket.MessageText, jsondata)
+		if err != nil {
+			fmt.Println(err)
 		}
 	}
 }
