@@ -1,14 +1,17 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
-	"go-chat-react/internal/database"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/coder/websocket"
-	"time"
+
+	"go-chat-react/internal/database"
 )
 
 type Message struct {
@@ -33,6 +36,7 @@ type SubmittedMessage struct {
 }
 
 func (s *Server) RegisterRoutes() http.Handler {
+	go s.handleMessages()
 	mux := http.NewServeMux()
 
 	// Register routes
@@ -53,10 +57,15 @@ func (s *Server) RegisterRoutes() http.Handler {
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "*") // Replace "*" with specific origins if needed
+		w.Header().
+			Set("Access-Control-Allow-Origin", "*")
+			// Replace "*" with specific origins if needed
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
-		w.Header().Set("Access-Control-Allow-Credentials", "false") // Set to "true" if credentials are required
+		w.Header().
+			Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
+		w.Header().
+			Set("Access-Control-Allow-Credentials", "false")
+			// Set to "true" if credentials are required
 
 		// Handle preflight OPTIONS requests
 		if r.Method == http.MethodOptions {
@@ -122,7 +131,11 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := map[string]interface{}{"token": token, "token_expire_time": expire_time, "userid": userid}
+	resp := map[string]interface{}{
+		"token":             token,
+		"token_expire_time": expire_time,
+		"userid":            userid,
+	}
 
 	// Set a cookie (you can modify the cookie as needed)
 
@@ -130,10 +143,13 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		http.Error(w, "internal error: unable to send encoded response", http.StatusInternalServerError)
+		http.Error(
+			w,
+			"internal error: unable to send encoded response",
+			http.StatusInternalServerError,
+		)
 		return
 	}
-
 }
 
 func (s *Server) GetMemberServers(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +182,7 @@ func (s *Server) GetMemberServers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request) {
-	serverid_str := r.PathValue("serverid") //r.URL.Query().Get("serverid")
+	serverid_str := r.PathValue("serverid") // r.URL.Query().Get("serverid")
 	serverid, err := strconv.Atoi(serverid_str)
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
@@ -193,8 +209,9 @@ func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request)
 		log.Printf("Failed to write response: %v", err)
 	}
 }
+
 func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	userid_str := r.PathValue("id") //r.URL.Query().Get("userid")
+	userid_str := r.PathValue("id") // r.URL.Query().Get("userid")
 	userid, err := strconv.Atoi(userid_str)
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
@@ -247,39 +264,92 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var (
+	clients   = make(map[*websocket.Conn]int)
+	broadcast = make(chan Message)
+	counter   = 0
+)
+
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	userid_str := r.URL.Query().Get("userid")
+
+	userid, err := strconv.Atoi(userid_str)
+	if err != nil || userid < 0 {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	passwordInfo, err := s.db.GetUserLoginInfo(database.Id(userid))
+	if err != nil {
+		http.Error(w, "unable to locate password", http.StatusBadRequest)
+		return
+	}
+
+	if token != passwordInfo.Token || passwordInfo.TokenExpireTime.Before(time.Now()) {
+		http.Error(w, "invalid token", http.StatusBadRequest)
+		return
+	}
+	userinfo, err := s.db.GetUser(database.Id(userid))
+	if err != nil {
+		http.Error(w, "error fetching user", http.StatusInternalServerError)
+		return
+	}
+
 	opts := websocket.AcceptOptions{InsecureSkipVerify: true}
 	socket, err := websocket.Accept(w, r, &opts)
+	client_number := len(clients) + 1
+	clients[socket] = client_number
 	if err != nil {
 		http.Error(w, "Failed to open websocket", http.StatusInternalServerError)
 		return
 	}
 	defer socket.Close(websocket.StatusGoingAway, "Server closing websocket")
 
-	ctx := r.Context()
-	socketCtx := socket.CloseRead(ctx)
-
-	counter := 1000
 	for {
-		payload := Message{
-			UserName:  "User Name",
-			UserId:    database.Id(counter % 3),
-			MessageID: database.Id(counter),
-			ChannelId: 0,
-			Message:   "message" + strconv.Itoa(counter),
-			Date:      time.Now().Format(time.UnixDate),
-		}
-		counter = counter + 1
-		jsonResp, err := json.Marshal(payload)
+		_, message, err := socket.Read(r.Context())
 		if err != nil {
-			http.Error(w, "Failed to open websocket", http.StatusInternalServerError)
-			return
-		}
-
-		if err := socket.Write(socketCtx, websocket.MessageText, jsonResp); err != nil {
-			log.Printf("Failed to write to socket: %v", err)
+			fmt.Printf("error getting message from websocket: %e", err)
 			break
 		}
-		time.Sleep(1 * time.Second)
+
+		// todo add message parsing
+		payload := struct {
+			Message string `json:"message"`
+		}{
+			Message: "",
+		}
+		err = json.Unmarshal(message, &payload)
+		if err != nil {
+			fmt.Printf("error getting message from websocket: %e", err)
+			continue
+		}
+		msg := Message{
+			UserName: userinfo.UserName,
+			UserId:   userinfo.UserId,
+			MessageID: database.Id(
+				counter,
+			), Message: payload.Message, Date: time.Now().Format(time.UnixDate),
+		}
+		counter = counter + 1
+		broadcast <- msg
+	}
+}
+
+func (s *Server) handleMessages() {
+	for {
+		msg := <-broadcast
+		jsondata, err := json.Marshal(msg)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		for client := range clients {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			client.Write(ctx, websocket.MessageText, jsondata)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
 	}
 }
