@@ -11,6 +11,7 @@ function ChatPage() {
     const ws = useRef<WebSocket | null>(null);
     const dummy = useRef<HTMLDivElement | null>(null);
     const [focusMessageWindow, setFocuseMessageWindow] = useState(false);
+    const maxMessageLength = 30;
 
     useEffect(() => {
         const onmessage = function(event: MessageEvent) {
@@ -25,8 +26,8 @@ function ChatPage() {
                 };
                 setMessages((messages) => {
                     console.log(messages.length);
-                    if (messages.length > 200) {
-                        return [...messages.slice(-200), newMessage];
+                    if (messages.length > maxMessageLength) {
+                        return [...messages.slice(-maxMessageLength), newMessage];
                     }
                     return [...messages, newMessage];
                 });
