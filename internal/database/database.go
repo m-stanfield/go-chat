@@ -35,6 +35,7 @@ type Service interface {
 	GetMessage(messageid Id) (Message, error)
 	AddMessage(channelid Id, userid Id, message string) (Id, error)
 	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
+	GetServer(serverid Id) (Server, error)
 
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
@@ -377,6 +378,29 @@ func (r *service) GetChannel(channelid Id) (Channel, error) {
 func (r *service) UpdateChannelName(userid Id, username string) error {
 	_, err := r.conn.Exec("UPDATE ChannelTable SET channelname = ? WHERE channelid=? ", username, userid)
 	return err
+}
+
+func (r *service) GetServer(serverid Id) (Server, error) {
+	rows, err := r.conn.Query(
+		"SELECT serverid, ownerid, servername FROM ServerTable WHERE serverid = ? ",
+		serverid,
+	)
+	if err != nil {
+		return Server{}, err
+	}
+	defer rows.Close()
+	var server Server
+	for rows.Next() {
+		err := rows.Scan(
+			&server.ServerId,
+			&server.OwnerId,
+			&server.ServerName,
+		)
+		if err != nil {
+			return Server{}, err
+		}
+	}
+	return server, nil
 }
 
 func (r *service) GetMessage(messageid Id) (Message, error) {
