@@ -47,16 +47,16 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// Register routes
 
 	mux.HandleFunc("/health", s.healthHandler)
-
 	mux.HandleFunc("/websocket", s.websocketHandler)
-
 	mux.HandleFunc("POST /api/login", s.loginHandler)
+
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
-	mux.HandleFunc("GET /api/server/{serverid}/members", s.GetServerMembersHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.GetMemberServers)
 
 	mux.HandleFunc("GET /api/server/{serverid}", s.GetServerInformation)
+	mux.HandleFunc("GET /api/server/{serverid}/members", s.GetServerMembersHandler)
 	mux.HandleFunc("GET /api/server/{serverid}/messages", s.GetServerMessages)
+
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
 }
