@@ -56,6 +56,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/server/{serverid}/members", s.GetServerMembersHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.GetMemberServers)
 
+	mux.HandleFunc("GET /api/server/{serverid}", s.GetServerInformation)
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
 }
@@ -177,6 +178,39 @@ func (s *Server) GetMemberServers(w http.ResponseWriter, r *http.Request) {
 	}
 	resp := map[string]interface{}{"servers": servers, "userid": userid}
 	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
+func (s *Server) GetServerInformation(w http.ResponseWriter, r *http.Request) {
+	serverid_str := r.PathValue("serverid") // r.URL.Query().Get("serverid")
+	serverid, err := strconv.Atoi(serverid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	server, err := s.db.GetServer(database.Id(serverid))
+	if err != nil {
+		http.Error(w, "invalid request: unable to find server", http.StatusNotFound)
+		return
+	}
+
+	jsonstruct := struct {
+		ServerId   database.Id `json:"serverid"`
+		OwnerId    database.Id `json:"ownerid"`
+		ServerName string      `json:"servername"`
+	}{
+		ServerId:   server.ServerId,
+		OwnerId:    server.OwnerId,
+		ServerName: server.ServerName,
+	}
+	jsonResp, err := json.Marshal(jsonstruct)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
 		return
