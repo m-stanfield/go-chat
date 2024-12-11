@@ -57,6 +57,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.GetMemberServers)
 
 	mux.HandleFunc("GET /api/server/{serverid}", s.GetServerInformation)
+	mux.HandleFunc("GET /api/server/{serverid}/messages", s.GetServerMessages)
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
 }
@@ -219,6 +220,16 @@ func (s *Server) GetServerInformation(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(jsonResp); err != nil {
 		log.Printf("Failed to write response: %v", err)
 	}
+}
+
+func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
+	serverid_str := r.PathValue("serverid") // r.URL.Query().Get("serverid")
+	_, err := strconv.Atoi(serverid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	http.Error(w, "endpoint not implemented", http.StatusNotImplemented)
 }
 
 func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request) {
