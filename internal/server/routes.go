@@ -52,7 +52,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/websocket", s.websocketHandler)
 
 	mux.HandleFunc("POST /api/login", s.loginHandler)
-	mux.HandleFunc("GET /api/user/{id}", s.GetUserHandler)
+	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
 	mux.HandleFunc("GET /api/server/{serverid}/members", s.GetServerMembersHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.GetMemberServers)
 
@@ -217,7 +217,7 @@ func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	userid_str := r.PathValue("id") // r.URL.Query().Get("userid")
+	userid_str := r.PathValue("userid") // r.URL.Query().Get("userid")
 	userid, err := strconv.Atoi(userid_str)
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
