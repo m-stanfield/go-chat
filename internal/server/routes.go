@@ -17,7 +17,6 @@ import (
 var (
 	clients         = make([]chan Message, 0)
 	incomingChannel = make(chan Message)
-	counter         = 0
 )
 
 type Message struct {
@@ -330,7 +329,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if token != passwordInfo.Token || passwordInfo.TokenExpireTime.Before(time.Now()) {
+	if s.validSession(passwordInfo, token) {
 		http.Error(w, "invalid token", http.StatusBadRequest)
 		return
 	}
@@ -369,14 +368,24 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("error getting message from websocket: %e", err)
 			continue
 		}
-		msg := Message{
-			UserName: userinfo.UserName,
-			UserId:   userinfo.UserId,
-			MessageID: database.Id(
-				counter,
-			), Message: payload.Message, Date: time.Now().Format(time.UnixDate),
+		messageid, err := s.db.AddMessage(1, userinfo.UserId, payload.Message)
+		if err != nil {
+			fmt.Printf("error saving message: %e", err)
+			continue
 		}
-		counter = counter + 1
+		dbmsg, err := s.db.GetMessage(messageid)
+		if err != nil {
+			fmt.Printf("error saving message: %e", err)
+			continue
+		}
+
+		msg := Message{
+			UserName:  userinfo.UserName,
+			UserId:    dbmsg.UserId,
+			MessageID: messageid,
+			Message:   dbmsg.Contents,
+			Date:      dbmsg.Timestamp.Format(time.UnixDate),
+		}
 		incomingChannel <- msg
 	}
 }
