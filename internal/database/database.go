@@ -190,7 +190,12 @@ func (r *service) GetUserIDFromUserName(username string) (Id, error) {
 func (r *service) UpdateUserSessionToken(userid Id) (string, time.Time, error) {
 	token := "token" + strconv.FormatUint(uint64(userid), 10)
 	expire := time.Now().Add(24 * time.Hour)
-	_, err := r.conn.Exec("UPDATE UserLoginTable SET token = ?, token_expire_time = ? WHERE userid=? ", token, expire, userid)
+	_, err := r.conn.Exec(
+		"UPDATE UserLoginTable SET token = ?, token_expire_time = ? WHERE userid=? ",
+		token,
+		expire,
+		userid,
+	)
 	if err != nil {
 		return "", expire, err
 	}
@@ -198,7 +203,10 @@ func (r *service) UpdateUserSessionToken(userid Id) (string, time.Time, error) {
 }
 
 func (r *service) GetUserLoginInfo(userid Id) (UserLoginInfo, error) {
-	rows, err := r.conn.Query("SELECT userid, passwordhash, salt, token, token_expire_time FROM UserLoginTable WHERE userid = ?", userid)
+	rows, err := r.conn.Query(
+		"SELECT userid, passwordhash, salt, token, token_expire_time FROM UserLoginTable WHERE userid = ?",
+		userid,
+	)
 	if err != nil {
 		return UserLoginInfo{}, err
 	}
@@ -210,7 +218,13 @@ func (r *service) GetUserLoginInfo(userid Id) (UserLoginInfo, error) {
 		if count > 1 {
 			return UserLoginInfo{}, ErrMultipleRecords
 		}
-		err := rows.Scan(&user.UserId, &user.PasswordHash, &user.Salt, &user.Token, &user.TokenExpireTime)
+		err := rows.Scan(
+			&user.UserId,
+			&user.PasswordHash,
+			&user.Salt,
+			&user.Token,
+			&user.TokenExpireTime,
+		)
 		if err != nil {
 			return UserLoginInfo{}, err
 		}
@@ -266,7 +280,11 @@ func (r *service) UpdateUserName(userid Id, username string) error {
 }
 
 func (r *service) GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry, error) {
-	rows, err := r.conn.Query("SELECT userid, username, timestamp FROM UserNameLogTable WHERE userid = ? ORDER BY timestamp DESC LIMIT ?", userid, number)
+	rows, err := r.conn.Query(
+		"SELECT userid, username, timestamp FROM UserNameLogTable WHERE userid = ? ORDER BY timestamp DESC LIMIT ?",
+		userid,
+		number,
+	)
 	if err != nil {
 		return []UsernameLogEntry{}, err
 	}
@@ -284,7 +302,10 @@ func (r *service) GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry
 }
 
 func (r *service) GetUsersOfServer(serverid Id) ([]User, error) {
-	rows, err := r.conn.Query("SELECT U.userid, U.username FROM UsersServerTable as US INNER JOIN UserTable as U ON US.userid = U.userid WHERE US.serverid = ?", serverid)
+	rows, err := r.conn.Query(
+		"SELECT U.userid, U.username FROM UsersServerTable as US INNER JOIN UserTable as U ON US.userid = U.userid WHERE US.serverid = ?",
+		serverid,
+	)
 	if err != nil {
 		return []User{}, err
 	}
@@ -302,7 +323,10 @@ func (r *service) GetUsersOfServer(serverid Id) ([]User, error) {
 }
 
 func (r *service) GetServersOfUser(userid Id) ([]Server, error) {
-	rows, err := r.conn.Query("SELECT S.serverid, S.ownerid, S.servername FROM UsersServerTable as U INNER JOIN ServerTable as S ON U.serverid = S.serverid WHERE U.userid = ?", userid)
+	rows, err := r.conn.Query(
+		"SELECT S.serverid, S.ownerid, S.servername FROM UsersServerTable as U INNER JOIN ServerTable as S ON U.serverid = S.serverid WHERE U.userid = ?",
+		userid,
+	)
 	if err != nil {
 		return []Server{}, err
 	}
@@ -320,7 +344,10 @@ func (r *service) GetServersOfUser(userid Id) ([]Server, error) {
 }
 
 func (r *service) GetChannelsOfServer(serverid Id) ([]Channel, error) {
-	rows, err := r.conn.Query("SELECT channelid, serverid, channelname, timestamp FROM ChannelTable WHERE serverid = ?", serverid)
+	rows, err := r.conn.Query(
+		"SELECT channelid, serverid, channelname, timestamp FROM ChannelTable WHERE serverid = ?",
+		serverid,
+	)
 	if err != nil {
 		return []Channel{}, err
 	}
@@ -335,10 +362,14 @@ func (r *service) GetChannelsOfServer(serverid Id) ([]Channel, error) {
 		servers = append(servers, s)
 	}
 	return servers, nil
-
 }
+
 func (r *service) AddChannel(serverid Id, channelname string) (Id, error) {
-	d, err := r.conn.Exec("INSERT INTO ChannelTable ( serverid, channelname) VALUES ( ?, ?)", serverid, channelname)
+	d, err := r.conn.Exec(
+		"INSERT INTO ChannelTable ( serverid, channelname) VALUES ( ?, ?)",
+		serverid,
+		channelname,
+	)
 	if err != nil {
 		return 0, fmt.Errorf("add user - username: %s err: %w", channelname, err)
 	}
@@ -353,7 +384,10 @@ func (r *service) AddChannel(serverid Id, channelname string) (Id, error) {
 }
 
 func (r *service) GetChannel(channelid Id) (Channel, error) {
-	rows, err := r.conn.Query("SELECT channelid, channelname, serverid, timestamp FROM ChannelTable WHERE channelid = ?", channelid)
+	rows, err := r.conn.Query(
+		"SELECT channelid, channelname, serverid, timestamp FROM ChannelTable WHERE channelid = ?",
+		channelid,
+	)
 	if err != nil {
 		return Channel{}, err
 	}
@@ -365,7 +399,12 @@ func (r *service) GetChannel(channelid Id) (Channel, error) {
 		if count > 1 {
 			return Channel{}, ErrMultipleRecords
 		}
-		err := rows.Scan(&channel.ChannelId, &channel.ChannelName, &channel.ServerId, &channel.Timestamp)
+		err := rows.Scan(
+			&channel.ChannelId,
+			&channel.ChannelName,
+			&channel.ServerId,
+			&channel.Timestamp,
+		)
 		if err != nil {
 			return Channel{}, err
 		}
@@ -375,8 +414,13 @@ func (r *service) GetChannel(channelid Id) (Channel, error) {
 	}
 	return channel, nil
 }
+
 func (r *service) UpdateChannelName(userid Id, username string) error {
-	_, err := r.conn.Exec("UPDATE ChannelTable SET channelname = ? WHERE channelid=? ", username, userid)
+	_, err := r.conn.Exec(
+		"UPDATE ChannelTable SET channelname = ? WHERE channelid=? ",
+		username,
+		userid,
+	)
 	return err
 }
 
@@ -404,14 +448,25 @@ func (r *service) GetServer(serverid Id) (Server, error) {
 }
 
 func (r *service) GetMessage(messageid Id) (Message, error) {
-	rows, err := r.conn.Query("SELECT messageid, channelid, userid, contents, timestamp, editted, edittimestamp FROM ChannelMessageTable WHERE messageid = ? ", messageid)
+	rows, err := r.conn.Query(
+		"SELECT messageid, channelid, userid, contents, timestamp, editted, edittimestamp FROM ChannelMessageTable WHERE messageid = ? ",
+		messageid,
+	)
 	if err != nil {
 		return Message{}, err
 	}
 	defer rows.Close()
 	var message Message
 	for rows.Next() {
-		err := rows.Scan(&message.MessageId, &message.ChannelId, &message.UserId, &message.Contents, &message.Timestamp, &message.Editted, &message.EdittedTimeStamp)
+		err := rows.Scan(
+			&message.MessageId,
+			&message.ChannelId,
+			&message.UserId,
+			&message.Contents,
+			&message.Timestamp,
+			&message.Editted,
+			&message.EdittedTimeStamp,
+		)
 		if err != nil {
 			return Message{}, err
 		}
@@ -423,7 +478,12 @@ func (r *service) AddMessage(channelid Id, userid Id, message string) (Id, error
 	if userid == 0 || channelid == 0 {
 		return 0, fmt.Errorf("add message - zero userid or channel id")
 	}
-	d, err := r.conn.Exec("INSERT INTO ChannelMessageTable (userid, channelid, contents) VALUES ( ?, ?, ?)", userid, channelid, message)
+	d, err := r.conn.Exec(
+		"INSERT INTO ChannelMessageTable (userid, channelid, contents) VALUES ( ?, ?, ?)",
+		userid,
+		channelid,
+		message,
+	)
 	if err != nil {
 		return 0, fmt.Errorf("add user - userid: %d err: %w", userid, err)
 	}
@@ -438,7 +498,11 @@ func (r *service) AddMessage(channelid Id, userid Id, message string) (Id, error
 }
 
 func (r *service) GetMessagesInChannel(channelid Id, number uint) ([]Message, error) {
-	rows, err := r.conn.Query("SELECT messageid, channelid, userid, contents, timestamp, editted, edittimestamp FROM ChannelMessageTable WHERE channelid = ? ORDER BY timestamp DESC LIMIT ?", channelid, number)
+	rows, err := r.conn.Query(
+		"SELECT messageid, channelid, userid, contents, timestamp, editted, edittimestamp FROM ChannelMessageTable WHERE channelid = ? ORDER BY timestamp DESC LIMIT ?",
+		channelid,
+		number,
+	)
 	if err != nil {
 		return []Message{}, err
 	}
@@ -446,7 +510,15 @@ func (r *service) GetMessagesInChannel(channelid Id, number uint) ([]Message, er
 	var messages []Message
 	for rows.Next() {
 		var message Message
-		err := rows.Scan(&message.MessageId, &message.ChannelId, &message.UserId, &message.Contents, &message.Timestamp, &message.Editted, &message.EdittedTimeStamp)
+		err := rows.Scan(
+			&message.MessageId,
+			&message.ChannelId,
+			&message.UserId,
+			&message.Contents,
+			&message.Timestamp,
+			&message.Editted,
+			&message.EdittedTimeStamp,
+		)
 		if err != nil {
 			return []Message{}, err
 		}
