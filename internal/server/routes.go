@@ -54,11 +54,38 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.GetMemberServers)
 
 	mux.HandleFunc("GET /api/server/{serverid}", s.GetServerInformation)
-	mux.HandleFunc("GET /api/server/{serverid}/members", s.GetServerMembersHandler)
-	mux.HandleFunc("GET /api/server/{serverid}/messages", s.GetServerMessages)
+	mux.HandleFunc(
+		"GET /api/server/{serverid}/members",
+		s.WithAuthUser(s.GetServerMembersHandler),
+	)
+	mux.HandleFunc("GET /api/server/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
+}
+
+func (s *Server) WithAuthUser(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("token")
+		userid_str := r.Header.Get("userid")
+
+		userid, err := strconv.Atoi(userid_str)
+		if err != nil || userid < 0 {
+			http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+			return
+		}
+		passwordInfo, err := s.db.GetUserLoginInfo(database.Id(userid))
+		if err != nil {
+			http.Error(w, "unable to locate password", http.StatusBadRequest)
+			return
+		}
+
+		if !s.validSession(passwordInfo, token) {
+			http.Error(w, "invalid token", http.StatusBadRequest)
+			return
+		}
+		next(w, r)
+	})
 }
 
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
