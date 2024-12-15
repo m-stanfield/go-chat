@@ -407,7 +407,7 @@ func (s *Server) handleMessages(client *websocket.Conn, broadcast chan Message) 
 			fmt.Println(err)
 			continue
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 1.0*time.Second)
 		defer cancel()
 		client.Write(ctx, websocket.MessageText, jsondata)
 		if err != nil {
