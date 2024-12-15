@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -47,7 +48,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// Register routes
 
 	mux.HandleFunc("/health", s.healthHandler)
-	mux.HandleFunc("/websocket", s.websocketHandler)
+	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
 	mux.HandleFunc("POST /api/login", s.loginHandler)
 
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
@@ -357,25 +358,9 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
-	token := r.URL.Query().Get("token")
-	userid_str := r.URL.Query().Get("userid")
-
-	userid, err := strconv.Atoi(userid_str)
-	if err != nil || userid < 0 {
-		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
-		return
-	}
-	passwordInfo, err := s.db.GetUserLoginInfo(database.Id(userid))
-	if err != nil {
-		http.Error(w, "unable to locate password", http.StatusBadRequest)
-		return
-	}
-
-	if !s.validSession(passwordInfo, token) {
-		http.Error(w, "invalid token", http.StatusBadRequest)
-		return
-	}
-	userinfo, err := s.db.GetUser(database.Id(userid))
+	val := r.Context().Value("userinfo")
+	passinfo := val.(database.UserLoginInfo)
+	userinfo, err := s.db.GetUser(database.Id(passinfo.UserId))
 	if err != nil {
 		http.Error(w, "error fetching user", http.StatusInternalServerError)
 		return
@@ -394,7 +379,11 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		_, message, err := socket.Read(r.Context())
-		if err != nil {
+		newerr := websocket.CloseError{}
+		if errors.As(err, &newerr) && newerr.Code == websocket.StatusGoingAway {
+			fmt.Println("socket closed by user with status go away")
+			break
+		} else if err != nil {
 			fmt.Printf("error getting message from websocket: %e", err)
 			break
 		}
@@ -446,7 +435,7 @@ func (s *Server) handleMessages(client *websocket.Conn, broadcast chan Message) 
 		msg := <-broadcast
 		jsondata, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("handleMessage", err)
 			continue
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 1.0*time.Second)
