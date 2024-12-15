@@ -66,15 +66,22 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 func (s *Server) WithAuthUser(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get("token")
-		userid_str := r.Header.Get("userid")
-
-		userid, err := strconv.Atoi(userid_str)
-		if err != nil || userid < 0 {
-			http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		cookieName := "token"
+		cookie, err := r.Cookie(cookieName)
+		if err != nil {
+			if err == http.ErrNoCookie {
+				// Handle the case where the cookie is not found
+				http.Error(w, "Token cookie not found", http.StatusUnauthorized)
+				return
+			}
+			// Handle other potential errors
+			http.Error(w, "Error retrieving cookie", http.StatusInternalServerError)
 			return
 		}
-		passwordInfo, err := s.db.GetUserLoginInfo(database.Id(userid))
+
+		// Access the cookie value
+		token := cookie.Value
+		passwordInfo, err := s.db.GetUserLoginInfoFromToken(token)
 		if err != nil {
 			http.Error(w, "unable to locate password", http.StatusBadRequest)
 			return
@@ -84,7 +91,7 @@ func (s *Server) WithAuthUser(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "invalid token", http.StatusBadRequest)
 			return
 		}
-		next(w, r)
+		next(w, r.WithContext(context.WithValue(r.Context(), "userinfo", passwordInfo)))
 	})
 }
 
@@ -166,12 +173,20 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := map[string]interface{}{
-		"token":             token,
 		"token_expire_time": expire_time,
+		"token":             token,
 		"userid":            userid,
 	}
 
 	// Set a cookie (you can modify the cookie as needed)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		Secure:   false,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
 
 	// Redirect the user to /chat
 	w.Header().Set("Content-Type", "application/json")
