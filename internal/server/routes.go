@@ -380,11 +380,17 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		_, message, err := socket.Read(r.Context())
 		newerr := websocket.CloseError{}
-		if errors.As(err, &newerr) && newerr.Code == websocket.StatusGoingAway {
-			fmt.Println("socket closed by user with status go away")
+		if errors.As(err, &newerr) {
+			if newerr.Code == websocket.StatusGoingAway {
+				fmt.Println("socket closed by user with status go away")
+			} else if newerr.Code == websocket.StatusNoStatusRcvd {
+				fmt.Println("socket closed due to not getting a response")
+			} else {
+				fmt.Println("websocketHandler error: %w", err)
+			}
 			break
 		} else if err != nil {
-			fmt.Printf("error getting message from websocket: %e", err)
+			fmt.Printf("error getting message from websocket: %w", err)
 			break
 		}
 
