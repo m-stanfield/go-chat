@@ -329,7 +329,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.validSession(passwordInfo, token) {
+	if !s.validSession(passwordInfo, token) {
 		http.Error(w, "invalid token", http.StatusBadRequest)
 		return
 	}
