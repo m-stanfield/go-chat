@@ -21,6 +21,7 @@ type Service interface {
 	Atomic(context.Context, AtomicCallback) error
 	GetUserIDFromUserName(username string) (Id, error)
 	UpdateUserSessionToken(userid Id) (string, time.Time, error)
+	GetUserLoginInfoFromToken(token string) (UserLoginInfo, error)
 	GetUserLoginInfo(userid Id) (UserLoginInfo, error)
 	GetUser(userid Id) (User, error)
 	AddUser(username string) (Id, error)
@@ -64,6 +65,7 @@ var (
 func (db *service) withTx(tx *sql.Tx) *service {
 	return &service{db: db.db, conn: tx}
 }
+
 func (r *service) Atomic(ctx context.Context, cb func(ds Service) error) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -206,6 +208,39 @@ func (r *service) GetUserLoginInfo(userid Id) (UserLoginInfo, error) {
 	rows, err := r.conn.Query(
 		"SELECT userid, passwordhash, salt, token, token_expire_time FROM UserLoginTable WHERE userid = ?",
 		userid,
+	)
+	if err != nil {
+		return UserLoginInfo{}, err
+	}
+	defer rows.Close()
+	count := 0
+	var user UserLoginInfo
+	for rows.Next() {
+		count += 1
+		if count > 1 {
+			return UserLoginInfo{}, ErrMultipleRecords
+		}
+		err := rows.Scan(
+			&user.UserId,
+			&user.PasswordHash,
+			&user.Salt,
+			&user.Token,
+			&user.TokenExpireTime,
+		)
+		if err != nil {
+			return UserLoginInfo{}, err
+		}
+	}
+	if count == 0 {
+		return UserLoginInfo{}, ErrNoRecord
+	}
+	return user, nil
+}
+
+func (r *service) GetUserLoginInfoFromToken(token string) (UserLoginInfo, error) {
+	rows, err := r.conn.Query(
+		"SELECT userid, passwordhash, salt, token, token_expire_time FROM UserLoginTable WHERE token = ?",
+		token,
 	)
 	if err != nil {
 		return UserLoginInfo{}, err
