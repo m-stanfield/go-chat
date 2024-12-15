@@ -48,7 +48,9 @@ function ChatPage() {
                 }
             }
         };
-        ws.current.onclose = () => console.log("ws closed");
+        ws.current.onclose = () => {
+            console.log("ws closed");
+        };
 
         return () => {
             ws.current?.close();
