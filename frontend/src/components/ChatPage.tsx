@@ -14,7 +14,12 @@ function ChatPage() {
     const maxMessageLength = 30;
 
     useEffect(() => {
-        const onmessage = function(event: MessageEvent) {
+        console.log("running websocket");
+        ws.current = new WebSocket(`ws://localhost:8080/websocket`);
+        ws.current.onopen = () => {
+            console.log("opening ws");
+        };
+        ws.current.onmessage = function(event: MessageEvent) {
             const json = JSON.parse(event.data);
             try {
                 const newMessage: MessageData = {
@@ -43,13 +48,6 @@ function ChatPage() {
                 }
             }
         };
-        ws.current = new WebSocket(
-            `ws://localhost:8080/websocket?token=${auth.authState.user?.token}&userid=${auth.authState.user?.id}`,
-        );
-        ws.current.onopen = () => {
-            console.log("opening ws");
-        };
-        ws.current.onmessage = onmessage;
         ws.current.onclose = () => console.log("ws closed");
 
         return () => {
@@ -67,11 +65,15 @@ function ChatPage() {
             username: "me",
             message: inputValue,
         });
-        if (ws?.current === null || ws?.current.readyState === WebSocket.CLOSED) {
+        if (ws?.current === null) {
+            console.log("websocket hasn't be initialized yet");
+            return inputValue;
+        }
+        if (ws.current.readyState === WebSocket.CLOSED) {
             console.log("can't send ws closed");
             return inputValue;
         }
-        ws?.current.send(stringified);
+        ws.current.send(stringified);
         return "";
     };
 
