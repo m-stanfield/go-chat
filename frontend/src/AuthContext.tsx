@@ -23,6 +23,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
+    if (!authState.isAuthenticated) {
+      return;
+    }
     setAuthState((prevState) => {
       prevState.logoutCallbacks.forEach((callback) => callback());
       return {
