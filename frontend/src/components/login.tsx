@@ -46,7 +46,6 @@ function Login() {
 
     return (
         <div className="flex-grow  bg-slate-700 ">
-            <h2>Login</h2>
             <form onSubmit={handleSubmit}>
                 <div>
                     <label htmlFor="username">Username:</label>
