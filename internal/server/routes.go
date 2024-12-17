@@ -66,8 +66,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 }
 
 func (s *Server) DebugEndpoint(next http.Handler) http.Handler {
+	counter := 0
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Endpoint hit: %s", r.URL)
+		counter = counter + 1
+		fmt.Printf("%d Endpoint hit: %s\n", counter, r.URL)
 		// Proceed with the next handler
 		next.ServeHTTP(w, r)
 	})
