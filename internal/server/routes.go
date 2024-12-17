@@ -62,10 +62,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/server/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
 
 	// Wrap the mux with CORS middleware
-	return s.corsMiddleware(s.DebugEndpoint(mux))
+	return s.corsMiddleware(s.logEndpoint(mux))
 }
 
-func (s *Server) DebugEndpoint(next http.Handler) http.Handler {
+func (s *Server) logEndpoint(next http.Handler) http.Handler {
 	counter := 0
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		counter = counter + 1
