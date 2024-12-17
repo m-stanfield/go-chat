@@ -13,42 +13,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const login = (user: User) => {
-    setAuthState({
-      isAuthenticated: true,
-      user,
-      logoutCallbacks: [],
+    setAuthState((prevState) => {
+      return {
+        isAuthenticated: true,
+        user: { ...user },
+        logoutCallbacks: [],
+      };
     });
   };
 
   const logout = () => {
-    authState.logoutCallbacks.forEach((callback) => callback());
-
-    setAuthState({
-      isAuthenticated: false,
-      user: null,
-      logoutCallbacks: [],
+    setAuthState((prevState) => {
+      prevState.logoutCallbacks.forEach((callback) => callback());
+      return {
+        isAuthenticated: false,
+        user: null,
+        logoutCallbacks: [],
+      };
     });
   };
 
   const addLogoutCallback = (callback: LogoutCallback) => {
     const removeCallback = () => {
-      const cbs_removed = authState.logoutCallbacks.filter(
-        (cb) => cb !== callback,
-      );
-      if (cbs_removed.length == 0) {
-        return;
-      }
-
-      setAuthState({
-        isAuthenticated: authState.isAuthenticated,
-        user: authState.user,
-        logoutCallbacks: cbs_removed,
+      setAuthState((prevState) => {
+        const cbs_removed = prevState.logoutCallbacks.filter(
+          (cb) => cb !== callback,
+        );
+        return {
+          ...prevState,
+          logoutCallbacks: cbs_removed,
+        };
       });
     };
-    setAuthState({
-      isAuthenticated: authState.isAuthenticated,
-      user: authState.user,
-      logoutCallbacks: [callback, ...authState.logoutCallbacks],
+    setAuthState((prevState) => {
+      return {
+        ...prevState,
+        logoutCallbacks: [callback, ...prevState.logoutCallbacks],
+      };
     });
 
     return removeCallback;
