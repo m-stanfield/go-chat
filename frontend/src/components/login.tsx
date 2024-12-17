@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../AuthContext.tsx";
 
 function Login() {
@@ -37,11 +37,9 @@ function Login() {
                 });
                 console.log("Login successful:", data);
             } else {
-                auth.logout();
                 console.error("Login failed:", response.statusText);
             }
         } catch (error) {
-            auth.logout();
             console.error("Error submitting login:", error);
         }
     };
