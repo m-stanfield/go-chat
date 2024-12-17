@@ -370,7 +370,7 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	val := r.Context().Value("userinfo")
 	passinfo, ok := val.(database.UserLoginInfo)
-	if ok {
+	if !ok {
 		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
 		return
 	}
