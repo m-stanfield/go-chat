@@ -436,6 +436,10 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("error getting message from websocket: %e", err)
 			continue
 		}
+		if payload.ChannnelId <= 0 {
+			fmt.Printf("websocketHandler: invalid channel id channe_id=%d", payload.ChannnelId)
+			continue
+		}
 		messageid, err := s.db.AddMessage(payload.ChannnelId, userinfo.UserId, payload.Message)
 		if err != nil {
 			fmt.Printf("error saving message: %e", err)
