@@ -17,10 +17,11 @@ function ChatPage({ channel_id }: ChatPageProps) {
     const maxMessageLength = 30;
 
     useEffect(() => {
-        console.log("running websocket");
+        const startTime = Date.now();
+        console.log("starting to open websocket", Date.now() - startTime);
         ws.current = new WebSocket(`ws://localhost:8080/websocket`);
         ws.current.onopen = () => {
-            console.log("opening ws");
+            console.log("opening ws", Date.now() - startTime);
         };
         ws.current.onmessage = function(event: MessageEvent) {
             const json = JSON.parse(event.data);
@@ -52,7 +53,7 @@ function ChatPage({ channel_id }: ChatPageProps) {
             }
         };
         ws.current.onclose = () => {
-            console.log("ws closed");
+            console.log("ws closed", Date.now() - startTime);
         };
 
         return () => {
