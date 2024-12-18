@@ -20,6 +20,7 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
             });
         }
     }, [auth.authState.user?.id, messages]);
+
     return (
         <div className=" flex h-full w-full flex-col ">
             <div className="w-full">Channel ID: {channel_id}</div>
