@@ -425,16 +425,18 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 		// todo add message parsing
 		payload := struct {
-			Message string `json:"message"`
+			Message    string      `json:"message"`
+			ChannnelId database.Id `json:"channel_id"`
 		}{
-			Message: "",
+			Message:    "",
+			ChannnelId: 0,
 		}
 		err = json.Unmarshal(message, &payload)
 		if err != nil {
 			fmt.Printf("error getting message from websocket: %e", err)
 			continue
 		}
-		messageid, err := s.db.AddMessage(1, userinfo.UserId, payload.Message)
+		messageid, err := s.db.AddMessage(payload.ChannnelId, userinfo.UserId, payload.Message)
 		if err != nil {
 			fmt.Printf("error saving message: %e", err)
 			continue
