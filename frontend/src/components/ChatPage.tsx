@@ -5,7 +5,10 @@ import Message, { MessageData } from "./Message"; // Import your Message compone
 import MockMessages from "./MockMessages";
 import { useAuth } from "../AuthContext";
 
-function ChatPage() {
+interface ChatPageProps {
+    channel_id: number;
+}
+function ChatPage({ channel_id }: ChatPageProps) {
     const auth = useAuth();
     const [messages, setMessages] = useState<MessageData[]>(MockMessages);
     const ws = useRef<WebSocket | null>(null);

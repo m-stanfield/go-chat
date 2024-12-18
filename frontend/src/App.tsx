@@ -16,7 +16,11 @@ function App() {
         Logout
       </button>
       <div className="flex w-full h-full">
-        {auth.authState.isAuthenticated ? <ChatPage /> : <Login />}
+        {auth.authState.isAuthenticated ? (
+          <ChatPage channel_id={2} />
+        ) : (
+          <Login />
+        )}
       </div>
     </div>
   );
