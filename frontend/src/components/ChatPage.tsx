@@ -95,6 +95,7 @@ function ChatPage({ channel_id }: ChatPageProps) {
     }, [messages]);
     return (
         <div className=" flex h-full w-full flex-col ">
+            <div className="w-full">Channel ID: {channel_id}</div>
             <div className="flex w-full flex-grow flex-col-reverse overflow-y-scroll rounded-lg">
                 <ul className="w-full space-y-1  rounded-lg bg-slate-800">
                     {messages.map((m, index) => (
