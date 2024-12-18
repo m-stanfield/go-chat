@@ -1,7 +1,7 @@
 import Login from "./components/login";
 import { useAuth } from "./AuthContext";
-import ChatPage from "./components/ChatPage";
 import { useEffect } from "react";
+import ServerPage from "./components/ServerPage";
 
 function App() {
   const auth = useAuth();
@@ -17,7 +17,7 @@ function App() {
       </button>
       <div className="flex w-full h-full">
         {auth.authState.isAuthenticated ? (
-          <ChatPage channel_id={2} />
+          <ServerPage server_id={1} />
         ) : (
           <Login />
         )}
