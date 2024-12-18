@@ -406,9 +406,9 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("starting websocket loop: %d",
 		time.Since(startTime).Milliseconds(),
 	)
+	newerr := websocket.CloseError{}
 	for {
 		_, message, err := socket.Read(r.Context())
-		newerr := websocket.CloseError{}
 		if errors.As(err, &newerr) {
 			if newerr.Code == websocket.StatusGoingAway {
 				fmt.Println("socket closed by user with status go away")
