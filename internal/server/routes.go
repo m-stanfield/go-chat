@@ -18,6 +18,7 @@ import (
 var (
 	clients         = make([]chan Message, 0)
 	incomingChannel = make(chan Message)
+	startTime       = time.Now()
 )
 
 type Message struct {
@@ -75,7 +76,12 @@ func (s *Server) logEndpoint(next http.Handler) http.Handler {
 	counter := 0
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		counter = counter + 1
-		fmt.Printf("%d Endpoint hit: %s\n", counter, r.URL)
+		fmt.Printf(
+			"%d Endpoint hit: %s after %d ms\n",
+			counter,
+			r.URL,
+			time.Since(startTime).Milliseconds(),
+		)
 		// Proceed with the next handler
 		next.ServeHTTP(w, r)
 	})
@@ -397,6 +403,9 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	go s.handleMessages(socket, outgoingChannel)
 	clients = append(clients, outgoingChannel)
 
+	fmt.Printf("starting websocket loop: %d",
+		time.Since(startTime).Milliseconds(),
+	)
 	for {
 		_, message, err := socket.Read(r.Context())
 		newerr := websocket.CloseError{}
