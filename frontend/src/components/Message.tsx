@@ -1,5 +1,6 @@
 export type MessageData = {
     id: number | undefined;
+    channel_id: number | undefined;
     author: string;
     author_id: string;
     date: Date;

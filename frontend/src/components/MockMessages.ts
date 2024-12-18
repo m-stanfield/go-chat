@@ -2,6 +2,7 @@ import { MessageData } from "./Message"; // Import your Message component
 const MockMessages = [
   {
     id: 1,
+    channel_id: 1,
     author: "abcd1",
     author_id: "1",
     date: new Date(0),
@@ -10,6 +11,7 @@ const MockMessages = [
   {
     id: 2,
     author: "abcd2",
+    channel_id: 1,
     author_id: "2",
     date: new Date(1),
     message: "message1",
@@ -18,6 +20,7 @@ const MockMessages = [
     id: 3,
     author: "abcd3",
     author_id: "3",
+    channel_id: 1,
     date: new Date(2),
     message: "message2",
   },
@@ -26,6 +29,7 @@ const MockMessages = [
     author: "abcd1",
     author_id: "1",
     date: new Date(3),
+    channel_id: 1,
     message: "message3",
   },
   {
@@ -34,6 +38,7 @@ const MockMessages = [
     author_id: "2",
     date: new Date(4),
     message: "message4",
+    channel_id: 1,
   },
   {
     id: 6,
@@ -44,6 +49,7 @@ const MockMessages = [
   },
   {
     id: 7,
+    channel_id: 1,
     author: "abcd1",
     author_id: "1",
     date: new Date(6),
@@ -52,12 +58,14 @@ const MockMessages = [
   {
     id: 8,
     author: "abcd2",
+    channel_id: 1,
     author_id: "2",
     date: new Date(7),
     message: "message7",
   },
   {
     id: 9,
+    channel_id: 1,
     author: "abcd3",
     author_id: "3",
     date: new Date(8),
@@ -66,6 +74,7 @@ const MockMessages = [
   {
     id: 10,
     author: "abcd4",
+    channel_id: 1,
     author_id: "4",
     date: new Date(9),
     message: "message9",
@@ -74,6 +83,7 @@ const MockMessages = [
     id: 11,
     author: "abcd2",
     author_id: "2",
+    channel_id: 1,
     date: new Date(10),
     message: "message10",
   },
@@ -82,6 +92,7 @@ const MockMessages = [
     author: "abcd3",
     author_id: "3",
     date: new Date(21),
+    channel_id: 1,
     message: "message21",
   },
   {
@@ -90,9 +101,11 @@ const MockMessages = [
     author_id: "4",
     date: new Date(32),
     message: "message32",
+    channel_id: 1,
   },
   {
     id: 14,
+    channel_id: 1,
     author: "abcd3",
     author_id: "3",
     date: new Date(23),
@@ -101,6 +114,7 @@ const MockMessages = [
   {
     id: 15,
     author: "abcd4",
+    channel_id: 1,
     author_id: "4",
     date: new Date(34),
     message: "message34",
@@ -109,6 +123,7 @@ const MockMessages = [
     id: 16,
     author: "abcd1",
     author_id: "1",
+    channel_id: 1,
     date: new Date(0),
     message: "message0",
   },
@@ -117,10 +132,12 @@ const MockMessages = [
     author: "abcd1",
     author_id: "1",
     date: new Date(1),
+    channel_id: 1,
     message: "message1",
   },
   {
     id: 18,
+    channel_id: 1,
     author: "abcd1",
     author_id: "1",
     date: new Date(2),
@@ -129,6 +146,7 @@ const MockMessages = [
   {
     id: 19,
     author: "abcd1",
+    channel_id: 1,
     author_id: "1",
     date: new Date(3),
     message: "message3",
@@ -137,6 +155,7 @@ const MockMessages = [
     id: 20,
     author: "abcd2",
     author_id: "2",
+    channel_id: 1,
     date: new Date(4),
     message: "message4",
   },
@@ -145,6 +164,7 @@ const MockMessages = [
     author: "abcd3",
     author_id: "3",
     date: new Date(5),
+    channel_id: 1,
     message: "message5",
   },
   {
@@ -153,9 +173,11 @@ const MockMessages = [
     author_id: "1",
     date: new Date(6),
     message: "message6",
+    channel_id: 1,
   },
   {
     id: 23,
+    channel_id: 1,
     author: "abcd2",
     author_id: "2",
     date: new Date(7),
@@ -164,6 +186,7 @@ const MockMessages = [
   {
     id: 24,
     author: "abcd3",
+    channel_id: 1,
     author_id: "3",
     date: new Date(8),
     message: "message8",
@@ -172,6 +195,7 @@ const MockMessages = [
     id: 25,
     author: "abcd4",
     author_id: "4",
+    channel_id: 1,
     date: new Date(9),
     message: "message9",
   },
@@ -180,6 +204,7 @@ const MockMessages = [
     author: "abcd2",
     author_id: "2",
     date: new Date(10),
+    channel_id: 1,
     message: "message10",
   },
   {
@@ -188,9 +213,11 @@ const MockMessages = [
     author_id: "3",
     date: new Date(21),
     message: "message21",
+    channel_id: 1,
   },
   {
     id: 28,
+    channel_id: 1,
     author: "abcd4",
     author_id: "4",
     date: new Date(32),
@@ -199,6 +226,7 @@ const MockMessages = [
   {
     id: 29,
     author: "abcd3",
+    channel_id: 1,
     author_id: "3",
     date: new Date(23),
     message: "message23",
@@ -207,6 +235,7 @@ const MockMessages = [
     id: 30,
     author: "abcd4",
     author_id: "4",
+    channel_id: 1,
     date: new Date(34),
     message: "message34",
   },

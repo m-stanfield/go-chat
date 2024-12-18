@@ -28,6 +28,7 @@ function ChatPage({ channel_id }: ChatPageProps) {
             try {
                 const newMessage: MessageData = {
                     id: json.messageid,
+                    channel_id: channel_id,
                     message: json.message,
                     date: new Date(json.date),
                     author: json.username,
@@ -68,7 +69,7 @@ function ChatPage({ channel_id }: ChatPageProps) {
         }
         setFocuseMessageWindow(true);
         const stringified = JSON.stringify({
-            username: "me",
+            channel_id: channel_id,
             message: inputValue,
         });
         if (ws?.current === null) {
