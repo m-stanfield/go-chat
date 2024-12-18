@@ -41,12 +41,18 @@ type SubmittedMessage struct {
 	Message   string      `json:"message"`
 }
 
+// redirect so I only have to remember one port during development
+func (s *Server) redirectToReact(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "http://localhost:5173", http.StatusTemporaryRedirect)
+}
+
 func (s *Server) RegisterRoutes() http.Handler {
 	go s.handleIncomingMessages(incomingChannel)
 	mux := http.NewServeMux()
 
 	// Register routes
 
+	mux.HandleFunc("/", s.redirectToReact)
 	mux.HandleFunc("/health", s.healthHandler)
 	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
 	mux.HandleFunc("POST /api/login", s.loginHandler)
