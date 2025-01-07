@@ -13,10 +13,12 @@ function ServerPage({ server_id }: ServerPageProps) {
     >(new Map());
     useEffect(() => {
         setChannelMessages((prev) => {
-            const temp = prev.set(server_id, MockMessages);
-            return new Map(temp);
+            const newmap = new Map([
+                [selectedChannelId, MockMessages(selectedChannelId)],
+            ]);
+            return newmap;
         });
-    }, []);
+    }, [selectedChannelId]);
     const ws = useRef<WebSocket | null>(null);
     const maxMessageLength = 30;
     const onSubmit = (t: SyntheticEvent, inputValue: string): string => {
