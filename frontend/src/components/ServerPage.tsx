@@ -7,8 +7,16 @@ interface ServerPageProps {
     server_id: number;
 }
 function ServerPage({ server_id }: ServerPageProps) {
-    const selectedChannelId = 2;
-    const [messages, setMessages] = useState<MessageData[]>(MockMessages);
+    const selectedChannelId = 1;
+    const [channnelMessages, setChannelMessages] = useState<
+        Map<number, MessageData[]>
+    >(new Map());
+    useEffect(() => {
+        setChannelMessages((prev) => {
+            const temp = prev.set(server_id, MockMessages);
+            return new Map(temp);
+        });
+    }, []);
     const ws = useRef<WebSocket | null>(null);
     const maxMessageLength = 30;
     const onSubmit = (t: SyntheticEvent, inputValue: string): string => {
@@ -44,18 +52,28 @@ function ServerPage({ server_id }: ServerPageProps) {
             try {
                 const newMessage: MessageData = {
                     id: json.messageid,
-                    channel_id: json.channel_id,
+                    channel_id: json.channelid,
                     message: json.message,
                     date: new Date(json.date),
                     author: json.username,
                     author_id: json.userid,
                 };
-                setMessages((messages) => {
-                    console.log(messages.length);
-                    if (messages.length > maxMessageLength) {
-                        return [...messages.slice(-maxMessageLength), newMessage];
+                const channel_id = newMessage.channel_id;
+                if (!channel_id) {
+                    return;
+                }
+                setChannelMessages((messages) => {
+                    let channel_messages = messages.get(channel_id);
+                    if (!channel_messages) {
+                        return messages;
                     }
-                    return [...messages, newMessage];
+                    channel_messages = [...channel_messages, newMessage];
+                    if (channel_messages.length > maxMessageLength) {
+                        messages.set(channel_id, channel_messages.slice(-maxMessageLength));
+                    } else {
+                        messages.set(channel_id, channel_messages);
+                    }
+                    return new Map(messages);
                 });
             } catch (err) {
                 console.log(err);
@@ -79,7 +97,7 @@ function ServerPage({ server_id }: ServerPageProps) {
                 <ChatPage
                     channel_id={selectedChannelId}
                     onSubmit={onSubmit}
-                    messages={messages}
+                    messages={channnelMessages.get(selectedChannelId) || []}
                 />
             </div>
         </div>
