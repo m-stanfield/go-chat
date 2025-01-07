@@ -14,7 +14,7 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
 
     useEffect(() => {
         const lastMessage = messages[messages.length - 1];
-        if (lastMessage.author_id == auth.authState.user?.id) {
+        if (lastMessage && lastMessage.author_id == auth.authState.user?.id) {
             messageEndRef.current?.scrollIntoView({
                 behavior: "smooth",
             });
