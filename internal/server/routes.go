@@ -455,6 +455,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			UserName:  userinfo.UserName,
 			UserId:    dbmsg.UserId,
 			MessageID: messageid,
+			ChannelId: dbmsg.ChannelId,
 			Message:   dbmsg.Contents,
 			Date:      dbmsg.Timestamp.Format(time.UnixDate),
 		}
