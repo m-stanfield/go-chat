@@ -12,12 +12,37 @@ function ServerPage({ server_id }: ServerPageProps) {
         Map<number, MessageData[]>
     >(new Map());
     useEffect(() => {
-        setChannelMessages((prev) => {
+        (async () => {
+            try {
+                // Send POST request to backend
+                const response = await fetch(
+                    "http://localhost:8080/api/server/1/messages",
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        credentials: "include",
+                    },
+                );
+
+                // Handle response
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(data);
+                } else {
+                    console.error("Login failed:", response.statusText);
+                }
+            } catch (error) {
+                console.error("Error submitting login:", error);
+            }
             const newmap = new Map([
                 [selectedChannelId, MockMessages(selectedChannelId)],
             ]);
-            return newmap;
-        });
+            setChannelMessages(() => {
+                return newmap;
+            });
+        })();
     }, [selectedChannelId]);
     const ws = useRef<WebSocket | null>(null);
     const maxMessageLength = 30;
