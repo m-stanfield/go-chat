@@ -37,6 +37,7 @@ type Service interface {
 	AddMessage(channelid Id, userid Id, message string) (Id, error)
 	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
 	GetServer(serverid Id) (Server, error)
+	IsUserInServer(userid Id, serverid Id) (bool, error)
 
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
@@ -416,6 +417,16 @@ func (r *service) AddChannel(serverid Id, channelname string) (Id, error) {
 		return 0, ErrNegativeRowIndex
 	}
 	return Id(id), nil
+}
+
+func (r *service) IsUserInServer(userid Id, serverid Id) (bool, error) {
+	query := `SELECT COUNT(1) FROM UsersServerTable WHERE serverid = ? AND userid = ?`
+	var count int
+	err := r.db.QueryRow(query, serverid, userid).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (r *service) GetChannel(channelid Id) (Channel, error) {
