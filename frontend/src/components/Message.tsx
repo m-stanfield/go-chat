@@ -1,5 +1,5 @@
 export type MessageData = {
-    id: number | undefined;
+    message_id: number | undefined;
     channel_id: number | undefined;
     author: string;
     author_id: string;
@@ -21,7 +21,7 @@ function Message({ message }: MessageProps) {
     const dayTime = formatDateTime(message.date);
     return (
         <>
-            {message.id === undefined ? (
+            {message.message_id === undefined ? (
                 <div>Invalid Message</div>
             ) : (
                 <div className="w-full grid grid-rows-2 gap-1 px-2 py-1">

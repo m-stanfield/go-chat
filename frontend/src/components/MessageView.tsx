@@ -8,7 +8,7 @@ interface MessageViewProps {
 export default function MessageView({ messages }: MessageViewProps) {
     const items = messages.map((m) => (
         <li
-            key={m.id}
+            key={m.messageid}
             className="w-full rounded-lg bg-slate-700 hover:bg-slate-600"
         >
             <Message message={m} />

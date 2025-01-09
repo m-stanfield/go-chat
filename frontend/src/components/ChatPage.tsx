@@ -28,7 +28,7 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
                 <ul className="w-full space-y-1  rounded-lg bg-slate-800">
                     {messages.map((m, index) => (
                         <li
-                            key={m.id}
+                            key={m.message_id}
                             className="w-full rounded-lg bg-slate-700 hover:bg-slate-600"
                             ref={index == messages.length - 1 ? messageEndRef : null}
                         >

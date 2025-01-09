@@ -61,7 +61,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.GetMemberServers)
 
-	mux.HandleFunc("GET /api/server/{serverid}", s.GetServerInformation)
+	mux.HandleFunc("GET /api/messages", s.GetServerInformation)
+	mux.HandleFunc("GET /api/server/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
 	mux.HandleFunc(
 		"GET /api/server/{serverid}/members",
 		s.WithAuthUser(s.GetServerMembersHandler),
@@ -227,6 +228,52 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
+	serverid_str := r.PathValue("serverid")
+	serverid, err := strconv.Atoi(serverid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	if serverid <= 0 {
+		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+
+	val := r.Context().Value("userinfo")
+	passinfo, ok := val.(database.UserLoginInfo)
+	if !ok {
+		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+		return
+	}
+	userinfo, err := s.db.GetUser(database.Id(passinfo.UserId))
+	isServerMember, err := s.db.IsUserInServer(userinfo.UserId, database.Id(serverid))
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	if !isServerMember {
+		http.Error(w, "user not member of server", http.StatusNetworkAuthenticationRequired)
+		return
+	}
+
+	channels, err := s.db.GetChannelsOfServer(database.Id(serverid))
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	resp := map[string]interface{}{"channels": channels}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
 func (s *Server) GetMemberServers(w http.ResponseWriter, r *http.Request) {
 	userid_str := r.PathValue("userid")
 	userid, err := strconv.Atoi(userid_str)
@@ -290,13 +337,76 @@ func (s *Server) GetServerInformation(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
-	serverid_str := r.PathValue("serverid") // r.URL.Query().Get("serverid")
-	_, err := strconv.Atoi(serverid_str)
+	serverid_str := r.PathValue("serverid")
+	serverid, err := strconv.Atoi(serverid_str)
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	http.Error(w, "endpoint not implemented", http.StatusNotImplemented)
+	if serverid <= 0 {
+		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+
+	val := r.Context().Value("userinfo")
+	passinfo, ok := val.(database.UserLoginInfo)
+	if !ok {
+		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+		return
+	}
+	isServerMember, err := s.db.IsUserInServer(passinfo.UserId, database.Id(serverid))
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	if !isServerMember {
+		http.Error(w, "user not member of server", http.StatusNetworkAuthenticationRequired)
+		return
+	}
+
+	channels, err := s.db.GetChannelsOfServer(database.Id(serverid))
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	var messages []Message
+	for _, channel := range channels {
+		db_messages, err := s.db.GetMessagesInChannel(channel.ChannelId, 30)
+		if err != nil {
+			http.Error(w, "database error", http.StatusInternalServerError)
+			return
+		}
+
+		tempmsgs := make([]Message, len(db_messages))
+		for i, dbmsg := range db_messages {
+			userinfo, err := s.db.GetUser(dbmsg.UserId)
+			if err != nil {
+				http.Error(w, "database error", http.StatusInternalServerError)
+				return
+			}
+			username := userinfo.UserName
+			tempmsgs[i] = Message{
+				UserId:    dbmsg.UserId,
+				UserName:  username,
+				MessageID: dbmsg.MessageId,
+				ChannelId: dbmsg.ChannelId,
+				Message:   dbmsg.Contents,
+				Date:      dbmsg.Timestamp.Format(time.UnixDate),
+			}
+		}
+		messages = append(messages, tempmsgs...)
+
+	}
+	resp := map[string]interface{}{"serverid": serverid, "messages": messages}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
 }
 
 func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request) {

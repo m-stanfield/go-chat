@@ -29,19 +29,32 @@ function ServerPage({ server_id }: ServerPageProps) {
                 // Handle response
                 if (response.ok) {
                     const data = await response.json();
+                    const messageDataArray: MessageData[] = data["messages"].map(
+                        (msg) => {
+                            const obj = {
+                                message_id: msg.messageid,
+                                channel_id: msg.channelid,
+                                author: msg.username,
+                                author_id: msg.userid,
+                                date: new Date(msg.date), // Convert to JavaScript Date object
+                                message: msg.message,
+                            };
+                            return obj;
+                        },
+                    );
                     console.log(data);
+                    const newmap = new Map([[selectedChannelId, messageDataArray]]);
+                    setChannelMessages(() => {
+                        return newmap;
+                    });
                 } else {
                     console.error("Login failed:", response.statusText);
+                    return;
                 }
             } catch (error) {
                 console.error("Error submitting login:", error);
+                return;
             }
-            const newmap = new Map([
-                [selectedChannelId, MockMessages(selectedChannelId)],
-            ]);
-            setChannelMessages(() => {
-                return newmap;
-            });
         })();
     }, [selectedChannelId]);
     const ws = useRef<WebSocket | null>(null);
@@ -78,7 +91,7 @@ function ServerPage({ server_id }: ServerPageProps) {
             const json = JSON.parse(event.data);
             try {
                 const newMessage: MessageData = {
-                    id: json.messageid,
+                    message_id: json.messageid,
                     channel_id: json.channelid,
                     message: json.message,
                     date: new Date(json.date),
