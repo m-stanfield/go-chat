@@ -1,5 +1,5 @@
 import MessageSubmitWindow from "./MessageSubmitWindow";
-import { SyntheticEvent, useEffect, useRef, useState } from "react";
+import { SyntheticEvent, useEffect, useRef } from "react";
 import Message, { MessageData } from "./Message"; // Import your Message component
 import { useAuth } from "../AuthContext";
 
