@@ -6,7 +6,7 @@ interface ServerPageProps {
     server_id: number;
 }
 function ServerPage({ server_id }: ServerPageProps) {
-    const selectedChannelId = 1;
+    const [selectedChannelId, setSelectedChannelId] = useState<number>(0);
     const [channnelMessages, setChannelMessages] = useState<
         Map<number, MessageData[]>
     >(new Map());
@@ -41,6 +41,7 @@ function ServerPage({ server_id }: ServerPageProps) {
                             return obj;
                         },
                     );
+                    setSelectedChannelId((x) => messageDataArray[0].channel_id);
                     messageDataArray.sort((a, b) => a.message_id - b.message_id);
                     console.log(data);
                     const newmap = new Map([[selectedChannelId, messageDataArray]]);
