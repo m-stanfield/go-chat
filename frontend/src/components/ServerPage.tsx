@@ -1,6 +1,5 @@
 import ChatPage from "./ChatPage";
 import { SyntheticEvent, useEffect, useRef, useState } from "react";
-import MockMessages from "./MockMessages";
 import { MessageData } from "./Message";
 
 interface ServerPageProps {
@@ -42,6 +41,7 @@ function ServerPage({ server_id }: ServerPageProps) {
                             return obj;
                         },
                     );
+                    messageDataArray.sort((a, b) => a.message_id - b.message_id);
                     console.log(data);
                     const newmap = new Map([[selectedChannelId, messageDataArray]]);
                     setChannelMessages(() => {

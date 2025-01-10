@@ -1,6 +1,6 @@
 export type MessageData = {
-    message_id: number | undefined;
-    channel_id: number | undefined;
+    message_id: number;
+    channel_id: number;
     author: string;
     author_id: string;
     date: Date;
