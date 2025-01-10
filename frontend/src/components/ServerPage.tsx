@@ -134,18 +134,11 @@ function ServerPage({ server_id }: ServerPageProps) {
     }, []);
 
     return (
-        <div className="w-full h-full">
-            <div>
-                <h1 className="w-full">Server ID: {server_id}</h1>
-            </div>
-            <div className="h-full w-full">
-                <ChatPage
-                    channel_id={selectedChannelId}
-                    onSubmit={onSubmit}
-                    messages={channnelMessages.get(selectedChannelId) || []}
-                />
-            </div>
-        </div>
+        <ChatPage
+            channel_id={selectedChannelId}
+            onSubmit={onSubmit}
+            messages={channnelMessages.get(selectedChannelId) || []}
+        />
     );
 }
 
