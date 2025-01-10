@@ -50,6 +50,10 @@ function ServerPage({ server_id }: ServerPageProps) {
                     });
                 } else {
                     console.error("Login failed:", response.statusText);
+                    setChannelMessages(() => {
+                        return new Map();
+                    });
+
                     return;
                 }
             } catch (error) {
