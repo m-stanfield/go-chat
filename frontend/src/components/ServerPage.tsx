@@ -15,7 +15,7 @@ function ServerPage({ server_id }: ServerPageProps) {
             try {
                 // Send POST request to backend
                 const response = await fetch(
-                    "http://localhost:8080/api/server/1/messages",
+                    `http://localhost:8080/api/server/${server_id}/messages`,
                     {
                         method: "GET",
                         headers: {
