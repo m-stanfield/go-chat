@@ -1,12 +1,16 @@
 import ChatPage from "./ChatPage";
 import { SyntheticEvent, useEffect, useRef, useState } from "react";
 import { MessageData } from "./Message";
+import ChannelIconBanner, { ChannelInfo } from "./ChannelIconBanner";
 
 interface ServerPageProps {
     server_id: number;
 }
 function ServerPage({ server_id }: ServerPageProps) {
-    const [selectedChannelId, setSelectedChannelId] = useState<number>(0);
+    const [selectedChannelId, setSelectedChannelId] = useState<ChannelInfo>({
+        channel_id: 0,
+        channel_name: "",
+    });
     const [channnelMessages, setChannelMessages] = useState<
         Map<number, MessageData[]>
     >(new Map());
@@ -41,10 +45,11 @@ function ServerPage({ server_id }: ServerPageProps) {
                             return obj;
                         },
                     );
-                    setSelectedChannelId((x) => messageDataArray[0].channel_id);
                     messageDataArray.sort((a, b) => a.message_id - b.message_id);
                     console.log(data);
-                    const newmap = new Map([[selectedChannelId, messageDataArray]]);
+                    const newmap = new Map([
+                        [messageDataArray[0].channel_id, messageDataArray],
+                    ]);
                     setChannelMessages(() => {
                         return newmap;
                     });
@@ -61,7 +66,7 @@ function ServerPage({ server_id }: ServerPageProps) {
                 return;
             }
         })();
-    }, [selectedChannelId]);
+    }, [server_id, selectedChannelId]);
     const ws = useRef<WebSocket | null>(null);
     const maxMessageLength = 30;
     const onSubmit = (t: SyntheticEvent, inputValue: string): string => {
@@ -134,11 +139,17 @@ function ServerPage({ server_id }: ServerPageProps) {
     }, []);
 
     return (
-        <ChatPage
-            channel_id={selectedChannelId}
-            onSubmit={onSubmit}
-            messages={channnelMessages.get(selectedChannelId) || []}
-        />
+        <div className="flex flex-grow bg-red-500 flex-col">
+            <ChannelIconBanner
+                server_id={server_id}
+                onChannelSelect={setSelectedChannelId}
+            />
+            <ChatPage
+                channel_id={selectedChannelId?.channel_id}
+                onSubmit={onSubmit}
+                messages={channnelMessages.get(selectedChannelId?.channel_id) || []}
+            />
+        </div>
     );
 }
 
