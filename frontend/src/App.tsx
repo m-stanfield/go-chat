@@ -29,15 +29,15 @@ function App() {
         Logout
       </button>
       {auth.authState.isAuthenticated ? (
-        <div className=" w-full h-full">
+        <div className=" w-full h-full flex flex-col">
           <ServerIconBanner
             server_ids={servers_ids}
             onServerSelect={onServerSelect}
           />
-          <div className=" w-full">
+          <div className=" w-full flex-none">
             <h1>Server ID: {selectedServerId.server_id}</h1>
           </div>
-          <div className="h-full w-full">
+          <div className=" w-full flex-1 overflow-auto">
             <ServerPage server_id={selectedServerId.server_id} />
           </div>
         </div>
