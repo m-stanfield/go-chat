@@ -24,7 +24,7 @@ function Message({ message }: MessageProps) {
             {message.message_id === undefined ? (
                 <div>Invalid Message</div>
             ) : (
-                <div className="flex-grow grid-flow-row grid-rows-2 gap-1 px-2 py-1">
+                <div className="flex-grow grid-flow-row grid-rows-2 gap-1 px-2 py-2">
                     <div className="  grid grid-cols-2 gap-1">
                         <div className=" col-span-1  text-lg font-bold">
                             {message.author}
