@@ -15,7 +15,10 @@ function MessageSubmitWindow(props: MessageSubmitWindowProps) {
                 value={inputValue}
                 onChange={onInputChange}
                 onKeyPress={(event) => {
-                    if (event.key === "Enter") {
+                    if (event.key === "Enter" && event.shiftKey) {
+                        event.preventDefault();
+                        setInputValue(inputValue + "\n");
+                    } else if (event.key === "Enter") {
                         event.preventDefault();
                         const newValue = props.onSubmit(event, inputValue);
                         setInputValue(newValue);
