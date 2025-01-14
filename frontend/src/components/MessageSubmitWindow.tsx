@@ -24,7 +24,7 @@ function MessageSubmitWindow(props: MessageSubmitWindowProps) {
                         setInputValue(newValue);
                     }
                 }}
-                className="overflow-auto text-black flex w-full h-full"
+                className="overflow-auto text-black flex w-full h-full rounded-lg px-2"
             ></textarea>
         </div>
     );
