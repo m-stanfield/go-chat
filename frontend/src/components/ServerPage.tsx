@@ -47,9 +47,14 @@ function ServerPage({ server_id }: ServerPageProps) {
                     );
                     messageDataArray.sort((a, b) => a.message_id - b.message_id);
                     console.log(data);
-                    const newmap = new Map([
-                        [messageDataArray[0].channel_id, messageDataArray],
-                    ]);
+                    const newmap = messageDataArray.reduce((map, obj) => {
+                        const { channel_id } = obj;
+                        if (!map.has(channel_id)) {
+                            map.set(channel_id, []);
+                        }
+                        map.get(channel_id).push(obj);
+                        return map;
+                    }, new Map());
                     setChannelMessages(() => {
                         return newmap;
                     });
@@ -75,7 +80,7 @@ function ServerPage({ server_id }: ServerPageProps) {
             return inputValue;
         }
         const stringified = JSON.stringify({
-            channel_id: selectedChannelId,
+            channel_id: selectedChannelId.channel_id,
             message: inputValue,
         });
         if (ws === null) {
