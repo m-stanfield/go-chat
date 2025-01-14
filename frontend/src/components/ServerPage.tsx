@@ -140,19 +140,15 @@ function ServerPage({ server_id }: ServerPageProps) {
 
     return (
         <div className="flex flex-col flex-grow overflow-y-auto">
-            <div>
-                <ChannelIconBanner
-                    server_id={server_id}
-                    onChannelSelect={setSelectedChannelId}
-                />
-            </div>
-            <div className="flex flex-grow overflow-y-auto">
-                <ChatPage
-                    channel_id={selectedChannelId?.channel_id}
-                    onSubmit={onSubmit}
-                    messages={channnelMessages.get(selectedChannelId?.channel_id) || []}
-                />
-            </div>
+            <ChannelIconBanner
+                server_id={server_id}
+                onChannelSelect={setSelectedChannelId}
+            />
+            <ChatPage
+                channel_id={selectedChannelId?.channel_id}
+                onSubmit={onSubmit}
+                messages={channnelMessages.get(selectedChannelId?.channel_id) || []}
+            />
         </div>
     );
 }

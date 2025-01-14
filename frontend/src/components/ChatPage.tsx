@@ -22,14 +22,14 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
     }, [auth.authState.user?.id, messages]);
 
     return (
-        <div className="flex flex-grow flex-col overflow-y-auto">
+        <div className="flex flex-grow flex-col overflow-y-auto bg-gray-600 p-2 rounded-lg">
             <div className="">Channel ID: {channel_id}</div>
             <div className="overflow-y-auto">
-                <ul className="">
+                <ul className="flex-grow space-y-1 rounded-lg ">
                     {messages.map((m, index) => (
                         <li
                             key={m.message_id}
-                            className=""
+                            className="flex flex-grow bg-slate-700 hover:bg-slate-600 rounded-lg"
                             ref={index === messages.length - 1 ? messageEndRef : null}
                         >
                             <Message message={m} />

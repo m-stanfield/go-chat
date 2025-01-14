@@ -24,7 +24,7 @@ function App() {
     }
   }
   return (
-    <div className="flex-col h-screen w-screen bg-gray-500 flex">
+    <div className="flex-col h-screen w-screen bg-gray-500 flex py-12 px-4 sm:px-6 lg:px-8 ">
       <button onClick={auth.logout} className="flex w-full">
         Logout
       </button>
