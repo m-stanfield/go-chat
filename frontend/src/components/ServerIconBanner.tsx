@@ -18,13 +18,11 @@ function ServerIconBanner({
         };
     }
     const items = server_ids.map((s) => (
-        <div key={s.server_id} className="w-full">
-            <button onClick={onServerSelectGenerator(s.server_id)}>
-                Server: ${s.server_id}
-            </button>
-        </div>
+        <button onClick={onServerSelectGenerator(s.server_id)}>
+            Server: {s.server_id}
+        </button>
     ));
-    return <div>{items}</div>;
+    return <div className="flex flex-shrink gap-2">{items}</div>;
 }
 
 export default ServerIconBanner;
