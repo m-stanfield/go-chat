@@ -24,16 +24,18 @@ function Message({ message }: MessageProps) {
             {message.message_id === undefined ? (
                 <div>Invalid Message</div>
             ) : (
-                <div className="flex-grow grid grid-rows-2 gap-1 px-2 py-1">
-                    <div className="flex-grow  grid grid-cols-2 gap-1">
-                        <div className="flex-grow col-span-1 overflow-auto text-lg font-bold">
+                <div className="flex-grow grid-flow-row grid-rows-2 gap-1 px-2 py-1">
+                    <div className="  grid grid-cols-2 gap-1">
+                        <div className=" col-span-1  text-lg font-bold">
                             {message.author}
                         </div>
-                        <div className="col-span-1 flex-grow overflow-auto text-right text-sm font-thin">
+                        <div className="col-span-1   text-right text-sm font-thin">
                             {dayTime}
                         </div>
                     </div>
-                    <div className="overflow-auto flex flex-grow">{message.message}</div>
+                    <p className="flex overflow-auto whitespace-pre-wrap break-all">
+                        {message.message}
+                    </p>
                 </div>
             )}
         </>
