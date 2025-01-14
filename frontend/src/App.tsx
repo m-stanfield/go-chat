@@ -24,20 +24,20 @@ function App() {
     }
   }
   return (
-    <div className="flex-col h-screen w-screen bg-gray-500 py-12 px-4 sm:px-6 lg:px-8 flex">
+    <div className="flex-col h-screen w-screen bg-gray-500 flex">
       <button onClick={auth.logout} className="flex w-full">
         Logout
       </button>
       {auth.authState.isAuthenticated ? (
-        <div className=" w-full h-full flex flex-col">
+        <div className="flex flex-col flex-grow overflow-y-auto">
           <ServerIconBanner
             server_ids={servers_ids}
             onServerSelect={onServerSelect}
           />
-          <div className=" w-full flex-none">
+          <div className="">
             <h1>Server ID: {selectedServerId.server_id}</h1>
           </div>
-          <div className=" w-full flex-1 overflow-auto">
+          <div className="flex flex-col flex-grow overflow-y-auto">
             <ServerPage server_id={selectedServerId.server_id} />
           </div>
         </div>

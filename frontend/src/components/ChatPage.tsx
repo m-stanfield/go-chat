@@ -22,14 +22,14 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
     }, [auth.authState.user?.id, messages]);
 
     return (
-        <div className="w-full">
-            <div className="w-full">Channel ID: {channel_id}</div>
-            <div className="flex w-full flex-grow flex-col-reverse overflow-y-auto rounded-lg">
-                <ul className="w-full space-y-1 rounded-lg bg-slate-800">
+        <div className="flex flex-grow flex-col overflow-y-auto">
+            <div className="">Channel ID: {channel_id}</div>
+            <div className="overflow-y-auto">
+                <ul className="">
                     {messages.map((m, index) => (
                         <li
                             key={m.message_id}
-                            className="w-full rounded-lg bg-slate-700 hover:bg-slate-600"
+                            className=""
                             ref={index === messages.length - 1 ? messageEndRef : null}
                         >
                             <Message message={m} />
@@ -37,7 +37,7 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
                     ))}
                 </ul>
             </div>
-            <div className="bottom-0 flex w-full p-3">
+            <div className="">
                 <MessageSubmitWindow onSubmit={onSubmit} />
             </div>
         </div>

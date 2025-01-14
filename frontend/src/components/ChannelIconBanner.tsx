@@ -70,7 +70,7 @@ function ChannelIconBanner({
     }, [server_id]);
 
     const items = channelInformationArray.map((s) => (
-        <div key={s.channel_id} className="w-full">
+        <div key={s.channel_id} className="">
             <button onClick={onChannelSelectGenerator(s)}>
                 Channel: ${s.channel_id}
             </button>
