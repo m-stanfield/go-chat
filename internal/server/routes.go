@@ -553,6 +553,10 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("websocketHandler: invalid channel id channe_id=%d", payload.ChannnelId)
 			continue
 		}
+		if len(payload.Message) > 1000 {
+			fmt.Printf("format error: length of message to large length=%d", len(payload.Message))
+			continue
+		}
 		messageid, err := s.db.AddMessage(payload.ChannnelId, userinfo.UserId, payload.Message)
 		if err != nil {
 			fmt.Printf("error saving message: %e", err)

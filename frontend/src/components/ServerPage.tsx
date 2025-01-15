@@ -78,6 +78,8 @@ function ServerPage({ server_id }: ServerPageProps) {
         t.preventDefault();
         if (inputValue.length === 0) {
             return inputValue;
+        } else if (inputValue.length >= 1000) {
+            return inputValue;
         }
         const stringified = JSON.stringify({
             channel_id: selectedChannelId.channel_id,
