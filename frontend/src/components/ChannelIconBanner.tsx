@@ -50,10 +50,12 @@ function ChannelIconBanner({
                         },
                     );
                     channelInfoArray.sort((a, b) => a.channel_id - b.channel_id);
-                    console.log(data);
                     setChannelInformationArray(() => {
                         return channelInfoArray;
                     });
+                    if (channelInfoArray.length > 0) {
+                        onChannelSelect(channelInfoArray[0]);
+                    }
                 } else {
                     console.error("Login failed:", response.statusText);
                     setChannelInformationArray(() => {

@@ -19,7 +19,7 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
                 behavior: "smooth",
             });
         }
-    }, [auth.authState.user?.id, messages]);
+    }, [auth.authState.user?.id, messages, channel_id]);
 
     return (
         <div className="flex flex-grow flex-col overflow-y-auto bg-gray-600 p-2 rounded-lg">
