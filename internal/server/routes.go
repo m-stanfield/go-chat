@@ -61,7 +61,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
 
-	mux.HandleFunc("GET /api/messages", s.GetServerInformation)
+	mux.HandleFunc("GET /api/server", s.GetServerInformation)
 	mux.HandleFunc("GET /api/server/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
 	mux.HandleFunc(
 		"GET /api/server/{serverid}/members",
