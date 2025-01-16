@@ -59,7 +59,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("POST /api/login", s.loginHandler)
 
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
-	mux.HandleFunc("GET /api/user/{userid}/servers", s.GetMemberServers)
+	mux.HandleFunc("GET /api/user/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
 
 	mux.HandleFunc("GET /api/messages", s.GetServerInformation)
 	mux.HandleFunc("GET /api/server/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
@@ -274,15 +274,27 @@ func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) GetMemberServers(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
 	userid_str := r.PathValue("userid")
-	userid, err := strconv.Atoi(userid_str)
+	userid_int, err := strconv.Atoi(userid_str)
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if userid <= 0 {
+	if userid_int <= 0 {
 		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+	userid := database.Id(userid_int)
+
+	val := r.Context().Value("userinfo")
+	passinfo, ok := val.(database.UserLoginInfo)
+	if !ok {
+		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+		return
+	}
+	if userid != passinfo.UserId {
+		http.Error(w, "invalid request: invalid user id", http.StatusBadRequest)
 		return
 	}
 
