@@ -2,6 +2,8 @@ import React from "react";
 
 export type ServerInfo = {
     server_id: number;
+    owner_id: number;
+    server_name: string;
 };
 interface ServerIconBannerProps {
     server_ids: ServerInfo[];
