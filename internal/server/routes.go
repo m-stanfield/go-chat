@@ -303,7 +303,7 @@ func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
 	}
-	resp := map[string]interface{}{"servers": servers, "userid": userid}
+	resp := map[string]interface{}{"servers": servers}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
