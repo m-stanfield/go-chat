@@ -6,6 +6,7 @@ import ServerIconBanner, { ServerInfo } from "./components/ServerIconBanner";
 
 function App() {
   const auth = useAuth();
+  const number_of_messages = 200;
   useEffect(() => {
     auth.addLogoutCallback(() => {
       console.log("logout callback");
@@ -81,7 +82,10 @@ function App() {
             <h1>Server ID: {selectedServerId.server_id}</h1>
           </div>
           <div className="flex flex-col flex-grow overflow-y-auto">
-            <ServerPage server_id={selectedServerId.server_id} />
+            <ServerPage
+              server_id={selectedServerId.server_id}
+              number_of_messages={number_of_messages}
+            />
           </div>
         </div>
       ) : (

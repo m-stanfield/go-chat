@@ -5,8 +5,9 @@ import ChannelIconBanner, { ChannelInfo } from "./ChannelIconBanner";
 
 interface ServerPageProps {
     server_id: number;
+    number_of_messages: number;
 }
-function ServerPage({ server_id }: ServerPageProps) {
+function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     const [selectedChannelId, setSelectedChannelId] = useState<ChannelInfo>({
         channel_id: 0,
         channel_name: "",
@@ -19,7 +20,7 @@ function ServerPage({ server_id }: ServerPageProps) {
             try {
                 // Send POST request to backend
                 const response = await fetch(
-                    `http://localhost:8080/api/server/${server_id}/messages`,
+                    `http://localhost:8080/api/server/${server_id}/messages?count=${number_of_messages}`,
                     {
                         method: "GET",
                         headers: {
@@ -71,9 +72,8 @@ function ServerPage({ server_id }: ServerPageProps) {
                 return;
             }
         })();
-    }, [server_id, selectedChannelId]);
+    }, [server_id, selectedChannelId, number_of_messages]);
     const ws = useRef<WebSocket | null>(null);
-    const maxMessageLength = 30;
     const onSubmit = (t: SyntheticEvent, inputValue: string): string => {
         t.preventDefault();
         if (inputValue.length === 0) {
@@ -125,8 +125,11 @@ function ServerPage({ server_id }: ServerPageProps) {
                         return messages;
                     }
                     channel_messages = [...channel_messages, newMessage];
-                    if (channel_messages.length > maxMessageLength) {
-                        messages.set(channel_id, channel_messages.slice(-maxMessageLength));
+                    if (channel_messages.length > number_of_messages) {
+                        messages.set(
+                            channel_id,
+                            channel_messages.slice(-number_of_messages),
+                        );
                     } else {
                         messages.set(channel_id, channel_messages);
                     }
@@ -143,7 +146,7 @@ function ServerPage({ server_id }: ServerPageProps) {
         return () => {
             ws.current?.close();
         };
-    }, []);
+    }, [number_of_messages]);
 
     return (
         <div className="flex flex-col flex-grow overflow-y-auto">

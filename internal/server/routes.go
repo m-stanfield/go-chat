@@ -61,7 +61,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
 
-	mux.HandleFunc("GET /api/server", s.GetServerInformation)
+	mux.HandleFunc("GET /api/server/{serverid}", s.GetServerInformation)
 	mux.HandleFunc("GET /api/server/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
 	mux.HandleFunc(
 		"GET /api/server/{serverid}/members",
@@ -359,6 +359,25 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
 		return
 	}
+	count_str := r.URL.Query().Get("count")
+	var count uint = 30
+	if count_str != "" {
+		tempcount, err := strconv.Atoi(count_str)
+		if err != nil {
+			http.Error(w, "invalid request: unable to parse count", http.StatusBadRequest)
+			return
+		}
+		if tempcount > 0 {
+			count = uint(tempcount)
+		} else {
+			http.Error(w, "invalid request: invalid count", http.StatusBadRequest)
+			return
+		}
+	}
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse count", http.StatusBadRequest)
+		return
+	}
 
 	val := r.Context().Value("userinfo")
 	passinfo, ok := val.(database.UserLoginInfo)
@@ -383,7 +402,7 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	var messages []Message
 	for _, channel := range channels {
-		db_messages, err := s.db.GetMessagesInChannel(channel.ChannelId, 30)
+		db_messages, err := s.db.GetMessagesInChannel(channel.ChannelId, count)
 		if err != nil {
 			http.Error(w, "database error", http.StatusInternalServerError)
 			return
