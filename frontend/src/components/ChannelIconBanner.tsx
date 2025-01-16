@@ -69,7 +69,7 @@ function ChannelIconBanner({
                 return;
             }
         })();
-    }, [server_id]);
+    }, [server_id, onChannelSelect]);
 
     const items = channelInformationArray.map((s) => (
         <div key={s.channel_id} className="">
