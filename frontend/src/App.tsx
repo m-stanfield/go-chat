@@ -11,7 +11,7 @@ function App() {
       console.log("logout callback");
     });
   }, []);
-  const servers_ids = [1, 2, 3].map((x) => ({
+  const servers_ids = [1, 2].map((x) => ({
     server_id: x,
   }));
   const [selectedServerId, setSelectedServerId] = useState<ServerInfo>(
