@@ -74,7 +74,7 @@ function ChannelIconBanner({
     const items = channelInformationArray.map((s) => (
         <div key={s.channel_id} className="">
             <button onClick={onChannelSelectGenerator(s)}>
-                Channel: ${s.channel_id}
+                Channel: {s.channel_id}
             </button>
         </div>
     ));
