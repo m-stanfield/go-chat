@@ -2,11 +2,11 @@ import Login from "./components/login";
 import { useAuth } from "./AuthContext";
 import { useEffect, useState } from "react";
 import ServerPage from "./components/ServerPage";
-import ServerIconBanner, { ServerInfo } from "./components/ServerIconBanner";
+import IconBanner, { IconInfo } from "./components/IconList";
 
 function App() {
   const auth = useAuth();
-  const number_of_messages = 200;
+  const number_of_messages = 20;
   useEffect(() => {
     auth.addLogoutCallback(() => {
       console.log("logout callback");
@@ -33,11 +33,12 @@ function App() {
         );
         if (response.ok) {
           const data = await response.json();
-          const servers_ids: ServerInfo[] = data.servers.map((server: any) => {
+          const servers_ids: IconInfo[] = data.servers.map((server: any) => {
             return {
-              server_id: server.ServerId,
-              server_name: server.ServerName,
-              owner_id: server.OwnerId,
+              icon_id: server.ServerId,
+              name: server.ServerName,
+              image_url:
+                "https://miro.medium.com/v2/resize:fit:720/format:webp/0*UD_CsUBIvEDoVwzc.png",
             };
           });
           setServerId(servers_ids);
@@ -55,14 +56,14 @@ function App() {
     _call();
   }, [auth.authState.user]);
 
-  const [servers_ids, setServerId] = useState<ServerInfo[]>([]);
-  const [selectedServerId, setSelectedServerId] = useState<ServerInfo>({
-    server_id: 0,
-    server_name: "",
-    owner_id: 0,
+  const [server_icons, setServerId] = useState<IconInfo[]>([]);
+  const [selectedServerId, setSelectedServerId] = useState<IconInfo>({
+    icon_id: -1,
+    name: "",
+    image_url: undefined,
   });
   function onServerSelect(server_id: number) {
-    const selectedServer = servers_ids.find((x) => x.server_id === server_id);
+    const selectedServer = server_icons.find((x) => x.icon_id === server_id);
     if (selectedServer !== undefined) {
       setSelectedServerId(selectedServer);
     }
@@ -74,16 +75,16 @@ function App() {
       </button>
       {auth.authState.isAuthenticated ? (
         <div className="flex flex-col flex-grow overflow-y-auto">
-          <ServerIconBanner
-            server_ids={servers_ids}
+          <IconBanner
+            icon_info={server_icons}
             onServerSelect={onServerSelect}
           />
           <div className="">
-            <h1>Server ID: {selectedServerId.server_id}</h1>
+            <h1>Server ID: {selectedServerId.icon_id}</h1>
           </div>
           <div className="flex flex-col flex-grow overflow-y-auto">
             <ServerPage
-              server_id={selectedServerId.server_id}
+              server_id={selectedServerId.icon_id}
               number_of_messages={number_of_messages}
             />
           </div>
