@@ -1,17 +1,14 @@
 import ChatPage from "./ChatPage";
 import { SyntheticEvent, useEffect, useRef, useState } from "react";
 import { MessageData } from "./Message";
-import ChannelIconBanner, { ChannelInfo } from "./ChannelIconBanner";
+import IconBanner, { IconInfo } from "./IconList";
 
 interface ServerPageProps {
     server_id: number;
     number_of_messages: number;
 }
 function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
-    const [selectedChannelId, setSelectedChannelId] = useState<ChannelInfo>({
-        channel_id: 0,
-        channel_name: "",
-    });
+    const [selectedChannelId, setSelectedChannelId] = useState<number>(0);
     const [channnelMessages, setChannelMessages] = useState<
         Map<number, MessageData[]>
     >(new Map());
@@ -82,7 +79,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
             return inputValue;
         }
         const stringified = JSON.stringify({
-            channel_id: selectedChannelId.channel_id,
+            channel_id: selectedChannelId,
             message: inputValue,
         });
         if (ws === null) {
@@ -148,16 +145,67 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
         };
     }, [number_of_messages]);
 
+    const [channelInformationArray, setChannelInformationArray] = useState<
+        IconInfo[]
+    >([]);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                // Send POST request to backend
+                const response = await fetch(
+                    `http://localhost:8080/api/server/${server_id}/channels`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        credentials: "include",
+                    },
+                );
+
+                // Handle response
+                if (response.ok) {
+                    const data = await response.json();
+                    const channelInfoArray: IconInfo[] = data["channels"].map((msg) => {
+                        const obj: IconInfo = {
+                            icon_id: msg.ChannelId,
+                            name: msg.ChannelName,
+                            image_url: undefined,
+                        };
+                        return obj;
+                    });
+                    channelInfoArray.sort((a, b) => a.icon_id - b.icon_id);
+                    setChannelInformationArray(() => {
+                        return channelInfoArray;
+                    });
+                    if (channelInfoArray.length > 0) {
+                        setSelectedChannelId(channelInfoArray[0].icon_id);
+                    }
+                } else {
+                    console.error("Login failed:", response.statusText);
+                    setChannelInformationArray(() => {
+                        return [];
+                    });
+
+                    return;
+                }
+            } catch (error) {
+                console.error("Error submitting login:", error);
+                return;
+            }
+        })();
+    }, [server_id]);
     return (
         <div className="flex flex-col flex-grow overflow-y-auto">
-            <ChannelIconBanner
-                server_id={server_id}
-                onChannelSelect={setSelectedChannelId}
+            <IconBanner
+                icon_info={channelInformationArray}
+                onServerSelect={setSelectedChannelId}
             />
             <ChatPage
-                channel_id={selectedChannelId?.channel_id}
+                channel_id={selectedChannelId}
                 onSubmit={onSubmit}
-                messages={channnelMessages.get(selectedChannelId?.channel_id) || []}
+                messages={channnelMessages.get(selectedChannelId) || []}
             />
         </div>
     );

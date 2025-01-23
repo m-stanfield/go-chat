@@ -12,10 +12,6 @@ function ChannelIconBanner({
     server_id,
     onChannelSelect,
 }: ChannelIconBannerProps) {
-    const [channelInformationArray, setChannelInformationArray] = useState<
-        ChannelInfo[]
-    >([]);
-
     function onChannelSelectGenerator(channel_id: ChannelInfo) {
         return (t: React.MouseEvent<HTMLElement>) => {
             t.preventDefault();
