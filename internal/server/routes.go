@@ -57,6 +57,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/health", s.healthHandler)
 	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
 	mux.HandleFunc("POST /api/login", s.loginHandler)
+	mux.HandleFunc("POST /api/signup", s.signupHandler)
 
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
@@ -232,6 +233,32 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) signupHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse form data (default for HTML form submission)
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Unable to parse form", http.StatusBadRequest)
+		return
+	}
+
+	loginData := struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&loginData)
+	username := loginData.Username
+	password := loginData.Password
+	userid, err := s.db.AddUser(username, "hashedpassword")
+	if err != nil {
+		http.Error(w, "unable to create user", http.StatusBadRequest)
+		return
+	}
+}
 func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 	serverid_str := r.PathValue("serverid")
 	serverid, err := strconv.Atoi(serverid_str)
