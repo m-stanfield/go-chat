@@ -153,8 +153,12 @@ func (s *Server) validSession(userinfo database.UserLoginInfo, usertoken string)
 	return userinfo.Token == usertoken
 }
 
-func (s *Server) comparePassword(userinfo database.UserLoginInfo, password string) bool {
-	return (password + userinfo.Salt) == (userinfo.PasswordHash + userinfo.Salt)
+func (s Server) hashPassword(password string, salt string) string {
+	return (password + salt)
+}
+
+func (s Server) comparePassword(userinfo database.UserLoginInfo, password string) bool {
+	return s.hashPassword(password, userinfo.Salt) == (userinfo.PasswordHash + userinfo.Salt)
 }
 
 func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
