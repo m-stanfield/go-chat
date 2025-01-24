@@ -14,6 +14,9 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     >(new Map());
     useEffect(() => {
         (async () => {
+            if (server_id < 0) {
+                return;
+            }
             try {
                 // Send POST request to backend
                 const response = await fetch(
@@ -151,6 +154,9 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
 
     useEffect(() => {
         (async () => {
+            if (server_id < 0) {
+                return;
+            }
             try {
                 // Send POST request to backend
                 const response = await fetch(
