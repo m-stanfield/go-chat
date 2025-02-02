@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import ServerPage from "./components/ServerPage";
 import IconBanner, { IconInfo } from "./components/IconList";
 
+type ServerIconResponse = {
+  ServerId: number;
+  ServerName: string;
+  image_url: string | undefined;
+};
 function App() {
   const auth = useAuth();
   const number_of_messages = 20;
@@ -33,14 +38,16 @@ function App() {
         );
         if (response.ok) {
           const data = await response.json();
-          const servers_ids: IconInfo[] = data.servers.map((server: any) => {
-            return {
-              icon_id: server.ServerId,
-              name: server.ServerName,
-              image_url:
-                "https://miro.medium.com/v2/resize:fit:720/format:webp/0*UD_CsUBIvEDoVwzc.png",
-            };
-          });
+          const servers_ids: IconInfo[] = data.servers.map(
+            (server: ServerIconResponse) => {
+              return {
+                icon_id: server.ServerId,
+                name: server.ServerName,
+                image_url:
+                  "https://miro.medium.com/v2/resize:fit:720/format:webp/0*UD_CsUBIvEDoVwzc.png",
+              };
+            },
+          );
           setServerId(servers_ids);
           if (servers_ids.length > 0) {
             setSelectedServerId(servers_ids[0]);
