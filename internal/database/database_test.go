@@ -72,21 +72,20 @@ func Test_AtomicFail(t *testing.T) {
 	defer db.Close()
 	var userId *Id = nil
 	err := db.Atomic(context.Background(), func(db Service) error {
-		u, err := db.AddUser("aaaaa")
+		u, err := db.CreateUser("aaaaa", "password")
 		if err != nil {
-			return err
+			t.Fatalf("database - AtomicFail: errored while creating user %v", err)
 		}
 		userId = &u
 		return errors.New("mock error for testing rollback")
 	})
 	if err == nil {
-		t.Fatalf("fail")
+		t.Fatalf("Database - AtomicFail: expected error, recieved none")
 	}
 	_, err = db.GetUser(*userId)
 	if err == nil {
 		t.Fatalf("fail")
 	}
-
 }
 
 func Test_AtomicPass(t *testing.T) {
@@ -94,7 +93,7 @@ func Test_AtomicPass(t *testing.T) {
 	defer db.Close()
 	var userId *Id = nil
 	err := db.Atomic(context.Background(), func(db Service) error {
-		u, err := db.AddUser("aaaaa")
+		u, err := db.CreateUser("aaaaa", "password")
 		if err != nil {
 			return err
 		}
@@ -108,15 +107,14 @@ func Test_AtomicPass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("fail")
 	}
-
 }
 
-func Test_AddUser(t *testing.T) {
+func Test_CreateUser(t *testing.T) {
 	db := setup()
 	defer db.Close()
 	expectedUsername := "u2jklfdsa"
 
-	id, err := db.AddUser(expectedUsername)
+	id, err := db.CreateUser(expectedUsername, "password")
 	if err != nil {
 		t.Fatalf("TestA: err: %v", err)
 	}
@@ -194,7 +192,11 @@ func Test_GetServersOfUser(t *testing.T) {
 		t.Fatalf("Autopop user name log: err: %v", err)
 	}
 	if len(server) != 2 {
-		t.Fatalf("GetServersOfUser failed: incorrect number of servers expected: %d got: %d", len(server), 2)
+		t.Fatalf(
+			"GetServersOfUser failed: incorrect number of servers expected: %d got: %d",
+			len(server),
+			2,
+		)
 	}
 	found1, found2 := false, false
 	for _, s := range server {
@@ -219,7 +221,11 @@ func Test_GetUsersOfServer(t *testing.T) {
 		t.Fatalf("Autopop user name log: err: %v", err)
 	}
 	if len(users) != 2 {
-		t.Fatalf("GetUsersOfServer failed: incorrect number of servers expected: %d got: %d", len(users), 2)
+		t.Fatalf(
+			"GetUsersOfServer failed: incorrect number of servers expected: %d got: %d",
+			len(users),
+			2,
+		)
 	}
 	found1, found2 := false, false
 	for _, s := range users {
@@ -244,7 +250,11 @@ func Test_GetChannelsOfServer(t *testing.T) {
 		t.Fatalf("channel of server log: err: %v", err)
 	}
 	if len(channels) != 2 {
-		t.Fatalf("GetUsersOfServer failed: incorrect number of servers expected: %d got: %d", len(channels), 2)
+		t.Fatalf(
+			"GetUsersOfServer failed: incorrect number of servers expected: %d got: %d",
+			len(channels),
+			2,
+		)
 	}
 	found1, found2 := false, false
 	for _, s := range channels {
@@ -260,7 +270,6 @@ func Test_GetChannelsOfServer(t *testing.T) {
 }
 
 func Test_GetMessage(t *testing.T) {
-
 	db := setup()
 	defer db.Close()
 	channelid := Id(1)
@@ -284,6 +293,7 @@ func Test_GetMessage(t *testing.T) {
 		t.Fatalf("TestA: invalid message contents expected: %s got: %s", message, user.Contents)
 	}
 }
+
 func Test_AddMessage(t *testing.T) {
 	db := setup()
 	defer db.Close()
@@ -306,6 +316,7 @@ func Test_AddMessage(t *testing.T) {
 		t.Fatalf("TestA: invalid message contents expected: %s got: %s", message, user.Contents)
 	}
 }
+
 func Test_AddChannel(t *testing.T) {
 	db := setup()
 	defer db.Close()
@@ -321,7 +332,11 @@ func Test_AddChannel(t *testing.T) {
 		t.Fatalf("TestA: invaluser user. expected: %d got: %d", id, user.ChannelId)
 	}
 	if user.ChannelName != expectedChannelname {
-		t.Fatalf("TestA: invaluser username expected: %s got: %s", expectedChannelname, user.ChannelName)
+		t.Fatalf(
+			"TestA: invaluser username expected: %s got: %s",
+			expectedChannelname,
+			user.ChannelName,
+		)
 	}
 }
 
@@ -338,7 +353,11 @@ func Test_GetChannel(t *testing.T) {
 		t.Fatalf("TestA: invalid id. expected: %d got: %d", 1, channel.ChannelId)
 	}
 	if channel.ChannelName != expectedChannelname {
-		t.Fatalf("TestA: invalid username expected: %s got: %s", expectedChannelname, channel.ChannelName)
+		t.Fatalf(
+			"TestA: invalid username expected: %s got: %s",
+			expectedChannelname,
+			channel.ChannelName,
+		)
 	}
 }
 
@@ -379,8 +398,8 @@ func Test_GetMessageInChannel_Two(t *testing.T) {
 	if len(messages) != number {
 		t.Fatalf("incorrect number of messages: got %d expected %d", len(messages), number)
 	}
-
 }
+
 func Test_GetMessageInChannel_Three(t *testing.T) {
 	db := setup()
 	defer db.Close()
@@ -395,8 +414,8 @@ func Test_GetMessageInChannel_Three(t *testing.T) {
 	if len(messages) != number {
 		t.Fatalf("incorrect number of messages: got %d expected %d", len(messages), number)
 	}
-
 }
+
 func Test_GetMessageInChannel_NoMessages(t *testing.T) {
 	db := setup()
 	defer db.Close()
@@ -411,8 +430,8 @@ func Test_GetMessageInChannel_NoMessages(t *testing.T) {
 	if len(messages) != number {
 		t.Fatalf("incorrect number of messages: got %d expected %d", len(messages), number)
 	}
-
 }
+
 func Test_GetMessageInChannel_InvalidChannel(t *testing.T) {
 	db := setup()
 	defer db.Close()
@@ -427,5 +446,4 @@ func Test_GetMessageInChannel_InvalidChannel(t *testing.T) {
 	if len(messages) != 0 {
 		t.Fatalf("incorrect number of messages: got %d expected %d", len(messages), number)
 	}
-
 }

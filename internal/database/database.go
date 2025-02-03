@@ -24,7 +24,7 @@ type Service interface {
 	GetUserLoginInfoFromToken(token string) (UserLoginInfo, error)
 	GetUserLoginInfo(userid Id) (UserLoginInfo, error)
 	GetUser(userid Id) (User, error)
-	AddUser(username string) (Id, error)
+	CreateUser(username string, hashed_password string) (Id, error)
 	UpdateUserName(userid Id, username string) error
 	GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry, error)
 	GetUsersOfServer(serverid Id) ([]User, error)
@@ -295,12 +295,42 @@ func (r *service) GetUser(userid Id) (User, error) {
 	return user, nil
 }
 
-func (r *service) AddUser(username string) (Id, error) {
-	d, err := r.conn.Exec("INSERT INTO UserTable ( username) VALUES ( ?)", username)
+func (r *service) CreateUser(username string, hashed_password string) (Id, error) {
+	d, err := r.conn.Exec("INSERT INTO UserTable (username) VALUES (?)", username)
+
+	rows, err := r.conn.Query("SELECT name FROM sqlite_master WHERE type='table';")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	fmt.Println("Tables in the database:")
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(tableName)
+	}
 	if err != nil {
 		return 0, fmt.Errorf("add user - username: %s err: %w", username, err)
 	}
 	id, err := d.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	if id < 0 {
+		return 0, ErrNegativeRowIndex
+	}
+	random_salt := "salt" + strconv.FormatUint(uint64(id), 10)
+	_, err = r.conn.Exec(
+		"INSERT INTO UserLoginTable (userid, passwordhash, salt) VALUES ( ?, ?, ?)",
+		id,
+		hashed_password,
+		random_salt,
+	)
+
+	id, err = d.LastInsertId()
 	if err != nil {
 		return 0, err
 	}

@@ -253,12 +253,57 @@ func (s *Server) signupHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(r.Body).Decode(&loginData)
 	username := loginData.Username
 	password := loginData.Password
-	userid, err := s.db.AddUser(username, "hashedpassword")
+	userid, err := s.db.CreateUser(username, "hashedpassword")
 	if err != nil {
 		http.Error(w, "unable to create user", http.StatusBadRequest)
 		return
 	}
+	passwordInfo, err := s.db.GetUserLoginInfo(userid)
+	if err != nil {
+		http.Error(w, "unable to locate password", http.StatusBadRequest)
+		return
+	}
+
+	if !s.comparePassword(passwordInfo, password) {
+		http.Error(w, "invalid password", http.StatusBadRequest)
+		return
+	}
+
+	token, expire_time, err := s.db.UpdateUserSessionToken(userid)
+	if err != nil {
+		http.Error(w, "unable to update session token", http.StatusBadRequest)
+		return
+	}
+
+	resp := map[string]interface{}{
+		"token_expire_time": expire_time,
+		"token":             token,
+		"userid":            userid,
+	}
+
+	// Set a cookie (you can modify the cookie as needed)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		Secure:   false,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	// Redirect the user to /chat
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		http.Error(
+			w,
+			"internal error: unable to send encoded response",
+			http.StatusInternalServerError,
+		)
+		return
+	}
 }
+
 func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 	serverid_str := r.PathValue("serverid")
 	serverid, err := strconv.Atoi(serverid_str)
@@ -590,11 +635,11 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			} else if newerr.Code == websocket.StatusNoStatusRcvd {
 				fmt.Println("socket closed due to not getting a response")
 			} else {
-				fmt.Println("websocketHandler error: %w", err)
+				fmt.Printf("websocketHandler error: %v", err)
 			}
 			break
 		} else if err != nil {
-			fmt.Printf("error getting message from websocket: %w", err)
+			fmt.Printf("error getting message from websocket: %v", err)
 			break
 		}
 
@@ -656,7 +701,7 @@ func (s *Server) handleMessages(client *websocket.Conn, broadcast chan Message) 
 		msg := <-broadcast
 		jsondata, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Printf("handleMessage", err)
+			fmt.Printf("handleMessage %v", err)
 			continue
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 1.0*time.Second)
