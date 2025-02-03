@@ -82,6 +82,9 @@ func Test_AtomicFail(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Database - AtomicFail: expected error, recieved none")
 	}
+	if userId == nil {
+		t.Fatalf("Database - AtomicFail: expected userId to be set, got nil")
+	}
 	_, err = db.GetUser(*userId)
 	if err == nil {
 		t.Fatalf("fail")
