@@ -304,14 +304,6 @@ func (r *service) CreateUser(username string, hashed_password string) (Id, error
 	}
 	defer rows.Close()
 
-	fmt.Println("Tables in the database:")
-	for rows.Next() {
-		var tableName string
-		if err := rows.Scan(&tableName); err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(tableName)
-	}
 	if err != nil {
 		return 0, fmt.Errorf("add user - username: %s err: %w", username, err)
 	}
