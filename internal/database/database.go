@@ -23,6 +23,7 @@ type Service interface {
 	UpdateUserSessionToken(userid Id) (string, time.Time, error)
 	GetUserLoginInfoFromToken(token string) (UserLoginInfo, error)
 	GetUserLoginInfo(userid Id) (UserLoginInfo, error)
+	ValidateUserLoginInfo(userid Id, password string) (bool, error)
 	GetUser(userid Id) (User, error)
 	CreateUser(username string, hashed_password string) (Id, error)
 	UpdateUserName(userid Id, username string) error
@@ -62,6 +63,14 @@ var (
 	dburl      = os.Getenv("BLUEPRINT_DB_URL")
 	dbInstance *service
 )
+
+func (r *service) ValidateUserLoginInfo(userid Id, password string) (bool, error) {
+	user, err := r.GetUserLoginInfo(userid)
+	if err != nil {
+		return false, err
+	}
+	return comparePassword(user, password), nil
+}
 
 func (db *service) withTx(tx *sql.Tx) *service {
 	return &service{db: db.db, conn: tx}
@@ -104,6 +113,14 @@ func New() Service {
 		conn: db,
 	}
 	return dbInstance
+}
+
+func hashPassword(password string, salt string) string {
+	return (password + salt)
+}
+
+func comparePassword(userinfo UserLoginInfo, password string) bool {
+	return hashPassword(password, userinfo.Salt) == (userinfo.PasswordHash + userinfo.Salt)
 }
 
 // Health checks the health of the database connection by pinging the database.
@@ -297,13 +314,6 @@ func (r *service) GetUser(userid Id) (User, error) {
 
 func (r *service) CreateUser(username string, hashed_password string) (Id, error) {
 	d, err := r.conn.Exec("INSERT INTO UserTable (username) VALUES (?)", username)
-
-	rows, err := r.conn.Query("SELECT name FROM sqlite_master WHERE type='table';")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
 	if err != nil {
 		return 0, fmt.Errorf("add user - username: %s err: %w", username, err)
 	}
@@ -316,19 +326,16 @@ func (r *service) CreateUser(username string, hashed_password string) (Id, error
 	}
 	random_salt := "salt" + strconv.FormatUint(uint64(id), 10)
 	_, err = r.conn.Exec(
-		"INSERT INTO UserLoginTable (userid, passwordhash, salt) VALUES ( ?, ?, ?)",
+		"INSERT INTO UserLoginTable (userid, passwordhash, salt, token) VALUES ( ?, ?, ?, ?)",
 		id,
 		hashed_password,
 		random_salt,
+		"",
 	)
-
-	id, err = d.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
-	if id < 0 {
-		return 0, ErrNegativeRowIndex
-	}
+
 	return Id(id), nil
 }
 

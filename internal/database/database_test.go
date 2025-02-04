@@ -115,9 +115,10 @@ func Test_AtomicPass(t *testing.T) {
 func Test_CreateUser(t *testing.T) {
 	db := setup()
 	defer db.Close()
-	expectedUsername := "u2jklfdsa"
+	expectedUsername := "u2jjklfdsa"
+	expectedPassword := "SFioj*&*(0"
 
-	id, err := db.CreateUser(expectedUsername, "password")
+	id, err := db.CreateUser(expectedUsername, expectedPassword)
 	if err != nil {
 		t.Fatalf("TestA: err: %v", err)
 	}
@@ -127,6 +128,13 @@ func Test_CreateUser(t *testing.T) {
 	}
 	if user.UserName != expectedUsername {
 		t.Fatalf("TestA: invaluser username expected: %s got: %s", expectedUsername, user.UserName)
+	}
+	valid_user, err := db.ValidateUserLoginInfo(id, expectedPassword)
+	if err != nil {
+		t.Fatalf("Test Create User: err: %v", err)
+	}
+	if !valid_user {
+		t.Fatalf("Test Create User: invalid user")
 	}
 }
 

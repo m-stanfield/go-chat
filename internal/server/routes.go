@@ -154,14 +154,6 @@ func (s *Server) validSession(userinfo database.UserLoginInfo, usertoken string)
 	return userinfo.Token == usertoken
 }
 
-func (s Server) hashPassword(password string, salt string) string {
-	return (password + salt)
-}
-
-func (s Server) comparePassword(userinfo database.UserLoginInfo, password string) bool {
-	return s.hashPassword(password, userinfo.Salt) == (userinfo.PasswordHash + userinfo.Salt)
-}
-
 func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -187,13 +179,13 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to locate username", http.StatusBadRequest)
 		return
 	}
-	passwordInfo, err := s.db.GetUserLoginInfo(userid)
+
+	valid, err := s.db.ValidateUserLoginInfo(userid, password)
 	if err != nil {
-		http.Error(w, "unable to locate password", http.StatusBadRequest)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-
-	if !s.comparePassword(passwordInfo, password) {
+	if !valid {
 		http.Error(w, "invalid password", http.StatusBadRequest)
 		return
 	}
@@ -258,13 +250,13 @@ func (s *Server) signupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to create user", http.StatusBadRequest)
 		return
 	}
-	passwordInfo, err := s.db.GetUserLoginInfo(userid)
+
+	valid_user, err := s.db.ValidateUserLoginInfo(userid, password)
 	if err != nil {
-		http.Error(w, "unable to locate password", http.StatusBadRequest)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-
-	if !s.comparePassword(passwordInfo, password) {
+	if !valid_user {
 		http.Error(w, "invalid password", http.StatusBadRequest)
 		return
 	}
