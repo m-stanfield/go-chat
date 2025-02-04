@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../AuthContext.tsx";
+import SignUp from "./signup.tsx";
 
 function Login() {
     const [username, setUsername] = useState("");
@@ -69,6 +70,9 @@ function Login() {
                     <button type="submit">Login</button>
                 </div>
             </form>
+            <div>
+                <SignUp />
+            </div>
         </div>
     );
 }

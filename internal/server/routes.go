@@ -251,7 +251,7 @@ func (s *Server) signupHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(r.Body).Decode(&loginData)
 	username := loginData.Username
 	password := loginData.Password
-	userid, err := s.db.CreateUser(username, "hashedpassword")
+	userid, err := s.db.CreateUser(username, password)
 	if err != nil {
 		http.Error(w, "unable to create user", http.StatusBadRequest)
 		return
