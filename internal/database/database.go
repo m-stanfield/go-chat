@@ -25,7 +25,7 @@ type Service interface {
 	GetUserLoginInfo(userid Id) (UserLoginInfo, error)
 	ValidateUserLoginInfo(userid Id, password string) (bool, error)
 	GetUser(userid Id) (User, error)
-	CreateUser(username string, hashed_password string) (Id, error)
+	CreateUser(username string, password string) (Id, error)
 	UpdateUserName(userid Id, username string) error
 	GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry, error)
 	GetUsersOfServer(serverid Id) ([]User, error)
@@ -312,7 +312,7 @@ func (r *service) GetUser(userid Id) (User, error) {
 	return user, nil
 }
 
-func (r *service) CreateUser(username string, hashed_password string) (Id, error) {
+func (r *service) CreateUser(username string, password string) (Id, error) {
 	d, err := r.conn.Exec("INSERT INTO UserTable (username) VALUES (?)", username)
 	if err != nil {
 		return 0, fmt.Errorf("add user - username: %s err: %w", username, err)
@@ -325,6 +325,7 @@ func (r *service) CreateUser(username string, hashed_password string) (Id, error
 		return 0, ErrNegativeRowIndex
 	}
 	random_salt := "salt" + strconv.FormatUint(uint64(id), 10)
+	hashed_password := hashPassword(password, random_salt)
 	_, err = r.conn.Exec(
 		"INSERT INTO UserLoginTable (userid, passwordhash, salt, token) VALUES ( ?, ?, ?, ?)",
 		id,
