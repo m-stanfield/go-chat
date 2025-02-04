@@ -120,7 +120,7 @@ func hashPassword(password string, salt string) string {
 }
 
 func comparePassword(userinfo UserLoginInfo, password string) bool {
-	return hashPassword(password, userinfo.Salt) == (userinfo.PasswordHash + userinfo.Salt)
+	return hashPassword(password, userinfo.Salt) == userinfo.PasswordHash
 }
 
 // Health checks the health of the database connection by pinging the database.
