@@ -148,9 +148,15 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *Server) validSession(userinfo database.UserLoginInfo, usertoken string) bool {
+	// if no token has been set
+	if userinfo.Token == "" {
+		return false
+	}
+	// if the token has expired
 	if time.Now().After(userinfo.TokenExpireTime) {
 		return false
 	}
+	// if the token is not the same as the one in the database
 	return userinfo.Token == usertoken
 }
 
