@@ -27,7 +27,6 @@ function SignUp() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                credentials: "include",
                 body: JSON.stringify(payload),
             });
 
@@ -36,6 +35,7 @@ function SignUp() {
                 const data = await response.json();
                 console.log("Login successful:", data);
             } else {
+                setError(response.statusText);
                 console.error("Login failed:", response.statusText);
             }
         } catch (error) {
