@@ -41,6 +41,7 @@ DROP TABLE IF EXISTS "UserTable";
 CREATE TABLE IF NOT EXISTS "UserTable" (
 	"userid"	INTEGER NOT NULL,
 	"username"	TEXT NOT NULL,
+	UNIQUE("username"),
 	PRIMARY KEY("userid" AUTOINCREMENT)
 );
 DROP TABLE IF EXISTS "UsersServerTable";
