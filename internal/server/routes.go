@@ -252,6 +252,10 @@ func (s *Server) signupHandler(w http.ResponseWriter, r *http.Request) {
 	username := loginData.Username
 	password := loginData.Password
 	userid, err := s.db.CreateUser(username, password)
+	if errors.Is(err, database.ErrRecordAlreadyExists) {
+		http.Error(w, "user already exists", http.StatusBadRequest)
+		return
+	}
 	if err != nil {
 		http.Error(w, "unable to create user", http.StatusBadRequest)
 		return
