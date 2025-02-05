@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/mattn/go-sqlite3"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -314,6 +316,11 @@ func (r *service) GetUser(userid Id) (User, error) {
 
 func (r *service) CreateUser(username string, password string) (Id, error) {
 	d, err := r.conn.Exec("INSERT INTO UserTable (username) VALUES (?)", username)
+	var sqliteErr sqlite3.Error
+	if errors.As(err, &sqliteErr) && sqliteErr.Code == sqlite3.ErrConstraint &&
+		sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+		return 0, ErrRecordAlreadyExists
+	}
 	if err != nil {
 		return 0, fmt.Errorf("add user - username: %s err: %w", username, err)
 	}
