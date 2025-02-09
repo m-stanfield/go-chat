@@ -491,3 +491,37 @@ func TestGetServerChannels(t *testing.T) {
 		)
 	}
 }
+
+func TestGetServerMessages(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/server/1/messages"
+	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+
+	result := struct {
+		Messages []Message `json:"messages"`
+	}{}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	for _, message := range result.Messages {
+		if len(message.Message) <= 0 {
+			t.Errorf("expected message to be non-empty")
+		}
+	}
+	if len(result.Messages) != 4 {
+		t.Errorf("expected number of messages to be %v; got %v", 4, len(result.Messages))
+	}
+}
