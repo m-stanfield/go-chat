@@ -57,7 +57,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/health", s.healthHandler)
 	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
 	mux.HandleFunc("POST /api/login", s.loginHandler)
-	mux.HandleFunc("POST /api/user/create", s.signupHandler)
+	mux.HandleFunc("POST /api/user/create", s.createUserHandler)
 
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
@@ -289,7 +289,7 @@ func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (s *Server) signupHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
