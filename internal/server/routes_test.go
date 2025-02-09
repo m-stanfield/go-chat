@@ -372,3 +372,19 @@ func TestGetServerChannels_Valid(t *testing.T) {
 		t.Fatalf("error unmarshalling response body. Err: %v", err)
 	}
 }
+
+func TestGetServerChannels_Unauthed(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/user/1/servers"
+	payload := map[string]string{"serverid": "1"}
+	unauthed_user := "u2"
+	password := "2"
+	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, payload, &unauthed_user, &password)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected status %v; got %v", http.StatusBadRequest, resp.Status)
+	}
+}
