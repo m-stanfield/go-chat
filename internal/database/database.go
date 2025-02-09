@@ -265,7 +265,7 @@ func (r *service) GetUserIDFromUserName(username string) (Id, error) {
 		}
 	}
 	if count == 0 {
-		return 0, ErrNoRecord
+		return 0, ErrRecordNotFound
 	}
 	return userid, nil
 }
@@ -313,7 +313,7 @@ func (r *service) GetUserLoginInfo(userid Id) (UserLoginInfo, error) {
 		}
 	}
 	if count == 0 {
-		return UserLoginInfo{}, ErrNoRecord
+		return UserLoginInfo{}, ErrRecordNotFound
 	}
 	return user, nil
 }
@@ -346,13 +346,16 @@ func (r *service) GetUserLoginInfoFromToken(token string) (UserLoginInfo, error)
 		}
 	}
 	if count == 0 {
-		return UserLoginInfo{}, ErrNoRecord
+		return UserLoginInfo{}, ErrRecordNotFound
 	}
 	return user, nil
 }
 
 func (r *service) GetUser(userid Id) (User, error) {
 	rows, err := r.conn.Query("SELECT userid, username FROM UserTable WHERE userid = ?", userid)
+	if errors.Is(err, sql.ErrNoRows) {
+		return User{}, ErrRecordNotFound
+	}
 	if err != nil {
 		return User{}, err
 	}
@@ -370,7 +373,7 @@ func (r *service) GetUser(userid Id) (User, error) {
 		}
 	}
 	if count == 0 {
-		return User{}, ErrNoRecord
+		return User{}, ErrRecordNotFound
 	}
 	return user, nil
 }
@@ -554,7 +557,7 @@ func (r *service) GetChannel(channelid Id) (Channel, error) {
 		}
 	}
 	if count == 0 {
-		return Channel{}, ErrNoRecord
+		return Channel{}, ErrRecordNotFound
 	}
 	return channel, nil
 }
