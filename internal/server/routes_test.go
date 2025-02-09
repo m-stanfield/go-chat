@@ -365,20 +365,20 @@ func TestGetServerChannels_Valid(t *testing.T) {
 	}
 
 	result := struct {
-		Channels []database.Server `json:"servers"`
+		Servers []database.Server `json:"servers"`
 	}{}
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		t.Fatalf("error unmarshalling response body. Err: %v", err)
 	}
-	if len(result.Channels) != 2 {
-		t.Errorf("expected number of channels to be %v; got %v", 2, len(result.Channels))
+	if len(result.Servers) != 2 {
+		t.Errorf("expected number of channels to be %v; got %v", 2, len(result.Servers))
 	}
-	if result.Channels[0].ServerId != 1 {
-		t.Errorf("expected server id to be %v; got %v", 1, result.Channels[0].ServerId)
+	if result.Servers[0].ServerId != 1 {
+		t.Errorf("expected server id to be %v; got %v", 1, result.Servers[0].ServerId)
 	}
-	if result.Channels[1].ServerId != 2 {
-		t.Errorf("expected server id to be %v; got %v", 2, result.Channels[1].ServerId)
+	if result.Servers[1].ServerId != 2 {
+		t.Errorf("expected server id to be %v; got %v", 2, result.Servers[1].ServerId)
 	}
 }
 
