@@ -15,7 +15,7 @@ import (
 
 var port = 8080
 
-func setupSuite(tb testing.TB) (*Server, func(tb testing.TB)) {
+func setupTest(tb testing.TB) (*Server, func(tb testing.TB)) {
 	server := database.NewInMemory()
 	if server == nil {
 		tb.Fatal("failed to create server")
@@ -88,26 +88,35 @@ func TestHandler(t *testing.T) {
 	}
 }
 
-func TestCreateNewServer(t *testing.T) {
-	s, teardown := setupSuite(t)
-	defer teardown(t)
-	userid := database.Id(1)
-	server := httptest.NewServer(http.HandlerFunc(s.createNewServer))
-	defer server.Close()
-	payload := map[string]string{"servername": "testserver"}
+func createAuthedSession(
+	handler http.HandlerFunc,
+	endpoint string,
+	userid database.Id,
+	payload map[string]string,
+) (*httptest.ResponseRecorder, *http.Request) {
 	jsonData, _ := json.Marshal(payload)
-	req := httptest.NewRequest(http.MethodPost, "/api/newserver", bytes.NewBuffer(jsonData))
+	req := httptest.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonData))
 	req = req.WithContext(context.WithValue(context.Background(), "userid", userid))
 	req.Header.Set("Content-Type", "application/json")
 
 	// Step 3: Create a ResponseRecorder to capture the response
 	resp := httptest.NewRecorder()
-	s.createNewServer(resp, req)
+	handler(resp, req)
+	return resp, req
+}
+
+func TestCreateNewServer(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/newserver"
+	userid := database.Id(1)
+	payload := map[string]string{"servername": "testserver"}
+	expected_server_id := database.Id(3)
+	resp, _ := createAuthedSession(s.createNewServer, endpoint, userid, payload)
 	// Assertions
 	if resp.Code != http.StatusOK {
 		t.Errorf("expected status OK; got %v", resp.Code)
 	}
-	expected_id := 3
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("error reading response body. Err: %v", err)
@@ -117,10 +126,10 @@ func TestCreateNewServer(t *testing.T) {
 	}{}
 	json.Unmarshal(body, &result)
 
-	if expected_id != int(result.ServerId) {
-		t.Errorf("expected response body to be %d; got %d", expected_id, result)
+	if expected_server_id != result.ServerId {
+		t.Errorf("expected response body to be %d; got %d", expected_server_id, result)
 	}
-	serverinfo, err := s.db.GetServer(database.Id(3))
+	serverinfo, err := s.db.GetServer(expected_server_id)
 	if err != nil {
 		t.Fatalf("error getting server info. Err: %v", err)
 	}
