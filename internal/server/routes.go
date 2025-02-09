@@ -257,7 +257,7 @@ func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to parse request", http.StatusBadRequest)
 		return
 	}
-	if len(newServerData.ServerName) > 100 {
+	if len(newServerData.ServerName) > 30 {
 		http.Error(w, "server name too long", http.StatusBadRequest)
 		return
 	}

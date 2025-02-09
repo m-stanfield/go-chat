@@ -105,7 +105,36 @@ func createAuthedSession(
 	return resp, req
 }
 
-func TestCreateNewServer(t *testing.T) {
+func TestCreateNewServer_Error_ShortName(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/server/create"
+	userid := database.Id(1)
+	payload := map[string]string{"servername": "te"}
+	resp, _ := createAuthedSession(s.createNewServer, endpoint, userid, payload)
+	// Assertions
+	if resp.Code != http.StatusBadRequest {
+		t.Errorf("expected status StatusBadRequest; got %v", resp.Code)
+	}
+}
+
+func TestCreateNewServer_Error_LongName(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/server/create"
+	userid := database.Id(1)
+
+	payload := map[string]string{
+		"servername": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+	}
+	resp, _ := createAuthedSession(s.createNewServer, endpoint, userid, payload)
+	// Assertions
+	if resp.Code != http.StatusBadRequest {
+		t.Errorf("expected status StatusBadRequest; got %v", resp.Code)
+	}
+}
+
+func TestCreateNewServer_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
 	endpoint := "/api/server/create"
