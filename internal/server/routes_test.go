@@ -402,7 +402,7 @@ func TestGetServerInformation_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
 	endpoint := "/api/server/1"
-	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	resp, err := s.sendRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		t.Fatalf("error creating session. Err: %v", err)
 	}
@@ -428,5 +428,66 @@ func TestGetServerInformation_Valid(t *testing.T) {
 	}
 	if result.OwnerId != 1 {
 		t.Errorf("expected owner id to be %v; got %v", 1, result.OwnerId)
+	}
+}
+
+func TestGetServerChannels(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/server/1/channels"
+	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+
+	result := struct {
+		Channels []database.Channel `json:"channels"`
+	}{}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if len(result.Channels) != 2 {
+		t.Errorf("expected number of channels to be %v; got %v", 2, len(result.Channels))
+	}
+	if result.Channels[0].ServerId != 1 {
+		t.Errorf("expected server id to be %v; got %v", 1, result.Channels[0].ServerId)
+	}
+	if result.Channels[1].ServerId != 1 {
+		t.Errorf("expected server id to be %v; got %v", 1, result.Channels[1].ServerId)
+	}
+	if result.Channels[0].Timestamp.IsZero() {
+		t.Errorf("expected timestamp to be non-zero")
+	}
+	if result.Channels[1].Timestamp.IsZero() {
+		t.Errorf("expected timestamp to be non-zero")
+	}
+	if result.Channels[0].ChannelId != 1 {
+		t.Errorf("expected channel id to be %v; got %v", 1, result.Channels[0].ChannelId)
+	}
+	if result.Channels[1].ChannelId != 2 {
+		t.Errorf("expected channel id to be %v; got %v", 2, result.Channels[1].ChannelId)
+	}
+	if result.Channels[0].ChannelName != "a" {
+		t.Errorf(
+			"expected channel name to be %v; got %v",
+			"b",
+			result.Channels[0].ChannelName,
+		)
+	}
+	if result.Channels[1].ChannelName != "b" {
+		t.Errorf(
+			"expected channel name to be %v; got %v",
+			"b",
+			result.Channels[1].ChannelName,
+		)
 	}
 }
