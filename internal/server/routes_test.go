@@ -2,12 +2,12 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"go-chat-react/internal/database"
@@ -15,18 +15,84 @@ import (
 
 var port = 8080
 
-func setupTest(tb testing.TB) (*Server, func(tb testing.TB)) {
+type TestServer struct {
+	server *httptest.Server
+}
+
+func setupTest(tb testing.TB) (*TestServer, func(tb testing.TB)) {
 	server := database.NewInMemory()
 	if server == nil {
 		tb.Fatal("failed to create server")
 	}
-	return &Server{port: port, db: server}, func(tb testing.TB) {
+
+	s := Server{port: port, db: server}
+	httpserver := httptest.NewServer(s.RegisterRoutes())
+	return &TestServer{server: httpserver}, func(tb testing.TB) {
 		server.Close()
 	}
 }
 
+func (s *TestServer) buildRequest(
+	method string,
+	endpoint string,
+	payload map[string]string,
+) (*http.Request, error) {
+	var jsonData []byte = nil
+	var buffer io.Reader = nil
+	if len(payload) > 0 {
+		jsonData, _ = json.Marshal(payload)
+		buffer = bytes.NewBuffer(jsonData)
+	}
+	req, err := http.NewRequest(method, s.server.URL+endpoint, buffer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	return req, nil
+}
+
+func (s *TestServer) sendRequest(
+	method string,
+	endpoint string,
+	payload map[string]string,
+) (*http.Response, error) {
+	session, err := s.buildRequest(method, endpoint, payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	return s.server.Client().Do(session)
+}
+
+func (s *TestServer) sendAuthRequest(
+	method string,
+	endpoint string,
+	payload map[string]string,
+	usernameOverride *string,
+	passwordOverride *string,
+) (*http.Response, error) {
+	session, err := s.buildRequest(method, endpoint, payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	if usernameOverride == nil {
+		temp := "u1"
+		usernameOverride = &temp
+	}
+	if passwordOverride == nil {
+		temp := "1"
+		passwordOverride = &temp
+	}
+	cookie, err := s.getLoginCookie(*usernameOverride, *passwordOverride)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get login cookie: %v", err)
+	}
+	session.AddCookie(cookie)
+	return s.server.Client().Do(session)
+}
+
 // Function to perform login and retrieve the login cookie
-func getLoginCookie(username, password string) (*http.Cookie, error) {
+func (s *TestServer) getLoginCookie(username, password string) (*http.Cookie, error) {
 	loginReq := struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -40,8 +106,8 @@ func getLoginCookie(username, password string) (*http.Cookie, error) {
 	}
 
 	// Send the login POST request
-	resp, err := http.Post(
-		"http://localhost:8080/api/login",
+	resp, err := s.server.Client().Post(
+		s.server.URL+"/api/login",
 		"application/json",
 		bytes.NewBuffer(loginData),
 	)
@@ -57,7 +123,7 @@ func getLoginCookie(username, password string) (*http.Cookie, error) {
 
 	// Retrieve the login cookie from the response
 	for _, cookie := range resp.Cookies() {
-		if cookie.Name == "login" { // assuming the cookie is named "login"
+		if cookie.Name == "token" {
 			return cookie, nil
 		}
 	}
@@ -88,45 +154,18 @@ func TestHandler(t *testing.T) {
 	}
 }
 
-func createSession(
-	handler http.HandlerFunc,
-	endpoint string,
-	payload map[string]string,
-	ctx *context.Context,
-) (*httptest.ResponseRecorder, *http.Request) {
-	jsonData, _ := json.Marshal(payload)
-	req := httptest.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonData))
-	if ctx != nil {
-		req = req.WithContext(*ctx)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	// Step 3: Create a ResponseRecorder to capture the response
-	resp := httptest.NewRecorder()
-	handler(resp, req)
-	return resp, req
-}
-
-func createAuthedSession(
-	handler http.HandlerFunc,
-	endpoint string,
-	userid database.Id,
-	payload map[string]string,
-) (*httptest.ResponseRecorder, *http.Request) {
-	ctx := context.WithValue(context.Background(), "userid", userid)
-	return createSession(handler, endpoint, payload, &ctx)
-}
-
 func TestCreateNewServer_Error_ShortName(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
 	endpoint := "/api/server/create"
-	userid := database.Id(1)
 	payload := map[string]string{"servername": "te"}
-	resp, _ := createAuthedSession(s.createNewServer, endpoint, userid, payload)
+	resp, err := s.sendAuthRequest(http.MethodPost, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
 	// Assertions
-	if resp.Code != http.StatusBadRequest {
-		t.Errorf("expected status StatusBadRequest; got %v", resp.Code)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected status StatusBadRequest; got %v", resp.Status)
 	}
 }
 
@@ -134,15 +173,14 @@ func TestCreateNewServer_Error_LongName(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
 	endpoint := "/api/server/create"
-	userid := database.Id(1)
 
 	payload := map[string]string{
 		"servername": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
 	}
-	resp, _ := createAuthedSession(s.createNewServer, endpoint, userid, payload)
+	resp, _ := s.sendAuthRequest(http.MethodPost, endpoint, payload, nil, nil)
 	// Assertions
-	if resp.Code != http.StatusBadRequest {
-		t.Errorf("expected status StatusBadRequest; got %v", resp.Code)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected status StatusBadRequest; got %v", resp.Status)
 	}
 }
 
@@ -150,13 +188,12 @@ func TestCreateNewServer_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
 	endpoint := "/api/server/create"
-	userid := database.Id(1)
 	payload := map[string]string{"servername": "testserver"}
 	expected_server_id := database.Id(3)
-	resp, _ := createAuthedSession(s.createNewServer, endpoint, userid, payload)
+	resp, _ := s.sendAuthRequest(http.MethodPost, endpoint, payload, nil, nil)
 	// Assertions
-	if resp.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", resp.Code)
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -170,12 +207,68 @@ func TestCreateNewServer_Valid(t *testing.T) {
 	if expected_server_id != result.ServerId {
 		t.Errorf("expected response body to be %d; got %d", expected_server_id, result)
 	}
-	serverinfo, err := s.db.GetServer(expected_server_id)
+	getresp, err := s.sendRequest(
+		http.MethodGet,
+		"/api/server/"+strconv.Itoa(int(expected_server_id)),
+		nil,
+	)
 	if err != nil {
 		t.Fatalf("error getting server info. Err: %v", err)
 	}
-	if serverinfo.ServerName != "testserver" {
-		t.Errorf("expected server name to be %v; got %v", "testserver", serverinfo.ServerName)
+
+	body, err = io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	getresult := struct {
+		ServerId   database.Id `json:"serverid"`
+		ServerName string      `json:"servername"`
+	}{}
+	json.Unmarshal(body, &getresult)
+	if getresult.ServerName != "testserver" {
+		t.Errorf("expected server name to be %v; got %v", "testserver", getresult.ServerName)
+	}
+}
+
+func TestCreateUser(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/user/create"
+	payload := map[string]string{"username": "new_user", "password": "new_user_password"}
+	resp, _ := s.sendRequest(http.MethodPost, endpoint, payload)
+	// Assertions
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	create_result := struct {
+		UserId database.Id `json:"userid"`
+	}{}
+	err = json.Unmarshal(body, &create_result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if create_result.UserId != 4 {
+		t.Errorf("expected userid to be %v; got %v", 4, create_result.UserId)
+	}
+	user_resp, err := s.sendRequest(http.MethodGet, "/api/user/4", nil)
+	if err != nil {
+		t.Fatalf("error getting user info. Err: %v", err)
+	}
+	user_result := struct {
+		UserName string `json:"username"`
+	}{}
+	body, err = io.ReadAll(user_resp.Body)
+	err = json.Unmarshal(body, &user_result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+
+	if user_result.UserName != payload["username"] {
+		t.Errorf("expected userid to be %v; got %v", user_result.UserName, payload["username"])
 	}
 }
 
@@ -184,10 +277,10 @@ func TestLogin(t *testing.T) {
 	defer teardown(t)
 	endpoint := "/api/login"
 	payload := map[string]string{"username": "u1", "password": "1"}
-	resp, _ := createSession(s.loginHandler, endpoint, payload, nil)
+	resp, _ := s.sendRequest(http.MethodPost, endpoint, payload)
 	// Assertions
-	if resp.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", resp.Code)
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

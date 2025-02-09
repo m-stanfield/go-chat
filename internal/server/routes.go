@@ -197,16 +197,14 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, expire_time, err := s.db.UpdateUserSessionToken(userid)
+	token, _, err := s.db.UpdateUserSessionToken(userid)
 	if err != nil {
 		http.Error(w, "unable to update session token", http.StatusBadRequest)
 		return
 	}
 
 	resp := map[string]interface{}{
-		"token_expire_time": expire_time,
-		"token":             token,
-		"userid":            userid,
+		"userid": userid,
 	}
 
 	// Set a cookie (you can modify the cookie as needed)
