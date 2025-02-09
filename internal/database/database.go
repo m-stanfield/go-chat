@@ -40,6 +40,7 @@ type Service interface {
 	AddMessage(channelid Id, userid Id, message string) (Id, error)
 	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
 	GetServer(serverid Id) (Server, error)
+	CreateServer(ownerid Id, servername string) (Id, error)
 	IsUserInServer(userid Id, serverid Id) (bool, error)
 
 	// Close terminates the database connection.
@@ -183,6 +184,30 @@ func (s *service) Health() map[string]string {
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", dburl)
 	return s.db.Close()
+}
+
+func (r *service) CreateServer(ownerid Id, servername string) (Id, error) {
+	d, err := r.conn.Exec(
+		"INSERT INTO ServerTable (servername, ownerid) VALUES (?, ?)",
+		servername,
+		ownerid,
+	)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"add server - servername: %s ownerid: %d err: %w",
+			servername,
+			ownerid,
+			err,
+		)
+	}
+	id, err := d.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	if id < 0 {
+		return 0, ErrNegativeRowIndex
+	}
+	return Id(id), nil
 }
 
 func (r *service) GetUserIDFromUserName(username string) (Id, error) {

@@ -58,6 +58,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
 	mux.HandleFunc("POST /api/login", s.loginHandler)
 	mux.HandleFunc("POST /api/signup", s.signupHandler)
+	mux.HandleFunc("POST /api/newserver", s.WithAuthUser(s.createNewServer))
 
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
@@ -229,6 +230,59 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
+}
+
+func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	val := r.Context().Value("userinfo")
+	passinfo, ok := val.(database.UserLoginInfo)
+	if !ok {
+		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+		return
+	}
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Unable to parse form", http.StatusBadRequest)
+		return
+	}
+
+	newServerData := struct {
+		ServerName string `json:"servername"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&newServerData)
+	if err != nil {
+		http.Error(w, "unable to parse request", http.StatusBadRequest)
+		return
+	}
+	if len(newServerData.ServerName) > 100 {
+		http.Error(w, "server name too long", http.StatusBadRequest)
+		return
+	}
+	if len(newServerData.ServerName) < 3 {
+		http.Error(w, "server name too short", http.StatusBadRequest)
+		return
+	}
+
+	serverid, err := s.db.CreateServer(passinfo.UserId, newServerData.ServerName)
+	resp := map[string]interface{}{
+		"serverid": serverid,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		http.Error(
+			w,
+			"internal error: unable to send encoded response",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	return
 }
 
 func (s *Server) signupHandler(w http.ResponseWriter, r *http.Request) {
