@@ -98,6 +98,42 @@ func (r *service) Atomic(ctx context.Context, cb func(ds Service) error) error {
 	return err
 }
 
+func executeSQLFile(db *sql.DB, filename string) error {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	_, err = db.Exec(string(data))
+	if err != nil {
+		return fmt.Errorf("failed to execute SQL: %w", err)
+	}
+
+	return nil
+}
+
+func NewInMemory() Service {
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = executeSQLFile(db, "../../schema.sql")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = executeSQLFile(db, "../../mockdata.sql")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dbInstance = &service{
+		db:   db,
+		conn: db,
+	}
+	return dbInstance
+}
+
 func New() Service {
 	// Reuse Connection
 	if dbInstance != nil {

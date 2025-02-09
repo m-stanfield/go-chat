@@ -120,7 +120,7 @@ func (s *Server) WithAuthUser(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "invalid token", http.StatusBadRequest)
 			return
 		}
-		next(w, r.WithContext(context.WithValue(r.Context(), "userinfo", passwordInfo)))
+		next(w, r.WithContext(context.WithValue(r.Context(), "userid", passwordInfo.UserId)))
 	})
 }
 
@@ -237,8 +237,8 @@ func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	val := r.Context().Value("userinfo")
-	passinfo, ok := val.(database.UserLoginInfo)
+	val := r.Context().Value("userid")
+	userid, ok := val.(database.Id)
 	if !ok {
 		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
 		return
@@ -266,7 +266,11 @@ func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serverid, err := s.db.CreateServer(passinfo.UserId, newServerData.ServerName)
+	serverid, err := s.db.CreateServer(userid, newServerData.ServerName)
+	if err != nil {
+		http.Error(w, "unable to create server", http.StatusBadRequest)
+		return
+	}
 	resp := map[string]interface{}{
 		"serverid": serverid,
 	}
@@ -372,13 +376,13 @@ func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	val := r.Context().Value("userinfo")
-	passinfo, ok := val.(database.UserLoginInfo)
+	val := r.Context().Value("userid")
+	userid, ok := val.(database.Id)
 	if !ok {
 		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
 		return
 	}
-	userinfo, err := s.db.GetUser(database.Id(passinfo.UserId))
+	userinfo, err := s.db.GetUser(userid)
 	isServerMember, err := s.db.IsUserInServer(userinfo.UserId, database.Id(serverid))
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
@@ -419,13 +423,13 @@ func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
 	}
 	userid := database.Id(userid_int)
 
-	val := r.Context().Value("userinfo")
-	passinfo, ok := val.(database.UserLoginInfo)
+	val := r.Context().Value("userid")
+	autheduserid, ok := val.(database.Id)
 	if !ok {
 		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
 		return
 	}
-	if userid != passinfo.UserId {
+	if userid != autheduserid {
 		http.Error(w, "invalid request: invalid user id", http.StatusBadRequest)
 		return
 	}
@@ -511,13 +515,13 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	val := r.Context().Value("userinfo")
-	passinfo, ok := val.(database.UserLoginInfo)
+	val := r.Context().Value("userid")
+	userid, ok := val.(database.Id)
 	if !ok {
 		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
 		return
 	}
-	isServerMember, err := s.db.IsUserInServer(passinfo.UserId, database.Id(serverid))
+	isServerMember, err := s.db.IsUserInServer(userid, database.Id(serverid))
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -656,13 +660,13 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
-	val := r.Context().Value("userinfo")
-	passinfo, ok := val.(database.UserLoginInfo)
+	val := r.Context().Value("userid")
+	passinfo, ok := val.(database.Id)
 	if !ok {
 		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
 		return
 	}
-	userinfo, err := s.db.GetUser(database.Id(passinfo.UserId))
+	userinfo, err := s.db.GetUser(passinfo)
 	if err != nil {
 		http.Error(w, "error fetching user", http.StatusInternalServerError)
 		return
