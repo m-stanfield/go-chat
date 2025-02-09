@@ -15,8 +15,7 @@ import (
 type Server struct {
 	port int
 
-	db     database.Service
-	tokens map[database.Id]string
+	db database.Service
 }
 
 func NewServer() *http.Server {
