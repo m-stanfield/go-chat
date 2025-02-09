@@ -230,6 +230,42 @@ func TestCreateNewServer_Valid(t *testing.T) {
 	}
 }
 
+func TestGetUser_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/user/1"
+	resp, _ := s.sendRequest(http.MethodGet, endpoint, nil)
+	// Assertions
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	result := struct {
+		UserName string `json:"username"`
+	}{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.UserName != "u1" {
+		t.Errorf("expected username to be %v; got %v", "u1", result.UserName)
+	}
+}
+
+func TestGetUser_Invalid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/user/100"
+	resp, _ := s.sendRequest(http.MethodGet, endpoint, nil)
+	// Assertions
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("expected status NotFound; got %v", resp.Status)
+	}
+}
+
 func TestCreateUser(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
@@ -272,7 +308,7 @@ func TestCreateUser(t *testing.T) {
 	}
 }
 
-func TestLogin(t *testing.T) {
+func TestLogin_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
 	endpoint := "/api/login"
@@ -296,5 +332,17 @@ func TestLogin(t *testing.T) {
 	}
 	if result.UserId != 1 {
 		t.Errorf("expected userid to be %v; got %v", 1, result.UserId)
+	}
+}
+
+func TestLogin_Invalid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/login"
+	payload := map[string]string{"username": "u1", "password": "notcorrectpassword"}
+	resp, _ := s.sendRequest(http.MethodPost, endpoint, payload)
+	// Assertions
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected status expected %v; got %v", http.StatusBadRequest, resp.Status)
 	}
 }
