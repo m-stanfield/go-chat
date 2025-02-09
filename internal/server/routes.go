@@ -614,6 +614,10 @@ func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := s.db.GetUser(database.Id(userid))
+	if errors.Is(err, database.ErrRecordNotFound) {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
