@@ -371,6 +371,15 @@ func TestGetServerChannels_Valid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error unmarshalling response body. Err: %v", err)
 	}
+	if len(result.Channels) != 2 {
+		t.Errorf("expected number of channels to be %v; got %v", 2, len(result.Channels))
+	}
+	if result.Channels[0].ServerId != 1 {
+		t.Errorf("expected server id to be %v; got %v", 1, result.Channels[0].ServerId)
+	}
+	if result.Channels[1].ServerId != 2 {
+		t.Errorf("expected server id to be %v; got %v", 2, result.Channels[1].ServerId)
+	}
 }
 
 func TestGetServerChannels_Unauthed(t *testing.T) {
