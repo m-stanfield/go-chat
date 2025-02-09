@@ -88,21 +88,33 @@ func TestHandler(t *testing.T) {
 	}
 }
 
-func createAuthedSession(
+func createSession(
 	handler http.HandlerFunc,
 	endpoint string,
-	userid database.Id,
 	payload map[string]string,
+	ctx *context.Context,
 ) (*httptest.ResponseRecorder, *http.Request) {
 	jsonData, _ := json.Marshal(payload)
 	req := httptest.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonData))
-	req = req.WithContext(context.WithValue(context.Background(), "userid", userid))
+	if ctx != nil {
+		req = req.WithContext(*ctx)
+	}
 	req.Header.Set("Content-Type", "application/json")
 
 	// Step 3: Create a ResponseRecorder to capture the response
 	resp := httptest.NewRecorder()
 	handler(resp, req)
 	return resp, req
+}
+
+func createAuthedSession(
+	handler http.HandlerFunc,
+	endpoint string,
+	userid database.Id,
+	payload map[string]string,
+) (*httptest.ResponseRecorder, *http.Request) {
+	ctx := context.WithValue(context.Background(), "userid", userid)
+	return createSession(handler, endpoint, payload, &ctx)
 }
 
 func TestCreateNewServer_Error_ShortName(t *testing.T) {
@@ -164,5 +176,32 @@ func TestCreateNewServer_Valid(t *testing.T) {
 	}
 	if serverinfo.ServerName != "testserver" {
 		t.Errorf("expected server name to be %v; got %v", "testserver", serverinfo.ServerName)
+	}
+}
+
+func TestLogin(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/login"
+	payload := map[string]string{"username": "u1", "password": "1"}
+	resp, _ := createSession(s.loginHandler, endpoint, payload, nil)
+	// Assertions
+	if resp.Code != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Code)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	result := struct {
+		UserId          database.Id `json:"userid"`
+		TokenExpireTime string      `json:"token_expire_time"`
+	}{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.UserId != 1 {
+		t.Errorf("expected userid to be %v; got %v", 1, result.UserId)
 	}
 }
