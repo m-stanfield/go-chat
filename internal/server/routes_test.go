@@ -108,7 +108,7 @@ func createAuthedSession(
 func TestCreateNewServer(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/newserver"
+	endpoint := "/api/server/create"
 	userid := database.Id(1)
 	payload := map[string]string{"servername": "testserver"}
 	expected_server_id := database.Id(3)

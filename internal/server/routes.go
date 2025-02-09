@@ -58,11 +58,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
 	mux.HandleFunc("POST /api/login", s.loginHandler)
 	mux.HandleFunc("POST /api/signup", s.signupHandler)
-	mux.HandleFunc("POST /api/newserver", s.WithAuthUser(s.createNewServer))
 
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
 
+	mux.HandleFunc("POST /api/server/create", s.WithAuthUser(s.createNewServer))
 	mux.HandleFunc("GET /api/server/{serverid}", s.GetServerInformation)
 	mux.HandleFunc("GET /api/server/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
 	mux.HandleFunc(
