@@ -57,7 +57,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/health", s.healthHandler)
 	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
 	mux.HandleFunc("POST /api/login", s.loginHandler)
-	mux.HandleFunc("POST /api/signup", s.signupHandler)
+	mux.HandleFunc("POST /api/user/create", s.signupHandler)
 
 	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
 	mux.HandleFunc("GET /api/user/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
