@@ -397,3 +397,36 @@ func TestGetServerChannels_Unauthed(t *testing.T) {
 		t.Errorf("expected status %v; got %v", http.StatusBadRequest, resp.Status)
 	}
 }
+
+func TestGetServerInformation_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/server/1"
+	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+
+	result := database.Server{}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.ServerId != 1 {
+		t.Errorf("expected server id to be %v; got %v", 1, result.ServerId)
+	}
+	if result.ServerName != "server1" {
+		t.Errorf("expected server name to be %v; got %v", "server1", result.ServerName)
+	}
+	if result.OwnerId != 1 {
+		t.Errorf("expected owner id to be %v; got %v", 1, result.OwnerId)
+	}
+}
