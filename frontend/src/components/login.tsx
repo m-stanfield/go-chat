@@ -33,8 +33,6 @@ function Login() {
                 auth.login({
                     name: username,
                     id: data.userid,
-                    token: data.token,
-                    token_expire_time: data.token_expire_time,
                 });
                 console.log("Login successful:", data);
             } else {

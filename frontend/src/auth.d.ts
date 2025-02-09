@@ -6,8 +6,6 @@ export type LogoutCallbackCancel = () => void;
 export type User = {
     id: string;
     name: string;
-    token: string;
-    token_expire_time: string;
 };
 
 export type AuthState = {
