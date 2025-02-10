@@ -37,3 +37,4 @@ database.db
 test.db
 node_modules
 cookies.txt
+coverage.html
