@@ -525,3 +525,43 @@ func TestGetServerMessages(t *testing.T) {
 		t.Errorf("expected number of messages to be %v; got %v", 4, len(result.Messages))
 	}
 }
+
+func TestGetServerMembers_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/server/1/members"
+	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+
+	result := struct {
+		Users []database.User `json:"users"`
+	}{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if len(result.Users) != 2 {
+		t.Errorf("expected number of channels to be %v; got %v", 2, len(result.Users))
+	}
+	if result.Users[0].UserId != 1 {
+		t.Errorf("expected user id to be %v; got %v", 1, result.Users[0].UserId)
+	}
+	if result.Users[1].UserId != 3 {
+		t.Errorf("expected user id to be %v; got %v", 2, result.Users[1].UserId)
+	}
+	if result.Users[0].UserName != "u1" {
+		t.Errorf("expected user name to be %v; got %v", "u1", result.Users[0].UserName)
+	}
+	if result.Users[1].UserName != "u3" {
+		t.Errorf("expected user name to be %v; got %v", "u2", result.Users[1].UserName)
+	}
+}
