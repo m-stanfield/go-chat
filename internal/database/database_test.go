@@ -138,6 +138,29 @@ func Test_CreateUser(t *testing.T) {
 	}
 }
 
+func Test_UpdateServerName(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	id := Id(1)
+	newServerName := "u2jklfdsa"
+
+	server, err := db.GetServer(id)
+	if server.ServerName == newServerName {
+		t.Fatalf("Test_UpdateUserName: invalid test data, test user name matches previous")
+	}
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	err = db.UpdateServerName(server.ServerId, newServerName)
+	newserver, err := db.GetServer(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if newserver.ServerName != newServerName {
+		t.Fatalf("TestA: invaluser username expected: %s got: %s", newServerName, server.ServerName)
+	}
+}
+
 func Test_UpdateUserName(t *testing.T) {
 	db := setup()
 	defer db.Close()

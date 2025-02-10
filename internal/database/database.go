@@ -41,6 +41,7 @@ type Service interface {
 	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
 	GetServer(serverid Id) (Server, error)
 	CreateServer(ownerid Id, servername string) (Id, error)
+	UpdateServerName(serverid Id, servername string) error
 	IsUserInServer(userid Id, serverid Id) (bool, error)
 
 	// Close terminates the database connection.
@@ -413,6 +414,15 @@ func (r *service) CreateUser(username string, password string) (Id, error) {
 
 func (r *service) UpdateUserName(userid Id, username string) error {
 	_, err := r.conn.Exec("UPDATE UserTable SET username = ? WHERE userid=? ", username, userid)
+	return err
+}
+
+func (r *service) UpdateServerName(serverid Id, servername string) error {
+	_, err := r.conn.Exec(
+		"UPDATE ServerTable SET servername = ? WHERE serverid=? ",
+		servername,
+		serverid,
+	)
 	return err
 }
 
