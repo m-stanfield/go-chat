@@ -38,6 +38,7 @@ type Service interface {
 	UpdateChannelName(userid Id, username string) error
 	GetMessage(messageid Id) (Message, error)
 	AddMessage(channelid Id, userid Id, message string) (Id, error)
+	// UpdateMessage(messageid Id, message string) error
 	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
 	GetServer(serverid Id) (Server, error)
 	CreateServer(ownerid Id, servername string) (Id, error)
