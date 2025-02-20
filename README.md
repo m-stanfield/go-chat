@@ -25,4 +25,6 @@ Current known dependencies:
 * Go v1.23
 * Node 18
 
+Copy the `example.env` file to the `.env` location and fill out with the details that you want to use.
+
 To run, the `make run` command in the base directory should work.
