@@ -623,8 +623,10 @@ func (r *service) GetMessage(messageid Id) (Message, error) {
 		return Message{}, err
 	}
 	defer rows.Close()
+	count := 0
 	var message Message
 	for rows.Next() {
+		count += 1
 		err := rows.Scan(
 			&message.MessageId,
 			&message.ChannelId,
@@ -637,6 +639,9 @@ func (r *service) GetMessage(messageid Id) (Message, error) {
 		if err != nil {
 			return Message{}, err
 		}
+	}
+	if count == 0 {
+		return Message{}, ErrRecordNotFound
 	}
 	return message, nil
 }
