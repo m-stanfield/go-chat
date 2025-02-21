@@ -21,29 +21,34 @@ type Service interface {
 	// The keys and values in the map are service-specific.
 	Health() map[string]string
 	Atomic(context.Context, AtomicCallback) error
+
 	GetUserIDFromUserName(username string) (Id, error)
 	UpdateUserSessionToken(userid Id) (string, time.Time, error)
 	GetUserLoginInfoFromToken(token string) (UserLoginInfo, error)
 	GetUserLoginInfo(userid Id) (UserLoginInfo, error)
 	ValidateUserLoginInfo(userid Id, password string) (bool, error)
+
 	GetUser(userid Id) (User, error)
 	CreateUser(username string, password string) (Id, error)
 	UpdateUserName(userid Id, username string) error
 	GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry, error)
+
 	GetUsersOfServer(serverid Id) ([]User, error)
 	GetServersOfUser(userid Id) ([]Server, error)
 	GetChannelsOfServer(serverid Id) ([]Channel, error)
-	AddChannel(serverid Id, channelname string) (Id, error)
-	GetChannel(channelid Id) (Channel, error)
-	UpdateChannelName(userid Id, username string) error
-	GetMessage(messageid Id) (Message, error)
-	AddMessage(channelid Id, userid Id, message string) (Id, error)
-	UpdateMessage(messageid Id, message string) error
-	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
 	GetServer(serverid Id) (Server, error)
 	CreateServer(ownerid Id, servername string) (Id, error)
 	UpdateServerName(serverid Id, servername string) error
 	IsUserInServer(userid Id, serverid Id) (bool, error)
+
+	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
+	AddChannel(serverid Id, channelname string) (Id, error)
+	GetChannel(channelid Id) (Channel, error)
+	UpdateChannelName(userid Id, username string) error
+
+	GetMessage(messageid Id) (Message, error)
+	AddMessage(channelid Id, userid Id, message string) (Id, error)
+	UpdateMessage(messageid Id, message string) error
 	DeleteMessage(messageid Id) error
 
 	// Close terminates the database connection.
