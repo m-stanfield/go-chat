@@ -44,6 +44,7 @@ type Service interface {
 	CreateServer(ownerid Id, servername string) (Id, error)
 	UpdateServerName(serverid Id, servername string) error
 	IsUserInServer(userid Id, serverid Id) (bool, error)
+	DeleteMessage(messageid Id) error
 
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
@@ -246,6 +247,11 @@ func (r *service) CreateServer(ownerid Id, servername string) (Id, error) {
 		return 0, ErrNegativeRowIndex
 	}
 	return Id(id), nil
+}
+
+func (r *service) DeleteMessage(messageid Id) error {
+	_, err := r.conn.Exec("DELETE FROM ChannelMessageTable WHERE messageid = ?", messageid)
+	return err
 }
 
 func (r *service) UpdateMessage(messageid Id, message string) error {

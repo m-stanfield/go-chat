@@ -51,6 +51,24 @@ func setup() *service {
 	return &service{db: db, conn: db}
 }
 
+func Test_DeleteMessage(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	message := "1111"
+	id, err := db.AddMessage(1, 1, message)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	err = db.DeleteMessage(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	_, err = db.GetMessage(id)
+	if !errors.Is(err, ErrRecordNotFound) {
+		t.Fatalf("TestA: err: %v", err)
+	}
+}
+
 func Test_GetMessage_InvalidId(t *testing.T) {
 	db := setup()
 	defer db.Close()
