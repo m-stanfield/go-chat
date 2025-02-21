@@ -72,7 +72,8 @@ CREATE TABLE IF NOT EXISTS "ChannelMessageTable" (
 	"timestamp"	DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now')),
 	"editted"	INTEGER,
 	"edittimestamp"	DATETIME,
-	FOREIGN KEY("userid","channelid") REFERENCES "UsersChannelTable"("userid","channelid"),
+	FOREIGN KEY("userid") REFERENCES "UsersChannelTable"("userid"),
+	FOREIGN KEY("channelid") REFERENCES "UsersChannelTable"("channelid"),
 	PRIMARY KEY("messageid" AUTOINCREMENT)
 );
 DROP TABLE IF EXISTS "UsersChannelTable";
