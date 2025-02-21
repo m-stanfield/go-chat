@@ -93,4 +93,9 @@ CREATE TRIGGER UpdateUserNicknameLog AFTER UPDATE OF nickname ON UsersServerTabl
 BEGIN
 	INSERT INTO UserNicknameLogTable (userid, serverid, nickname) VALUES (new.userid, new.serverid, new.nickname);
 END;
+
+CREATE TRIGGER UpdateMessageLog AFTER UPDATE OF contents ON ChannelMessageTable 
+BEGIN
+	UPDATE ChannelMessageTable SET editted = 1, edittimestamp = strftime('%Y-%m-%d %H:%M:%f', 'now') WHERE messageid = old.messageid;
+END;
 COMMIT;

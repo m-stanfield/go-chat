@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -48,6 +49,53 @@ func setup() *service {
 		panic("unable to initialize database for tests")
 	}
 	return &service{db: db, conn: db}
+}
+
+func Test_UpdateMessage(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	initialMessage := "1111"
+	newMessage := "u2jklfdsa"
+	start_time := time.Now()
+
+	id, err := db.AddMessage(1, 1, initialMessage)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	time.Sleep(1 * time.Millisecond)
+	message, err := db.GetMessage(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	err = db.UpdateMessage(message.MessageId, newMessage)
+	newmessage, err := db.GetMessage(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if newmessage.Contents != newMessage {
+		t.Fatalf(
+			"TestA: invalmessage message expected: %s got: %s",
+			newMessage,
+			newmessage.Contents,
+		)
+	}
+	if newmessage.MessageId != id {
+		t.Fatalf("TestA: invalmessage message expected: %d got: %d", id, newmessage.MessageId)
+	}
+	if newmessage.Timestamp != message.Timestamp {
+		t.Fatalf(
+			"TestA: invalmessage message expected: %v got: %v",
+			start_time,
+			newmessage.Timestamp,
+		)
+	}
+	if !newmessage.EdittedTimeStamp.After(message.Timestamp) {
+		t.Fatalf(
+			"TestA: invalmessage message expected: %v got: %v",
+			start_time,
+			newmessage.EdittedTimeStamp,
+		)
+	}
 }
 
 func Test_GetUser(t *testing.T) {
