@@ -35,18 +35,18 @@ type Service interface {
 
 	GetUsersOfServer(serverid Id) ([]User, error)
 	GetServersOfUser(userid Id) ([]Server, error)
-	GetChannelsOfServer(serverid Id) ([]Channel, error)
 	GetServer(serverid Id) (Server, error)
 	CreateServer(ownerid Id, servername string) (Id, error)
 	UpdateServerName(serverid Id, servername string) error
 	IsUserInServer(userid Id, serverid Id) (bool, error)
 
-	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
 	AddChannel(serverid Id, channelname string) (Id, error)
 	GetChannel(channelid Id) (Channel, error)
+	GetChannelsOfServer(serverid Id) ([]Channel, error)
 	UpdateChannelName(userid Id, username string) error
 
 	GetMessage(messageid Id) (Message, error)
+	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
 	AddMessage(channelid Id, userid Id, message string) (Id, error)
 	UpdateMessage(messageid Id, message string) error
 	DeleteMessage(messageid Id) error
