@@ -28,12 +28,23 @@
     devShells = forAllSystems ({ pkgs }: {  
         default = pkgs.mkShell {  
           # The Nix packages provided in the environment  
+          hardeningDisable = ["fortify"];
           packages = with pkgs; [  
-            go # Go 1.22  
+            go_1_23 # Go 1.22  
             gotools # Go tools like goimports, godoc, and others  
+            delve
             node2nix 
+            gcc
+            gdb
+            pkg-config
             nodejs
           ];  
+shellHook = ''
+  export CGO_ENABLED=1
+  export CC=${pkgs.gcc}/bin/gcc
+  export CXX=${pkgs.gcc}/bin/g++
+'';
+
         };  
     });  
   };  
