@@ -61,24 +61,64 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.HandleFunc("POST /api/users", s.createUserHandler)
 	mux.HandleFunc("GET /api/users/{userid}", s.GetUserHandler)
+	mux.HandleFunc("PATCH /api/users/{userid}", s.WithAuthUser(s.UpdateUser))
 	mux.HandleFunc("GET /api/users/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
 
 	mux.HandleFunc("POST /api/servers", s.WithAuthUser(s.createNewServer))
 	mux.HandleFunc("GET /api/servers/{serverid}", s.GetServerInformation)
+	mux.HandleFunc("PATCH /api/servers/{serverid}", s.WithAuthUser(s.UpdateServer))  // New
+	mux.HandleFunc("DELETE /api/servers/{serverid}", s.WithAuthUser(s.DeleteServer)) // New
 	mux.HandleFunc("GET /api/servers/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
+	mux.HandleFunc("POST /api/servers/{serverid}/channels", s.WithAuthUser(s.CreateChannel))
 	mux.HandleFunc("GET /api/servers/{serverid}/members", s.WithAuthUser(s.GetServerMembersHandler))
 	mux.HandleFunc("GET /api/servers/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
 
-	mux.HandleFunc("POST /api/channels", s.CreateChannel)
 	mux.HandleFunc("GET /api/channels/{channelid}", s.GetChannel)
+	mux.HandleFunc("PATCH /api/channels/{channelid}", s.WithAuthUser(s.UpdateChannel)) // New
+	mux.HandleFunc("DELETE /api/channels/{channelid}", s.WithAuthUser(s.DeleteChannel))
+	mux.HandleFunc("POST /api/channels/{channelid}/members", s.WithAuthUser(s.AddChannelMember))               // New
+	mux.HandleFunc("DELETE /api/channels/{channelid}/members/{userid}", s.WithAuthUser(s.RemoveChannelMember)) // New
+
 	mux.HandleFunc("GET /api/channels/{channelid}/messages", s.GetChannelMessages)
 	mux.HandleFunc("POST /api/channels/{channelid}/messages", s.CreateChannelMessage)
-	mux.HandleFunc("DELETE /api/channels/{channelid}", s.DeleteChannel)
+	mux.HandleFunc("PATCH /api/channels/{channelid}/messages/{messageid}", s.WithAuthUser(s.UpdateMessage))  // New
+	mux.HandleFunc("DELETE /api/channels/{channelid}/messages/{messageid}", s.WithAuthUser(s.DeleteMessage)) // New
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(s.logEndpoint(mux))
 }
 
+func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
+func (s *Server) DeleteServer(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
+func (s *Server) UpdateChannel(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
+func (s *Server) AddChannelMember(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
+func (s *Server) RemoveChannelMember(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
+func (s *Server) UpdateMessage(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
+func (s *Server) DeleteMessage(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
+func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
 func (s *Server) DeleteChannel(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
