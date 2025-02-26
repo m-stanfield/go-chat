@@ -122,9 +122,11 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 func (s *Server) DeleteChannel(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
+
 func (s *Server) CreateChannel(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
+
 func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
@@ -570,10 +572,6 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err != nil {
-		http.Error(w, "invalid request: unable to parse count", http.StatusBadRequest)
-		return
-	}
 
 	val := r.Context().Value("userid")
 	userid, ok := val.(database.Id)
@@ -806,8 +804,5 @@ func (s *Server) handleMessages(client *websocket.Conn, broadcast chan Message) 
 		ctx, cancel := context.WithTimeout(context.Background(), 1.0*time.Second)
 		defer cancel()
 		client.Write(ctx, websocket.MessageText, jsondata)
-		if err != nil {
-			fmt.Println(err)
-		}
 	}
 }
