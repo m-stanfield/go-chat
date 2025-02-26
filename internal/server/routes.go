@@ -66,23 +66,23 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.HandleFunc("POST /api/servers", s.WithAuthUser(s.createNewServer))
 	mux.HandleFunc("GET /api/servers/{serverid}", s.GetServerInformation)
-	mux.HandleFunc("PATCH /api/servers/{serverid}", s.WithAuthUser(s.UpdateServer))  // New
-	mux.HandleFunc("DELETE /api/servers/{serverid}", s.WithAuthUser(s.DeleteServer)) // New
+	mux.HandleFunc("PATCH /api/servers/{serverid}", s.WithAuthUser(s.UpdateServer))
+	mux.HandleFunc("DELETE /api/servers/{serverid}", s.WithAuthUser(s.DeleteServer))
 	mux.HandleFunc("GET /api/servers/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
 	mux.HandleFunc("POST /api/servers/{serverid}/channels", s.WithAuthUser(s.CreateChannel))
 	mux.HandleFunc("GET /api/servers/{serverid}/members", s.WithAuthUser(s.GetServerMembersHandler))
 	mux.HandleFunc("GET /api/servers/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
 
 	mux.HandleFunc("GET /api/channels/{channelid}", s.GetChannel)
-	mux.HandleFunc("PATCH /api/channels/{channelid}", s.WithAuthUser(s.UpdateChannel)) // New
+	mux.HandleFunc("PATCH /api/channels/{channelid}", s.WithAuthUser(s.UpdateChannel))
 	mux.HandleFunc("DELETE /api/channels/{channelid}", s.WithAuthUser(s.DeleteChannel))
-	mux.HandleFunc("POST /api/channels/{channelid}/members", s.WithAuthUser(s.AddChannelMember))               // New
-	mux.HandleFunc("DELETE /api/channels/{channelid}/members/{userid}", s.WithAuthUser(s.RemoveChannelMember)) // New
+	mux.HandleFunc("POST /api/channels/{channelid}/members", s.WithAuthUser(s.AddChannelMember))
+	mux.HandleFunc("DELETE /api/channels/{channelid}/members/{userid}", s.WithAuthUser(s.RemoveChannelMember))
 
 	mux.HandleFunc("GET /api/channels/{channelid}/messages", s.GetChannelMessages)
 	mux.HandleFunc("POST /api/channels/{channelid}/messages", s.CreateChannelMessage)
-	mux.HandleFunc("PATCH /api/channels/{channelid}/messages/{messageid}", s.WithAuthUser(s.UpdateMessage))  // New
-	mux.HandleFunc("DELETE /api/channels/{channelid}/messages/{messageid}", s.WithAuthUser(s.DeleteMessage)) // New
+	mux.HandleFunc("PATCH /api/channels/{channelid}/messages/{messageid}", s.WithAuthUser(s.UpdateMessage))
+	mux.HandleFunc("DELETE /api/channels/{channelid}/messages/{messageid}", s.WithAuthUser(s.DeleteMessage))
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(s.logEndpoint(mux))
