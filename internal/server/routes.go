@@ -57,6 +57,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
 
 	mux.HandleFunc("POST /api/auth/login", s.loginHandler)
+	mux.HandleFunc("POST /api/auth/logout", s.WithAuthUser(s.LogoutHandler))
 
 	mux.HandleFunc("POST /api/users", s.createUserHandler)
 	mux.HandleFunc("GET /api/users/{userid}", s.GetUserHandler)
@@ -68,14 +69,25 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/servers/{serverid}/members", s.WithAuthUser(s.GetServerMembersHandler))
 	mux.HandleFunc("GET /api/servers/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
 
+	mux.HandleFunc("POST /api/channels", s.CreateChannel)
 	mux.HandleFunc("GET /api/channels/{channelid}", s.GetChannel)
 	mux.HandleFunc("GET /api/channels/{channelid}/messages", s.GetChannelMessages)
-	mux.HandleFunc("POST /api/channels/{channelid}/messages", s.GetChannelMessages)
+	mux.HandleFunc("POST /api/channels/{channelid}/messages", s.CreateChannelMessage)
+	mux.HandleFunc("DELETE /api/channels/{channelid}", s.DeleteChannel)
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(s.logEndpoint(mux))
 }
 
+func (s *Server) DeleteChannel(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+func (s *Server) CreateChannel(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
 func (s *Server) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
