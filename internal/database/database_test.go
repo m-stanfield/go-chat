@@ -534,3 +534,49 @@ func Test_UpdateUserSessionToken(t *testing.T) {
 		t.Fatalf("TestA: invalid expire time")
 	}
 }
+
+func Test_GetUserLoginInfoFromToken(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	id := Id(1)
+	token, _, err := db.UpdateUserSessionToken(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	userid, err := db.GetUserLoginInfoFromToken(token)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if userid.UserId != id {
+		t.Fatalf("TestA: invalid id. expected: %d got: %d", id, userid.UserId)
+	}
+}
+
+func Test_IsUserInServer_Valid(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	userid := Id(121)
+	serverid := Id(1)
+	inserver, err := db.IsUserInServer(userid, serverid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if inserver {
+		t.Fatalf("TestA: invalid in server")
+	}
+}
+
+func Test_IsUserInServer_InValid(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	userid := Id(1)
+	serverid := Id(1)
+	_, err := db.IsUserInServer(userid, serverid)
+	inserver, err := db.IsUserInServer(userid, serverid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if !inserver {
+		t.Fatalf("TestA: valid in server should be invalid")
+	}
+}
