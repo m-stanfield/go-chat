@@ -22,7 +22,7 @@ function SignUp() {
 
         try {
             // Send POST request to backend
-            const response = await fetch("http://localhost:8080/api/user/create", {
+            const response = await fetch("http://localhost:8080/api/users", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

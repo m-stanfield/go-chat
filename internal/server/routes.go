@@ -55,20 +55,18 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.HandleFunc("/", s.redirectToReact)
 	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
-	mux.HandleFunc("POST /api/login", s.loginHandler)
-	mux.HandleFunc("POST /api/user/create", s.createUserHandler)
 
-	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
-	mux.HandleFunc("GET /api/user/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
+	mux.HandleFunc("POST /api/auth/login", s.loginHandler)
 
-	mux.HandleFunc("POST /api/server/create", s.WithAuthUser(s.createNewServer))
-	mux.HandleFunc("GET /api/server/{serverid}", s.GetServerInformation)
-	mux.HandleFunc("GET /api/server/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
-	mux.HandleFunc(
-		"GET /api/server/{serverid}/members",
-		s.WithAuthUser(s.GetServerMembersHandler),
-	)
-	mux.HandleFunc("GET /api/server/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
+	mux.HandleFunc("POST /api/users", s.createUserHandler)
+	mux.HandleFunc("GET /api/users/{userid}", s.GetUserHandler)
+	mux.HandleFunc("GET /api/users/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
+
+	mux.HandleFunc("POST /api/servers", s.WithAuthUser(s.createNewServer))
+	mux.HandleFunc("GET /api/servers/{serverid}", s.GetServerInformation)
+	mux.HandleFunc("GET /api/servers/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
+	mux.HandleFunc("GET /api/servers/{serverid}/members", s.WithAuthUser(s.GetServerMembersHandler))
+	mux.HandleFunc("GET /api/servers/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(s.logEndpoint(mux))
