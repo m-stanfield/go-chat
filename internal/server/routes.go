@@ -68,8 +68,23 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/servers/{serverid}/members", s.WithAuthUser(s.GetServerMembersHandler))
 	mux.HandleFunc("GET /api/servers/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
 
+	mux.HandleFunc("GET /api/channels/{channelid}", s.GetChannel)
+	mux.HandleFunc("GET /api/channels/{channelid}/messages", s.GetChannelMessages)
+	mux.HandleFunc("POST /api/channels/{channelid}/messages", s.GetChannelMessages)
+
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(s.logEndpoint(mux))
+}
+
+func (s *Server) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
+func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
 
 func (s *Server) logEndpoint(next http.Handler) http.Handler {
