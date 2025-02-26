@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -479,5 +480,57 @@ func Test_GetMessageInChannel_InvalidChannel(t *testing.T) {
 
 	if len(messages) != 0 {
 		t.Fatalf("incorrect number of messages: got %d expected %d", len(messages), number)
+	}
+}
+
+func Test_CreateServer(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	expectedServerName := "u2jjklfdsa"
+	ownerid := Id(118)
+
+	id, err := db.CreateServer(ownerid, expectedServerName)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	server, err := db.GetServer(id)
+	if server.ServerId != id {
+		t.Fatalf("TestA: invalid id. expected: %d got: %d", id, server.ServerId)
+	}
+	if server.ServerName != expectedServerName {
+		t.Fatalf("TestA: invalid username expected: %s got: %s", expectedServerName, server.ServerName)
+	}
+	if server.OwnerId != ownerid {
+		t.Fatalf("TestA: invalid owner id expected: %d got: %d", ownerid, server.OwnerId)
+	}
+}
+
+func Test_GetUserIDFromUserName(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	username := "u1"
+	id, err := db.GetUserIDFromUserName(username)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if id != 1 {
+		t.Fatalf("TestA: invalid id. expected: %d got: %d", 1, id)
+	}
+}
+
+func Test_UpdateUserSessionToken(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	id := Id(1)
+	start_time := time.Now()
+	val, expiretime, err := db.UpdateUserSessionToken(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if val == "" {
+		t.Fatalf("TestA: invalid token value")
+	}
+	if expiretime.Before(start_time) {
+		t.Fatalf("TestA: invalid expire time")
 	}
 }
