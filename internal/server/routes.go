@@ -42,6 +42,15 @@ type SubmittedMessage struct {
 	Message   string      `json:"message"`
 }
 
+func (s *Server) getUserIdFromContext(r *http.Request) (database.Id, error) {
+	val := r.Context().Value("userid")
+	userid, err := database.ParseStringToID(val.(string))
+	if err != nil {
+		return database.Id(0), err
+	}
+	return userid, nil
+}
+
 // redirect so I only have to remember one port during development
 func (s *Server) redirectToReact(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "http://localhost:5173", http.StatusTemporaryRedirect)
