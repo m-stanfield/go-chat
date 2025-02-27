@@ -409,7 +409,7 @@ func Test_UpdateChannelName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TestA: err: %v", err)
 	}
-	err = db.UpdateChannelName(user.ChannelId, newChannelName)
+	err = db.UpdateChannel(user.ChannelId, newChannelName)
 	newuser, err := db.GetChannel(id)
 	if err != nil {
 		t.Fatalf("TestA: err: %v", err)
