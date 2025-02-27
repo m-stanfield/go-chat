@@ -107,7 +107,7 @@ func (s *TestServer) getLoginCookie(username, password string) (*http.Cookie, er
 
 	// Send the login POST request
 	resp, err := s.server.Client().Post(
-		s.server.URL+"/api/login",
+		s.server.URL+"/api/auth/login",
 		"application/json",
 		bytes.NewBuffer(loginData),
 	)
@@ -134,7 +134,7 @@ func (s *TestServer) getLoginCookie(username, password string) (*http.Cookie, er
 func TestCreateNewServer_Error_ShortName(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/create"
+	endpoint := "/api/servers"
 	payload := map[string]string{"servername": "te"}
 	resp, err := s.sendAuthRequest(http.MethodPost, endpoint, payload, nil, nil)
 	if err != nil {
@@ -149,7 +149,7 @@ func TestCreateNewServer_Error_ShortName(t *testing.T) {
 func TestCreateNewServer_Error_LongName(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/create"
+	endpoint := "/api/servers"
 
 	payload := map[string]string{
 		"servername": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
@@ -164,7 +164,7 @@ func TestCreateNewServer_Error_LongName(t *testing.T) {
 func TestCreateNewServer_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/create"
+	endpoint := "/api/servers"
 	payload := map[string]string{"servername": "testserver"}
 	expected_server_id := database.Id(3)
 	resp, _ := s.sendAuthRequest(http.MethodPost, endpoint, payload, nil, nil)
@@ -186,7 +186,7 @@ func TestCreateNewServer_Valid(t *testing.T) {
 	}
 	getresp, err := s.sendRequest(
 		http.MethodGet,
-		"/api/server/"+strconv.Itoa(int(expected_server_id)),
+		"/api/servers/"+strconv.Itoa(int(expected_server_id)),
 		nil,
 	)
 	if err != nil {
@@ -210,7 +210,7 @@ func TestCreateNewServer_Valid(t *testing.T) {
 func TestGetUser_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/user/1"
+	endpoint := "/api/users/1"
 	resp, _ := s.sendRequest(http.MethodGet, endpoint, nil)
 	// Assertions
 	if resp.StatusCode != http.StatusOK {
@@ -235,7 +235,7 @@ func TestGetUser_Valid(t *testing.T) {
 func TestGetUser_Invalid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/user/100"
+	endpoint := "/api/users/100"
 	resp, _ := s.sendRequest(http.MethodGet, endpoint, nil)
 	// Assertions
 	if resp.StatusCode != http.StatusNotFound {
@@ -246,7 +246,7 @@ func TestGetUser_Invalid(t *testing.T) {
 func TestCreateUser(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/user/create"
+	endpoint := "/api/users"
 	payload := map[string]string{"username": "new_user", "password": "new_user_password"}
 	resp, _ := s.sendRequest(http.MethodPost, endpoint, payload)
 	// Assertions
@@ -288,7 +288,7 @@ func TestCreateUser(t *testing.T) {
 func TestLogin_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/login"
+	endpoint := "/api/auth/login"
 	payload := map[string]string{"username": "u1", "password": "1"}
 	resp, _ := s.sendRequest(http.MethodPost, endpoint, payload)
 	// Assertions
@@ -315,7 +315,7 @@ func TestLogin_Valid(t *testing.T) {
 func TestLogin_Invalid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/login"
+	endpoint := "/api/auth/login"
 	payload := map[string]string{"username": "u1", "password": "notcorrectpassword"}
 	resp, _ := s.sendRequest(http.MethodPost, endpoint, payload)
 	// Assertions
@@ -327,7 +327,7 @@ func TestLogin_Invalid(t *testing.T) {
 func TestGetServerChannels_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/user/1/servers"
+	endpoint := "/api/users/1/servers"
 	payload := map[string]string{"serverid": "1"}
 	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, payload, nil, nil)
 	if err != nil {
@@ -362,7 +362,7 @@ func TestGetServerChannels_Valid(t *testing.T) {
 func TestGetServerChannels_Unauthed(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/user/1/servers"
+	endpoint := "/api/users/1/servers"
 	payload := map[string]string{"serverid": "1"}
 	unauthed_user := "u2"
 	password := "2"
@@ -378,7 +378,7 @@ func TestGetServerChannels_Unauthed(t *testing.T) {
 func TestGetServerInformation_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/1"
+	endpoint := "/api/servers/1"
 	resp, err := s.sendRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		t.Fatalf("error creating session. Err: %v", err)
@@ -411,7 +411,7 @@ func TestGetServerInformation_Valid(t *testing.T) {
 func TestGetServerChannels(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/1/channels"
+	endpoint := "/api/servers/1/channels"
 	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("error creating session. Err: %v", err)
@@ -472,7 +472,7 @@ func TestGetServerChannels(t *testing.T) {
 func TestGetServerMessages(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/1/messages"
+	endpoint := "/api/servers/1/messages"
 	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("error creating session. Err: %v", err)
@@ -506,7 +506,7 @@ func TestGetServerMessages(t *testing.T) {
 func TestGetServerMembers_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/1/members"
+	endpoint := "/api/servers/1/members"
 	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("error creating session. Err: %v", err)
