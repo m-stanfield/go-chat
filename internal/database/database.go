@@ -32,7 +32,7 @@ type Service interface {
 	GetChannelsOfServer(serverid Id) ([]Channel, error)
 	AddChannel(serverid Id, channelname string) (Id, error)
 	GetChannel(channelid Id) (Channel, error)
-	UpdateChannelName(userid Id, username string) error
+	UpdateChannel(channelid Id, username string) error
 	GetMessage(messageid Id) (Message, error)
 	AddMessage(channelid Id, userid Id, message string) (Id, error)
 	// UpdateMessage(messageid Id, message string) error
@@ -519,11 +519,11 @@ func (r *service) GetChannel(channelid Id) (Channel, error) {
 	return channel, nil
 }
 
-func (r *service) UpdateChannelName(userid Id, username string) error {
+func (r *service) UpdateChannel(channelid Id, new_server_name string) error {
 	_, err := r.conn.Exec(
-		"UPDATE ChannelTable SET channelname = ? WHERE channelid=? ",
-		username,
-		userid,
+		"UPDATE ChannelTable SET channelname = ? WHERE channelid = ? ",
+		new_server_name,
+		channelid,
 	)
 	return err
 }
