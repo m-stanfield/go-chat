@@ -30,6 +30,7 @@
           # The Nix packages provided in the environment  
           hardeningDisable = ["fortify"];
           packages = with pkgs; [  
+            sqlitebrowser
             go_1_23 # Go 1.22  
             gotools # Go tools like goimports, godoc, and others  
             delve
