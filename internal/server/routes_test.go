@@ -267,7 +267,7 @@ func TestCreateUser(t *testing.T) {
 	if create_result.UserId != 4 {
 		t.Errorf("expected userid to be %v; got %v", 4, create_result.UserId)
 	}
-	user_resp, err := s.sendRequest(http.MethodGet, "/api/user/4", nil)
+	user_resp, err := s.sendRequest(http.MethodGet, "/api/users/4", nil)
 	if err != nil {
 		t.Fatalf("error getting user info. Err: %v", err)
 	}

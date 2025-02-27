@@ -44,9 +44,12 @@ type SubmittedMessage struct {
 
 func (s *Server) getUserIdFromContext(r *http.Request) (database.Id, error) {
 	val := r.Context().Value("userid")
-	userid, err := database.ParseStringToID(val.(string))
-	if err != nil {
-		return database.Id(0), err
+	if val == nil {
+		return database.Id(0), errors.New("unable to get userid from context")
+	}
+	userid, ok := val.(database.Id)
+	if !ok {
+		return database.Id(0), errors.New("unable to get userid from context")
 	}
 	return userid, nil
 }
@@ -203,7 +206,7 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers
 		w.Header().
-			Set("Access-Control-Allow-Origin", "http://localhost:5173")
+			Set("Access-Control-Allow-Origin", "*")
 			// Replace "*" with specific origins if needed
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 		w.Header().
@@ -315,7 +318,7 @@ func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err := r.ParseForm()
+	err = r.ParseForm()
 	if err != nil {
 		http.Error(w, "Unable to parse form", http.StatusBadRequest)
 		return
