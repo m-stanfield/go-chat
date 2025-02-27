@@ -310,10 +310,9 @@ func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	val := r.Context().Value("userid")
-	userid, ok := val.(database.Id)
-	if !ok {
-		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+	userid, err := s.getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err := r.ParseForm()
@@ -447,10 +446,9 @@ func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	val := r.Context().Value("userid")
-	userid, ok := val.(database.Id)
-	if !ok {
-		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+	userid, err := s.getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	userinfo, err := s.db.GetUser(userid)
@@ -494,10 +492,9 @@ func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
 	}
 	userid := database.Id(userid_int)
 
-	val := r.Context().Value("userid")
-	autheduserid, ok := val.(database.Id)
-	if !ok {
-		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+	autheduserid, err := s.getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if userid != autheduserid {
@@ -582,10 +579,9 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	val := r.Context().Value("userid")
-	userid, ok := val.(database.Id)
-	if !ok {
-		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+	userid, err := s.getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	isServerMember, err := s.db.IsUserInServer(userid, database.Id(serverid))
@@ -706,10 +702,9 @@ func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
-	val := r.Context().Value("userid")
-	passinfo, ok := val.(database.Id)
-	if !ok {
-		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+	passinfo, err := s.getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	userinfo, err := s.db.GetUser(passinfo)
