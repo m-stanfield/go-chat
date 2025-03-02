@@ -604,3 +604,23 @@ func Test_UpdateServer_InvalidPermissions(t *testing.T) {
 
 }
 
+func Test_DeleteServer_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/servers/1"
+	resp, err := s.sendAuthRequest(http.MethodDelete, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	getresp, err := s.sendRequest(http.MethodGet, endpoint, nil)
+	if err == nil {
+		t.Fatalf("error getting server info. Err: %v", err)
+	}
+	if getresp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected status OK; got %v", getresp.Status)
+	}
+
+}

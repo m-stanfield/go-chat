@@ -145,7 +145,32 @@ func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) DeleteServer(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	userid, err := s.getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	serverid_str := r.PathValue("serverid")
+	serverid, err := strconv.Atoi(serverid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	if serverid <= 0 {
+		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+	server_info, err := s.db.GetServer(database.Id(serverid))
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	if server_info.OwnerId != userid {
+		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+		return
+	}
+	s.db.DeleteServer(database.Id(serverid))
 }
 
 func (s *Server) UpdateChannel(w http.ResponseWriter, r *http.Request) {
