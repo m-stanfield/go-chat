@@ -39,6 +39,7 @@ type Service interface {
 	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
 	GetServer(serverid Id) (Server, error)
 	CreateServer(ownerid Id, servername string) (Id, error)
+	DeleteServer(serverid Id) error
 	UpdateServerName(serverid Id, servername string) error
 	IsUserInServer(userid Id, serverid Id) (bool, error)
 
@@ -416,6 +417,9 @@ func (r *service) GetUsersOfServer(serverid Id) ([]User, error) {
 	return names, nil
 }
 
+func (r *service) DeleteServer(serverid Id) error {
+	return errors.New("not implemented")
+}
 func (r *service) GetServersOfUser(userid Id) ([]Server, error) {
 	rows, err := r.conn.Query(
 		"SELECT S.serverid, S.ownerid, S.servername FROM UsersServerTable as U INNER JOIN ServerTable as S ON U.serverid = S.serverid WHERE U.userid = ?",
