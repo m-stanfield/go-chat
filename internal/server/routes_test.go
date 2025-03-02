@@ -589,3 +589,18 @@ func TestUpdateServer_Valid(t *testing.T) {
 	}
 
 }
+func Test_UpdateServer_InvalidPermissions(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/servers/1"
+	new_server_name := "new_server_name"
+	payload := map[string]string{"servername": new_server_name}
+	username := "u2"
+	password := "2"
+	resp, err := s.sendAuthRequest(http.MethodPatch, endpoint, payload, &username, &password)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("got unexpected status code Err: %v", err)
+	}
+
+}
+
