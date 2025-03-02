@@ -40,8 +40,10 @@ func (s *TestServer) buildRequest(
 	var jsonData []byte = nil
 	var buffer io.Reader = nil
 	if len(payload) > 0 {
-		jsonData, _ = json.Marshal(payload)
-		buffer = bytes.NewBuffer(jsonData)
+		if http.MethodPost == method || http.MethodPatch == method {
+			jsonData, _ = json.Marshal(payload)
+			buffer = bytes.NewBuffer(jsonData)
+		}
 	}
 	req, err := http.NewRequest(method, s.server.URL+endpoint, buffer)
 	if err != nil {
@@ -541,4 +543,49 @@ func TestGetServerMembers_Valid(t *testing.T) {
 	if result.Users[1].UserName != "u3" {
 		t.Errorf("expected user name to be %v; got %v", "u2", result.Users[1].UserName)
 	}
+}
+
+func TestUpdateServer_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/servers/1"
+	new_server_name := "new_server_name"
+	payload := map[string]string{"servername": new_server_name}
+	resp, err := s.sendAuthRequest(http.MethodPatch, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	getresp, err := s.sendRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		t.Fatalf("error getting server info. Err: %v", err)
+	}
+	if getresp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", getresp.Status)
+	}
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+
+	result := struct {
+		ServerId   database.Id `json:"serverid"`
+		OwnerId    database.Id `json:"ownerid"`
+		ServerName string      `json:"servername"`
+	}{}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.ServerName != new_server_name {
+		t.Errorf("expected server name to be %v; got %v", "new_server_name", result.ServerName)
+	}
+
 }
