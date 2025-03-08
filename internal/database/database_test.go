@@ -556,3 +556,101 @@ func Test_GetMessageInChannel_InvalidChannel(t *testing.T) {
 		t.Fatalf("incorrect number of messages: got %d expected %d", len(messages), number)
 	}
 }
+
+func Test_CreateServer(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	expectedServerName := "u2jjklfdsa"
+	ownerid := Id(118)
+
+	id, err := db.CreateServer(ownerid, expectedServerName)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	server, err := db.GetServer(id)
+	if server.ServerId != id {
+		t.Fatalf("TestA: invalid id. expected: %d got: %d", id, server.ServerId)
+	}
+	if server.ServerName != expectedServerName {
+		t.Fatalf("TestA: invalid username expected: %s got: %s", expectedServerName, server.ServerName)
+	}
+	if server.OwnerId != ownerid {
+		t.Fatalf("TestA: invalid owner id expected: %d got: %d", ownerid, server.OwnerId)
+	}
+}
+
+func Test_GetUserIDFromUserName(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	username := "u1"
+	id, err := db.GetUserIDFromUserName(username)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if id != 1 {
+		t.Fatalf("TestA: invalid id. expected: %d got: %d", 1, id)
+	}
+}
+
+func Test_UpdateUserSessionToken(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	id := Id(1)
+	start_time := time.Now()
+	val, expiretime, err := db.UpdateUserSessionToken(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if val == "" {
+		t.Fatalf("TestA: invalid token value")
+	}
+	if expiretime.Before(start_time) {
+		t.Fatalf("TestA: invalid expire time")
+	}
+}
+
+func Test_GetUserLoginInfoFromToken(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	id := Id(1)
+	token, _, err := db.UpdateUserSessionToken(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	userid, err := db.GetUserLoginInfoFromToken(token)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if userid.UserId != id {
+		t.Fatalf("TestA: invalid id. expected: %d got: %d", id, userid.UserId)
+	}
+}
+
+func Test_IsUserInServer_Valid(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	userid := Id(121)
+	serverid := Id(1)
+	inserver, err := db.IsUserInServer(userid, serverid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if inserver {
+		t.Fatalf("TestA: invalid in server")
+	}
+}
+
+func Test_IsUserInServer_InValid(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	userid := Id(1)
+	serverid := Id(1)
+	_, err := db.IsUserInServer(userid, serverid)
+	inserver, err := db.IsUserInServer(userid, serverid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if !inserver {
+		t.Fatalf("TestA: valid in server should be invalid")
+	}
+}
