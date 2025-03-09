@@ -438,7 +438,8 @@ func (r *service) GetUsersOfServer(serverid Id) ([]User, error) {
 }
 
 func (r *service) DeleteServer(serverid Id) error {
-	return errors.New("not implemented")
+	_, err := r.conn.Exec("DELETE FROM ServerTable WHERE serverid = ?", serverid)
+	return err
 }
 
 func (r *service) GetServersOfUser(userid Id) ([]Server, error) {
@@ -563,7 +564,9 @@ func (r *service) GetServer(serverid Id) (Server, error) {
 	}
 	defer rows.Close()
 	var server Server
+	server_found := false
 	for rows.Next() {
+		server_found = true
 		err := rows.Scan(
 			&server.ServerId,
 			&server.OwnerId,
@@ -572,6 +575,9 @@ func (r *service) GetServer(serverid Id) (Server, error) {
 		if err != nil {
 			return Server{}, err
 		}
+	}
+	if !server_found {
+		return Server{}, ErrRecordNotFound
 	}
 	return server, nil
 }
