@@ -72,7 +72,8 @@ CREATE TABLE IF NOT EXISTS "ChannelMessageTable" (
 	"timestamp"	DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now')),
 	"editted"	INTEGER,
 	"edittimestamp"	DATETIME,
-	FOREIGN KEY("userid","channelid") REFERENCES "UsersChannelTable"("userid","channelid"),
+	FOREIGN KEY("userid") REFERENCES "UsersChannelTable"("userid"),
+	FOREIGN KEY("channelid") REFERENCES "UsersChannelTable"("channelid"),
 	PRIMARY KEY("messageid" AUTOINCREMENT)
 );
 DROP TABLE IF EXISTS "UsersChannelTable";
@@ -92,5 +93,10 @@ DROP TRIGGER IF EXISTS "UpdateUserNicknameLog";
 CREATE TRIGGER UpdateUserNicknameLog AFTER UPDATE OF nickname ON UsersServerTable 
 BEGIN
 	INSERT INTO UserNicknameLogTable (userid, serverid, nickname) VALUES (new.userid, new.serverid, new.nickname);
+END;
+
+CREATE TRIGGER UpdateMessageLog AFTER UPDATE OF contents ON ChannelMessageTable 
+BEGIN
+	UPDATE ChannelMessageTable SET editted = 1, edittimestamp = strftime('%Y-%m-%d %H:%M:%f', 'now') WHERE messageid = old.messageid;
 END;
 COMMIT;

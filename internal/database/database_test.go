@@ -51,6 +51,80 @@ func setup() *service {
 	return &service{db: db, conn: db}
 }
 
+func Test_DeleteMessage(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	message := "1111"
+	id, err := db.AddMessage(1, 1, message)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	err = db.DeleteMessage(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	_, err = db.GetMessage(id)
+	if !errors.Is(err, ErrRecordNotFound) {
+		t.Fatalf("TestA: err: %v", err)
+	}
+}
+
+func Test_GetMessage_InvalidId(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	_, err := db.GetMessage(100000000)
+	if !errors.Is(err, ErrRecordNotFound) {
+		t.Fatalf("TestA: err: %v", err)
+	}
+}
+
+func Test_UpdateMessage(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	initialMessage := "1111"
+	newMessage := "u2jklfdsa"
+	start_time := time.Now()
+
+	id, err := db.AddMessage(1, 1, initialMessage)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	time.Sleep(1 * time.Millisecond)
+	message, err := db.GetMessage(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	err = db.UpdateMessage(message.MessageId, newMessage)
+	newmessage, err := db.GetMessage(id)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if newmessage.Contents != newMessage {
+		t.Fatalf(
+			"TestA: invalmessage message expected: %s got: %s",
+			newMessage,
+			newmessage.Contents,
+		)
+	}
+	if newmessage.MessageId != id {
+		t.Fatalf("TestA: invalmessage message expected: %d got: %d", id, newmessage.MessageId)
+	}
+	if newmessage.Timestamp != message.Timestamp {
+		t.Fatalf(
+			"TestA: invalmessage message expected: %v got: %v",
+			start_time,
+			newmessage.Timestamp,
+		)
+	}
+	if !newmessage.EdittedTimeStamp.After(message.Timestamp) {
+		t.Fatalf(
+			"TestA: invalmessage message expected: %v got: %v",
+			start_time,
+			newmessage.EdittedTimeStamp,
+		)
+	}
+}
+
 func Test_GetUser(t *testing.T) {
 	db := setup()
 	expectedUsername := "u1"
