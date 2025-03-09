@@ -587,8 +587,8 @@ func TestUpdateServer_Valid(t *testing.T) {
 	if result.ServerName != new_server_name {
 		t.Errorf("expected server name to be %v; got %v", "new_server_name", result.ServerName)
 	}
-
 }
+
 func Test_UpdateServer_InvalidPermissions(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
@@ -601,7 +601,6 @@ func Test_UpdateServer_InvalidPermissions(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("got unexpected status code Err: %v", err)
 	}
-
 }
 
 func Test_DeleteServer_Valid(t *testing.T) {
@@ -616,11 +615,10 @@ func Test_DeleteServer_Valid(t *testing.T) {
 		t.Errorf("expected status OK; got %v", resp.Status)
 	}
 	getresp, err := s.sendRequest(http.MethodGet, endpoint, nil)
-	if err == nil {
+	if err != nil {
 		t.Fatalf("error getting server info. Err: %v", err)
 	}
-	if getresp.StatusCode != http.StatusBadRequest {
+	if getresp.StatusCode != http.StatusNotFound {
 		t.Errorf("expected status OK; got %v", getresp.Status)
 	}
-
 }

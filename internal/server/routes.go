@@ -89,12 +89,21 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("PATCH /api/channels/{channelid}", s.WithAuthUser(s.UpdateChannel))
 	mux.HandleFunc("DELETE /api/channels/{channelid}", s.WithAuthUser(s.DeleteChannel))
 	mux.HandleFunc("POST /api/channels/{channelid}/members", s.WithAuthUser(s.AddChannelMember))
-	mux.HandleFunc("DELETE /api/channels/{channelid}/members/{userid}", s.WithAuthUser(s.RemoveChannelMember))
+	mux.HandleFunc(
+		"DELETE /api/channels/{channelid}/members/{userid}",
+		s.WithAuthUser(s.RemoveChannelMember),
+	)
 
 	mux.HandleFunc("GET /api/channels/{channelid}/messages", s.GetChannelMessages)
 	mux.HandleFunc("POST /api/channels/{channelid}/messages", s.CreateChannelMessage)
-	mux.HandleFunc("PATCH /api/channels/{channelid}/messages/{messageid}", s.WithAuthUser(s.UpdateMessage))
-	mux.HandleFunc("DELETE /api/channels/{channelid}/messages/{messageid}", s.WithAuthUser(s.DeleteMessage))
+	mux.HandleFunc(
+		"PATCH /api/channels/{channelid}/messages/{messageid}",
+		s.WithAuthUser(s.UpdateMessage),
+	)
+	mux.HandleFunc(
+		"DELETE /api/channels/{channelid}/messages/{messageid}",
+		s.WithAuthUser(s.DeleteMessage),
+	)
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(s.logEndpoint(mux))
@@ -141,7 +150,6 @@ func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error: unable to update server name", http.StatusBadRequest)
 		return
 	}
-
 }
 
 func (s *Server) DeleteServer(w http.ResponseWriter, r *http.Request) {
@@ -170,7 +178,11 @@ func (s *Server) DeleteServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
 		return
 	}
-	s.db.DeleteServer(database.Id(serverid))
+	err = s.db.DeleteServer(database.Id(serverid))
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
 }
 
 func (s *Server) UpdateChannel(w http.ResponseWriter, r *http.Request) {
@@ -196,6 +208,7 @@ func (s *Server) DeleteMessage(w http.ResponseWriter, r *http.Request) {
 func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
+
 func (s *Server) DeleteChannel(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
@@ -207,9 +220,11 @@ func (s *Server) CreateChannel(w http.ResponseWriter, r *http.Request) {
 func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
+
 func (s *Server) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
+
 func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
@@ -595,6 +610,11 @@ func (s *Server) GetServerInformation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	server, err := s.db.GetServer(database.Id(serverid))
+	if errors.Is(err, database.ErrRecordNotFound) {
+		// TODO: figure out proper method for valid resopnse but no data
+		http.Error(w, "server not found", http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		http.Error(w, "invalid request: unable to find server", http.StatusNotFound)
 		return
