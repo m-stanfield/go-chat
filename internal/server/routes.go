@@ -295,7 +295,19 @@ func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error: unable to locate channel", http.StatusBadRequest)
 		return
 	}
-	jsonResp, err := json.Marshal(channel_info)
+
+	payload := struct {
+		ChannelId   database.Id `json:"channelid"`
+		ServerId    database.Id `json:"serverid"`
+		ChannelName string      `json:"channelname"`
+		Timestamp   time.Time   `json:"timestamp"`
+	}{
+		ChannelId:   channel_info.ChannelId,
+		ServerId:    channel_info.ServerId,
+		ChannelName: channel_info.ChannelName,
+		Timestamp:   channel_info.Timestamp,
+	}
+	jsonResp, err := json.Marshal(payload)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
 		return
