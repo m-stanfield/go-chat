@@ -85,7 +85,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/servers/{serverid}/members", s.WithAuthUser(s.GetServerMembersHandler))
 	mux.HandleFunc("GET /api/servers/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
 
-	mux.HandleFunc("GET /api/channels/{channelid}", s.GetChannel)
+	mux.HandleFunc("GET /api/channels/{channelid}", s.WithAuthUser(s.GetChannel))
 	mux.HandleFunc("PATCH /api/channels/{channelid}", s.WithAuthUser(s.UpdateChannel))
 	mux.HandleFunc("DELETE /api/channels/{channelid}", s.WithAuthUser(s.DeleteChannel))
 	mux.HandleFunc("POST /api/channels/{channelid}/members", s.WithAuthUser(s.AddChannelMember))
@@ -186,7 +186,51 @@ func (s *Server) DeleteServer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UpdateChannel(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	channelid_str := r.PathValue("channelid")
+	channelid, err := strconv.Atoi(channelid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	if channelid <= 0 {
+		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+	channel_info, err := s.db.GetChannel(database.Id(channelid))
+	if err != nil {
+		http.Error(w, "error: unable to locate channel", http.StatusBadRequest)
+		return
+	}
+	server_info, err := s.db.GetServer(channel_info.ServerId)
+	if server_info.OwnerId != userid {
+		http.Error(w, "error: user not owner of channel", http.StatusBadRequest)
+		return
+	}
+
+	new_channel_name := struct {
+		UpdatedChannelName string `json:"channelname"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&new_channel_name)
+	if err != nil {
+		http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+		return
+	}
+	err = s.db.UpdateChannel(database.Id(channelid), new_channel_name.UpdatedChannelName)
+	if err != nil {
+		http.Error(w, "error: unable to update channel", http.StatusBadRequest)
+		return
+
+	}
 }
 
 func (s *Server) AddChannelMember(w http.ResponseWriter, r *http.Request) {
@@ -226,7 +270,40 @@ func (s *Server) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	_, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	channelid_str := r.PathValue("channelid")
+	channelid, err := strconv.Atoi(channelid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	if channelid <= 0 {
+		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+	channel_info, err := s.db.GetChannel(database.Id(channelid))
+	if err != nil {
+		http.Error(w, "error: unable to locate channel", http.StatusBadRequest)
+		return
+	}
+	jsonResp, err := json.Marshal(channel_info)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
 }
 
 func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) {
