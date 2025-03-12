@@ -42,7 +42,7 @@ type SubmittedMessage struct {
 	Message   string      `json:"message"`
 }
 
-func (s *Server) getUserIdFromContext(r *http.Request) (database.Id, error) {
+func getUserIdFromContext(r *http.Request) (database.Id, error) {
 	val := r.Context().Value("userid")
 	if val == nil {
 		return database.Id(0), errors.New("unable to get userid from context")
@@ -110,7 +110,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 }
 
 func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) {
-	userid, err := s.getUserIdFromContext(r)
+	userid, err := getUserIdFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -153,7 +153,7 @@ func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) DeleteServer(w http.ResponseWriter, r *http.Request) {
-	userid, err := s.getUserIdFromContext(r)
+	userid, err := getUserIdFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -393,7 +393,7 @@ func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	userid, err := s.getUserIdFromContext(r)
+	userid, err := getUserIdFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -529,7 +529,7 @@ func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userid, err := s.getUserIdFromContext(r)
+	userid, err := getUserIdFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -575,7 +575,7 @@ func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
 	}
 	userid := database.Id(userid_int)
 
-	autheduserid, err := s.getUserIdFromContext(r)
+	autheduserid, err := getUserIdFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -667,7 +667,7 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	userid, err := s.getUserIdFromContext(r)
+	userid, err := getUserIdFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -790,7 +790,7 @@ func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
-	passinfo, err := s.getUserIdFromContext(r)
+	passinfo, err := getUserIdFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
