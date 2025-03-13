@@ -42,6 +42,8 @@ type Service interface {
 	GetChannel(channelid Id) (Channel, error)
 	GetChannelsOfServer(serverid Id) ([]Channel, error)
 	UpdateChannel(channelid Id, username string) error
+	AddUserToChannel(channelid Id, userid Id) error
+	IsUserInChannel(userid Id, channelid Id) (bool, error)
 
 	GetMessage(messageid Id) (Message, error)
 	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
@@ -482,6 +484,35 @@ func (r *service) GetChannelsOfServer(serverid Id) ([]Channel, error) {
 		servers = append(servers, s)
 	}
 	return servers, nil
+}
+
+func (r *service) IsUserInChannel(userid Id, channelid Id) (bool, error) {
+	query := `SELECT COUNT(1) FROM UsersChannelTable WHERE channelid = ? AND userid = ?`
+	var count int
+	err := r.db.QueryRow(query, channelid, userid).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (r *service) AddUserToChannel(userid Id, channelid Id) error {
+	d, err := r.conn.Exec(
+		"INSERT INTO UsersChannelTable ( userid, channelid) VALUES ( ?, ?)",
+		userid,
+		channelid,
+	)
+	if err != nil {
+		return fmt.Errorf("add user - userid: %d err: %w", userid, err)
+	}
+	id, err := d.LastInsertId()
+	if err != nil {
+		return err
+	}
+	if id < 0 {
+		return ErrNegativeRowIndex
+	}
+	return nil
 }
 
 func (r *service) AddChannel(serverid Id, channelname string) (Id, error) {
