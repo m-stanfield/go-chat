@@ -109,6 +109,77 @@ func (s *Server) RegisterRoutes() http.Handler {
 	return s.corsMiddleware(s.logEndpoint(mux))
 }
 
+type HttpErrorInfo struct {
+	StatusCode int
+	Message    string
+}
+
+type ServerVerification struct {
+	Validated bool
+	UserId    database.Id
+	Server    database.Server
+	Httperr   *HttpErrorInfo
+}
+
+func (s *Server) verifyServerOwner(r *http.Request) ServerVerification {
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		return ServerVerification{
+			Validated: false,
+			Httperr: &HttpErrorInfo{
+				StatusCode: http.StatusInternalServerError,
+				Message:    "unable to get userid from context",
+			},
+		}
+	}
+	serverid_str := r.PathValue("serverid")
+	serverid, err := strconv.Atoi(serverid_str)
+	if err != nil {
+		return ServerVerification{
+			Validated: false,
+			Httperr: &HttpErrorInfo{
+				StatusCode: http.StatusBadRequest,
+				Message:    "invalid request: unable to parse server id",
+			},
+		}
+	}
+	if serverid <= 0 {
+		return ServerVerification{
+			Validated: false,
+			Httperr: &HttpErrorInfo{
+				StatusCode: http.StatusBadRequest,
+				Message:    "invalid request: invalid server id",
+			},
+		}
+	}
+	server_info, err := s.db.GetServer(database.Id(serverid))
+	if err != nil {
+		return ServerVerification{
+			Validated: false,
+			Httperr: &HttpErrorInfo{
+				StatusCode: http.StatusBadRequest,
+				Message:    "error: unable to locate server",
+			},
+		}
+	}
+	if server_info.OwnerId != userid {
+		return ServerVerification{
+			Validated: false,
+			Httperr: &HttpErrorInfo{
+				StatusCode: http.StatusBadRequest,
+				Message:    "error: user not owner of server",
+			},
+		}
+	}
+
+	return ServerVerification{
+		Validated: true,
+		UserId:    userid,
+		Server:    server_info,
+		Httperr:   nil,
+	}
+}
+
 func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) {
 	userid, err := getUserIdFromContext(r)
 	if err != nil {
