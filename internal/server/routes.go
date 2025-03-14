@@ -89,6 +89,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("PATCH /api/channels/{channelid}", s.WithAuthUser(s.UpdateChannel))
 	mux.HandleFunc("DELETE /api/channels/{channelid}", s.WithAuthUser(s.DeleteChannel))
 	mux.HandleFunc("POST /api/channels/{channelid}/members", s.WithAuthUser(s.AddChannelMember))
+	mux.HandleFunc("GET /api/channels/{channelid}/members", s.WithAuthUser(s.GetChannelMembers))
 	mux.HandleFunc(
 		"DELETE /api/channels/{channelid}/members/{userid}",
 		s.WithAuthUser(s.RemoveChannelMember),
@@ -299,8 +300,129 @@ func (s *Server) UpdateChannel(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) GetChannelMembers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	channelid_str := r.PathValue("channelid")
+	channelid, err := strconv.Atoi(channelid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	if channelid <= 0 {
+		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+	inchannel, err := s.db.IsUserInChannel(userid, database.Id(channelid))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+		return
+	}
+	if !inchannel {
+		http.Error(w, "user not in channel", http.StatusBadRequest)
+		return
+	}
+	users, err := s.db.GetUsersInChannel(database.Id(channelid))
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	// convert users from database.User to server.User
+	newusers := make([]User, len(users))
+	for i, user := range users {
+		newusers[i] = User{
+			UserID:   user.UserId,
+			UserName: user.UserName,
+		}
+	}
+
+	resp := map[string]interface{}{"users": newusers}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
 func (s *Server) AddChannelMember(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	post_data := struct {
+		UserId string `json:"userid"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&post_data)
+	if err != nil {
+		fmt.Printf("error: unable to parse request %s", err)
+		http.Error(w, fmt.Sprintf("error: unable to parse request %s", err), http.StatusBadRequest)
+		return
+	}
+	newuserid_str, err := strconv.Atoi(post_data.UserId)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
+		return
+	}
+	if newuserid_str <= 0 {
+		http.Error(w, "invalid request: invalid user id", http.StatusBadRequest)
+		return
+	}
+	newuserid := database.Id(newuserid_str)
+
+	channelid_str := r.PathValue("channelid")
+	channelid, err := strconv.Atoi(channelid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	if channelid <= 0 {
+		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+	channel, err := s.db.GetChannel(database.Id(channelid))
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	server_info, err := s.db.GetServer(channel.ServerId)
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	if server_info.OwnerId != userid {
+		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+		return
+	}
+	inserver, err := s.db.IsUserInServer(database.Id(newuserid), server_info.ServerId)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+		return
+	}
+	if !inserver {
+		http.Error(w, "user not in server", http.StatusBadRequest)
+		return
+	}
+	err = s.db.AddUserToChannel(database.Id(newuserid), server_info.ServerId)
+	if err != nil {
+		http.Error(w, "error: unable to add user to channel", http.StatusBadRequest)
+		return
+	}
 }
 
 func (s *Server) RemoveChannelMember(w http.ResponseWriter, r *http.Request) {

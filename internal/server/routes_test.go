@@ -663,3 +663,73 @@ func Test_UpdateChannel_Valid(t *testing.T) {
 		t.Errorf("expected server name to be %v; got %v", new_channel_name, result.ChannelName)
 	}
 }
+
+func Test_AddChannelMember_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/members"
+	payload := map[string]string{"userid": "3"}
+	resp, err := s.sendAuthRequest(http.MethodPost, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting server info. Err: %v", err)
+	}
+	if getresp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", getresp.Status)
+	}
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+
+	result := struct {
+		Users []User `json:"users"`
+	}{}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	for _, user := range result.Users {
+		if user.UserID == 3 {
+			return
+		}
+	}
+	t.Errorf("expected user id to be %v; got %v", 3, result.Users)
+}
+
+func TestServer_GetChannelMembers(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/members"
+	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	result := struct {
+		Users []User `json:"users"`
+	}{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.Users[0].UserID != database.Id(1) {
+		t.Errorf("expected user id to be %v; got %v", 1, result.Users[0].UserID)
+	}
+	if result.Users[0].UserName != "u1" {
+		t.Errorf("expected user name to be %v; got %v", "u1", result.Users[0].UserName)
+	}
+}
