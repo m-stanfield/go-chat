@@ -43,6 +43,7 @@ type Service interface {
 	GetChannelsOfServer(serverid Id) ([]Channel, error)
 	UpdateChannel(channelid Id, username string) error
 	AddUserToChannel(channelid Id, userid Id) error
+	GetUsersInChannel(channelid Id) ([]User, error)
 	IsUserInChannel(userid Id, channelid Id) (bool, error)
 
 	GetMessage(messageid Id) (Message, error)
@@ -696,4 +697,25 @@ func (r *service) GetMessagesInChannel(channelid Id, number uint) ([]Message, er
 		messages = append(messages, message)
 	}
 	return messages, nil
+}
+
+func (r *service) GetUsersInChannel(channelid Id) ([]User, error) {
+	rows, err := r.conn.Query(
+		"SELECT U.userid, U.username FROM UsersChannelTable as UC INNER JOIN UserTable as U ON UC.userid = U.userid WHERE UC.channelid = ?",
+		channelid,
+	)
+	if err != nil {
+		return []User{}, err
+	}
+	defer rows.Close()
+	var names []User
+	for rows.Next() {
+		var name User
+		err := rows.Scan(&name.UserId, &name.UserName)
+		if err != nil {
+			return []User{}, err
+		}
+		names = append(names, name)
+	}
+	return names, nil
 }

@@ -712,3 +712,22 @@ func Test_IsUserInChannel_Invalid(t *testing.T) {
 		t.Fatalf("TestA: invalid in server")
 	}
 }
+
+func Test_GetUsersInChannel_Valid(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	serverid := Id(1)
+	users, err := db.GetUsersInChannel(serverid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if len(users) != 1 {
+		t.Fatalf("TestA: invalid number of users")
+	}
+	if users[0].UserId != 1 {
+		t.Fatalf("TestA: invalid user id")
+	}
+	if users[0].UserName != "u1" {
+		t.Fatalf("TestA: invalid user name")
+	}
+}
