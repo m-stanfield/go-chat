@@ -42,23 +42,6 @@ type SubmittedMessage struct {
 	Message   string      `json:"message"`
 }
 
-func getUserIdFromContext(r *http.Request) (database.Id, error) {
-	val := r.Context().Value("userid")
-	if val == nil {
-		return database.Id(0), errors.New("unable to get userid from context")
-	}
-	userid, ok := val.(database.Id)
-	if !ok {
-		return database.Id(0), errors.New("unable to get userid from context")
-	}
-	return userid, nil
-}
-
-// redirect so I only have to remember one port during development
-func (s *Server) redirectToReact(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "http://localhost:5173", http.StatusTemporaryRedirect)
-}
-
 func (s *Server) RegisterRoutes() http.Handler {
 	go s.handleIncomingMessages(incomingChannel)
 	mux := http.NewServeMux()
@@ -110,70 +93,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 	return s.corsMiddleware(s.logEndpoint(mux))
 }
 
-type HttpErrorInfo struct {
-	StatusCode int
-	Message    string
-}
-
-type ServerVerification struct {
-	Validated bool
-	UserId    database.Id
-	Server    database.Server
-}
-
-func (s *Server) verifyServerOwner(r *http.Request) (ServerVerification, *HttpErrorInfo) {
-	userid, err := getUserIdFromContext(r)
-	if err != nil {
-		return ServerVerification{
-				Validated: false,
-			}, &HttpErrorInfo{
-				StatusCode: http.StatusInternalServerError,
-				Message:    "unable to get userid from context",
-			}
-	}
-	serverid_str := r.PathValue("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
-	if err != nil {
-		return ServerVerification{
-				Validated: false,
-			}, &HttpErrorInfo{
-				StatusCode: http.StatusBadRequest,
-				Message:    "invalid request: unable to parse server id",
-			}
-	}
-	if serverid <= 0 {
-		return ServerVerification{
-				Validated: false,
-			},
-			&HttpErrorInfo{
-				StatusCode: http.StatusBadRequest,
-				Message:    "invalid request: invalid server id",
-			}
-	}
-	server_info, err := s.db.GetServer(database.Id(serverid))
-	if err != nil {
-		return ServerVerification{
-				Validated: false,
-			},
-			&HttpErrorInfo{
-				StatusCode: http.StatusBadRequest,
-				Message:    "error: unable to locate server",
-			}
-	}
-	if server_info.OwnerId != userid {
-		return ServerVerification{
-				Validated: false,
-			}, &HttpErrorInfo{
-				StatusCode: http.StatusBadRequest,
-				Message:    "error: user not owner of server",
-			}
-	}
-
-	return ServerVerification{
-		Validated: true,
-		UserId:    userid,
-		Server:    server_info,
-	}, nil
+// redirect so I only have to remember one port during development
+func (s *Server) redirectToReact(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "http://localhost:5173", http.StatusTemporaryRedirect)
 }
 
 func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) {
@@ -508,92 +430,6 @@ func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
-}
-
-func (s *Server) logEndpoint(next http.Handler) http.Handler {
-	counter := 0
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counter = counter + 1
-		start_time := time.Since(startTime)
-		// Proceed with the next handler
-		next.ServeHTTP(w, r)
-		end_time := time.Since(startTime.Add(start_time))
-
-		fmt.Printf(
-			"%d Endpoint hit: %s took %d ms\n",
-			counter,
-			r.URL,
-			end_time.Milliseconds(),
-		)
-	})
-}
-
-func (s *Server) WithAuthUser(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookieName := "token"
-		cookie, err := r.Cookie(cookieName)
-		if err != nil {
-			if err == http.ErrNoCookie {
-				// Handle the case where the cookie is not found
-				http.Error(w, "Token cookie not found", http.StatusUnauthorized)
-				return
-			}
-			// Handle other potential errors
-			http.Error(w, "Error retrieving cookie", http.StatusInternalServerError)
-			return
-		}
-
-		// Access the cookie value
-		token := cookie.Value
-		passwordInfo, err := s.db.GetUserLoginInfoFromToken(token)
-		if err != nil {
-			http.Error(w, "unable to locate password", http.StatusBadRequest)
-			return
-		}
-
-		if !s.validSession(passwordInfo, token) {
-			http.Error(w, "invalid token", http.StatusBadRequest)
-			return
-		}
-		next(w, r.WithContext(context.WithValue(r.Context(), "userid", passwordInfo.UserId)))
-	})
-}
-
-func (s *Server) corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
-		w.Header().
-			Set("Access-Control-Allow-Origin", "*")
-			// Replace "*" with specific origins if needed
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-		w.Header().
-			Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
-		w.Header().
-			Set("Access-Control-Allow-Credentials", "true")
-			// Set to "true" if credentials are required
-
-		// Handle preflight OPTIONS requests
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		// Proceed with the next handler
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (s *Server) validSession(userinfo database.UserLoginInfo, usertoken string) bool {
-	// if no token has been set
-	if userinfo.Token == "" {
-		return false
-	}
-	// if the token has expired
-	if time.Now().After(userinfo.TokenExpireTime) {
-		return false
-	}
-	// if the token is not the same as the one in the database
-	return userinfo.Token == usertoken
 }
 
 func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
