@@ -722,10 +722,26 @@ func (r *service) GetUsersInChannel(channelid Id) ([]User, error) {
 }
 
 func (r *service) RemoveUserFromChannel(channelid Id, userid Id) error {
-	_, err := r.conn.Exec(
+	result, err := r.conn.Exec(
 		"DELETE FROM UsersChannelTable WHERE channelid = ? AND userid = ?",
 		channelid,
 		userid,
 	)
-	return err
+	// check and ensure that at least one row was deleted
+	if err != nil {
+		return fmt.Errorf(
+			"remove user from channel - channelid: %d userid: %d err: %w",
+			channelid,
+			userid,
+			err,
+		)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }

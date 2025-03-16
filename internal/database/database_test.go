@@ -721,13 +721,20 @@ func Test_GetUsersInChannel_Valid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TestA: err: %v", err)
 	}
-	if len(users) != 1 {
+	if len(users) != 2 {
 		t.Fatalf("TestA: invalid number of users")
 	}
 	if users[0].UserId != 1 {
 		t.Fatalf("TestA: invalid user id")
 	}
 	if users[0].UserName != "u1" {
+		t.Fatalf("TestA: invalid user name")
+	}
+
+	if users[1].UserId != 2 {
+		t.Fatalf("TestA: invalid user id")
+	}
+	if users[1].UserName != "u2" {
 		t.Fatalf("TestA: invalid user name")
 	}
 }

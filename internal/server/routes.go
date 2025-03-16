@@ -401,7 +401,16 @@ func (s *Server) RemoveChannelMember(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request: invalid user id", http.StatusBadRequest)
 		return
 	}
-	//_ := database.Id(newuserid_str)
+
+	newuserid := database.Id(newuserid_str)
+	err = s.db.RemoveUserFromChannel(database.Id(channelid), newuserid)
+	if errors.Is(err, database.ErrRecordNotFound) {
+		http.Error(w, "user not in channel", http.StatusBadRequest)
+		return
+	} else if err != nil {
+		http.Error(w, "error: unable to remove user from channel", http.StatusBadRequest)
+		return
+	}
 }
 
 func (s *Server) UpdateMessage(w http.ResponseWriter, r *http.Request) {

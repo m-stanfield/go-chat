@@ -45,7 +45,7 @@ func (s *Server) validSession(userinfo database.UserLoginInfo, usertoken string)
 	return userinfo.Token == usertoken
 }
 
-func (s *Server) getServerFromRequest(r *http.Request) (database.Server, error) {
+func (s *Server) GetServerFromRequest(r *http.Request) (database.Server, error) {
 	serverid_str := r.PathValue("serverid")
 	serverid, err := strconv.Atoi(serverid_str)
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *Server) getServerFromRequest(r *http.Request) (database.Server, error) 
 	return server, nil
 }
 
-func (s *Server) getChannelFromRequest(r *http.Request) (database.Channel, error) {
+func (s *Server) GetChannelFromRequest(r *http.Request) (database.Channel, error) {
 	channelid_str := r.PathValue("channelid")
 	channelid, err := strconv.Atoi(channelid_str)
 	if err != nil {
@@ -77,7 +77,7 @@ func (s *Server) getChannelFromRequest(r *http.Request) (database.Channel, error
 	return channel, nil
 }
 
-func (s *Server) getServerFromChannel(channelid database.Id) (database.Server, error) {
+func (s *Server) GetServerFromChannel(channelid database.Id) (database.Server, error) {
 	channel, err := s.db.GetChannel(channelid)
 	if err != nil {
 		return database.Server{}, err
