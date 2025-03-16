@@ -43,6 +43,7 @@ type Service interface {
 	GetChannelsOfServer(serverid Id) ([]Channel, error)
 	UpdateChannel(channelid Id, username string) error
 	AddUserToChannel(channelid Id, userid Id) error
+	RemoveUserFromChannel(channelid Id, userid Id) error
 	GetUsersInChannel(channelid Id) ([]User, error)
 	IsUserInChannel(userid Id, channelid Id) (bool, error)
 
@@ -718,4 +719,13 @@ func (r *service) GetUsersInChannel(channelid Id) ([]User, error) {
 		names = append(names, name)
 	}
 	return names, nil
+}
+
+func (r *service) RemoveUserFromChannel(channelid Id, userid Id) error {
+	_, err := r.conn.Exec(
+		"DELETE FROM UsersChannelTable WHERE channelid = ? AND userid = ?",
+		channelid,
+		userid,
+	)
+	return err
 }
