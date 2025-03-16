@@ -74,7 +74,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("POST /api/channels/{channelid}/members", s.WithAuthUser(s.AddChannelMember))
 	mux.HandleFunc("GET /api/channels/{channelid}/members", s.WithAuthUser(s.GetChannelMembers))
 	mux.HandleFunc(
-		"DELETE /api/channels/{channelid}/members/{userid}",
+		"DELETE /api/channels/{channelid}/members",
 		s.WithAuthUser(s.RemoveChannelMember),
 	)
 
@@ -348,7 +348,60 @@ func (s *Server) AddChannelMember(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) RemoveChannelMember(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// get serverid for the channel and make sure the user is the owner
+	channelid_str := r.PathValue("channelid")
+	channelid, err := strconv.Atoi(channelid_str)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	if channelid <= 0 {
+		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
+		return
+	}
+	channel, err := s.db.GetChannel(database.Id(channelid))
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	server_info, err := s.db.GetServer(channel.ServerId)
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	if server_info.OwnerId != userid {
+
+		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+		return
+	}
+	post_data := struct {
+		UserId string `json:"userid"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&post_data)
+	if err != nil {
+		fmt.Printf("error: unable to parse request %s", err)
+		http.Error(w, fmt.Sprintf("error: unable to parse request %s", err), http.StatusBadRequest)
+		return
+	}
+	newuserid_str, err := strconv.Atoi(post_data.UserId)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
+		return
+	}
+	if newuserid_str <= 0 {
+		http.Error(w, "invalid request: invalid user id", http.StatusBadRequest)
+		return
+	}
+	//_ := database.Id(newuserid_str)
 }
 
 func (s *Server) UpdateMessage(w http.ResponseWriter, r *http.Request) {
