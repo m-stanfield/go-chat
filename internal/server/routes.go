@@ -80,6 +80,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.HandleFunc("GET /api/channels/{channelid}/messages", s.GetChannelMessages)
 	mux.HandleFunc("POST /api/channels/{channelid}/messages", s.CreateChannelMessage)
+	mux.HandleFunc("GET /api/channels/{channelid}/messages/{messageid}", s.GetMessage)
 	mux.HandleFunc(
 		"PATCH /api/channels/{channelid}/messages/{messageid}",
 		s.WithAuthUser(s.UpdateMessage),
@@ -538,6 +539,10 @@ func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(jsonResp); err != nil {
 		log.Printf("Failed to write response: %v", err)
 	}
+}
+
+func (s *Server) GetMessage(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
 
 func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) {
