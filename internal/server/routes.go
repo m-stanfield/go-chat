@@ -414,7 +414,48 @@ func (s *Server) RemoveChannelMember(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UpdateMessage(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	message_id_str := r.PathValue("messageid")
+	messageid, err := strconv.Atoi(message_id_str)
+	if err != nil {
+		http.Error(w, "error: unable to parse messageid", http.StatusBadRequest)
+		return
+	}
+	if messageid < 0 {
+		http.Error(w, "error: invalid messageid", http.StatusBadRequest)
+		return
+	}
+	message, err := s.db.GetMessage(database.Id(messageid))
+	if err != nil {
+		http.Error(w, "error: unable to fetch message", http.StatusBadRequest)
+		return
+	}
+	if message.UserId != userid {
+		http.Error(w, "error: attempting to modify different user message", http.StatusBadRequest)
+		return
+	}
+
+	message_data := struct {
+		Message string `json:"message"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&message_data)
+	if err != nil {
+		http.Error(w, "error: unable to parse message from body", http.StatusBadRequest)
+		return
+	}
+	err = s.db.UpdateMessage(message.MessageId, message_data.Message)
+	if err != nil {
+		http.Error(w, "error: issue while updating message", http.StatusBadRequest)
+		return
+	}
 }
 
 func (s *Server) DeleteMessage(w http.ResponseWriter, r *http.Request) {
