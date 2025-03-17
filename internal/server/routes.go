@@ -22,7 +22,6 @@ var (
 )
 
 type ServerMessage struct {
-	UserName  string      `json:"username"`
 	UserId    database.Id `json:"userid"`
 	MessageID database.Id `json:"messageid"`
 	ChannelId database.Id `json:"channelid"`
@@ -927,15 +926,8 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 
 		tempmsgs := make([]ServerMessage, len(db_messages))
 		for i, dbmsg := range db_messages {
-			userinfo, err := s.db.GetUser(dbmsg.UserId)
-			if err != nil {
-				http.Error(w, "database error", http.StatusInternalServerError)
-				return
-			}
-			username := userinfo.UserName
 			tempmsgs[i] = ServerMessage{
 				UserId:    dbmsg.UserId,
-				UserName:  username,
 				MessageID: dbmsg.MessageId,
 				ChannelId: dbmsg.ChannelId,
 				Message:   dbmsg.Contents,
@@ -1095,7 +1087,6 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		msg := ServerMessage{
-			UserName:  userinfo.UserName,
 			UserId:    dbmsg.UserId,
 			MessageID: messageid,
 			ChannelId: dbmsg.ChannelId,
