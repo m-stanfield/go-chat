@@ -442,6 +442,15 @@ func (s *Server) UpdateMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error: attempting to modify different user message", http.StatusBadRequest)
 		return
 	}
+	in_channel, err := s.db.IsUserInChannel(userid, message.ChannelId)
+	if err != nil {
+		http.Error(w, "error: unable to verify channel permissions", http.StatusBadRequest)
+		return
+	}
+	if !in_channel {
+		http.Error(w, "error: user not in channel", http.StatusBadRequest)
+		return
+	}
 
 	message_data := struct {
 		Message string `json:"message"`
