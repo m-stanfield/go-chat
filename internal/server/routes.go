@@ -16,12 +16,12 @@ import (
 )
 
 var (
-	clients         = make([]chan Message, 0)
-	incomingChannel = make(chan Message)
+	clients         = make([]chan ServerMessage, 0)
+	incomingChannel = make(chan ServerMessage)
 	startTime       = time.Now()
 )
 
-type Message struct {
+type ServerMessage struct {
 	UserName  string      `json:"username"`
 	UserId    database.Id `json:"userid"`
 	MessageID database.Id `json:"messageid"`
@@ -917,7 +917,7 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
 	}
-	var messages []Message
+	var messages []ServerMessage
 	for _, channel := range channels {
 		db_messages, err := s.db.GetMessagesInChannel(channel.ChannelId, count)
 		if err != nil {
@@ -925,7 +925,7 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tempmsgs := make([]Message, len(db_messages))
+		tempmsgs := make([]ServerMessage, len(db_messages))
 		for i, dbmsg := range db_messages {
 			userinfo, err := s.db.GetUser(dbmsg.UserId)
 			if err != nil {
@@ -933,7 +933,7 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			username := userinfo.UserName
-			tempmsgs[i] = Message{
+			tempmsgs[i] = ServerMessage{
 				UserId:    dbmsg.UserId,
 				UserName:  username,
 				MessageID: dbmsg.MessageId,
@@ -1038,7 +1038,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer socket.Close(websocket.StatusGoingAway, "Server closing websocket")
-	outgoingChannel := make(chan Message)
+	outgoingChannel := make(chan ServerMessage)
 	go s.handleMessages(socket, outgoingChannel)
 	clients = append(clients, outgoingChannel)
 
@@ -1094,7 +1094,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		msg := Message{
+		msg := ServerMessage{
 			UserName:  userinfo.UserName,
 			UserId:    dbmsg.UserId,
 			MessageID: messageid,
@@ -1106,7 +1106,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) handleIncomingMessages(broadcast chan Message) {
+func (s *Server) handleIncomingMessages(broadcast chan ServerMessage) {
 	for {
 		message := <-broadcast
 		for _, ch := range clients {
@@ -1115,7 +1115,7 @@ func (s *Server) handleIncomingMessages(broadcast chan Message) {
 	}
 }
 
-func (s *Server) handleMessages(client *websocket.Conn, broadcast chan Message) {
+func (s *Server) handleMessages(client *websocket.Conn, broadcast chan ServerMessage) {
 	for {
 		msg := <-broadcast
 		jsondata, err := json.Marshal(msg)

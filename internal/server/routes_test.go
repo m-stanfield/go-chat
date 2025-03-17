@@ -486,7 +486,7 @@ func TestGetServerMessages(t *testing.T) {
 	}
 
 	result := struct {
-		Messages []Message `json:"messages"`
+		Messages []ServerMessage `json:"messages"`
 	}{}
 
 	err = json.Unmarshal(body, &result)
@@ -806,7 +806,7 @@ func TestServer_UpdateMessage_Valid(t *testing.T) {
 		t.Fatalf("error reading response body. Err: %v", err)
 	}
 	result := struct {
-		Message Message `json:"message"`
+		Message ServerMessage `json:"message"`
 	}{}
 	err = json.Unmarshal(body, &result)
 	if err != nil {
