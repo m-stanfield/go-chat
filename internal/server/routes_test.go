@@ -793,8 +793,8 @@ func TestServer_UpdateMessage_Valid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating session. Err: %v", err)
 	}
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected status BadRequest; got %v", resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status StatusOK; got %v", resp.Status)
 	}
 	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
 	if err != nil {
@@ -805,14 +805,12 @@ func TestServer_UpdateMessage_Valid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error reading response body. Err: %v", err)
 	}
-	result := struct {
-		Message ServerMessage `json:"message"`
-	}{}
+	result := ServerMessage{}
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		t.Fatalf("error unmarshalling response body. Err: %v", err)
 	}
-	if result.Message.Message != new_message {
+	if result.Message != new_message {
 		t.Fatalf("error: message was not updated")
 	}
 	// TODO: add check for time to update
