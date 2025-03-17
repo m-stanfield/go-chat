@@ -782,3 +782,38 @@ func TestServer_RemoveChannelMember_NotInChannel(t *testing.T) {
 		t.Errorf("expected status BadRequest; got %v", resp.Status)
 	}
 }
+
+func TestServer_UpdateMessage_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/messages/1"
+	new_message := "updated message"
+	payload := map[string]string{"message": new_message}
+	resp, err := s.sendAuthRequest(http.MethodPatch, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected status BadRequest; got %v", resp.Status)
+	}
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
+	}
+
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	result := struct {
+		Message Message `json:"message"`
+	}{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.Message.Message != new_message {
+		t.Fatalf("error: message was not updated")
+	}
+	// TODO: add check for time to update
+}
