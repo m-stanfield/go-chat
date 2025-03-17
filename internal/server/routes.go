@@ -491,6 +491,10 @@ func (s *Server) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
 
+func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
 func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -574,10 +578,6 @@ func (s *Server) GetMessage(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(jsonResp); err != nil {
 		log.Printf("Failed to write response: %v", err)
 	}
-}
-
-func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
 
 func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
