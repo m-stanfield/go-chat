@@ -541,7 +541,39 @@ func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetMessage(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusBadRequest)
+		return
+	}
+
+	message_id_str := r.PathValue("messageid")
+	messageid, err := strconv.Atoi(message_id_str)
+	if err != nil {
+		http.Error(w, "error: unable to parse message id", http.StatusBadRequest)
+		return
+	}
+	if messageid < 0 {
+		http.Error(w, "error: invalid message id. requires postitive values", http.StatusBadRequest)
+		return
+	}
+	dbmessage, err := s.db.GetMessage(database.Id(messageid))
+	if err != nil {
+		http.Error(w, "error: internal server error", http.StatusBadRequest)
+		return
+	}
+	message := fromDBMessageToSeverMessage(dbmessage)
+	jsonResp, err := json.Marshal(message)
+	if err != nil {
+		http.Error(
+			w,
+			"error: internal server error. Unable to process request",
+			http.StatusBadRequest,
+		)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
 }
 
 func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) {

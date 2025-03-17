@@ -817,3 +817,28 @@ func TestServer_UpdateMessage_Valid(t *testing.T) {
 	}
 	// TODO: add check for time to update
 }
+
+func TestServer_GetMessage_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/messages/1"
+	expected_message := "1111"
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
+	}
+
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	result := ServerMessage{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.Message != expected_message {
+		t.Fatalf("error: message was not updated")
+	}
+	// TODO: add check for time to update
+}
