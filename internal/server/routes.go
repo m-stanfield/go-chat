@@ -774,18 +774,11 @@ func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
-	userid_str := r.PathValue("userid")
-	userid_int, err := strconv.Atoi(userid_str)
+	userid, err := parsePathFromID(r, "userid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if userid_int <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
-		return
-	}
-	userid := database.Id(userid_int)
-
 	autheduserid, err := getUserIdFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -814,13 +807,12 @@ func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServerInformation(w http.ResponseWriter, r *http.Request) {
-	serverid_str := r.PathValue("serverid") // r.URL.Query().Get("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	server, err := s.db.GetServer(database.Id(serverid))
+	server, err := s.db.GetServer(serverid)
 	if errors.Is(err, database.ErrRecordNotFound) {
 		// TODO: figure out proper method for valid resopnse but no data
 		http.Error(w, "server not found", http.StatusNotFound)
@@ -852,14 +844,9 @@ func (s *Server) GetServerInformation(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
-	serverid_str := r.PathValue("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
-		return
-	}
-	if serverid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
 		return
 	}
 	count_str := r.URL.Query().Get("count")
@@ -932,18 +919,13 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request) {
-	serverid_str := r.PathValue("serverid") // r.URL.Query().Get("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if serverid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
-		return
-	}
 
-	users, err := s.db.GetUsersOfServer(database.Id(serverid))
+	users, err := s.db.GetUsersOfServer(serverid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -961,18 +943,13 @@ func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	userid_str := r.PathValue("userid") // r.URL.Query().Get("userid")
-	userid, err := strconv.Atoi(userid_str)
+	userid, err := parsePathFromID(r, "userid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
 		return
 	}
-	if userid <= 0 {
-		http.Error(w, "invalid request: invalid userid", http.StatusBadRequest)
-		return
-	}
 
-	user, err := s.db.GetUser(database.Id(userid))
+	user, err := s.db.GetUser(userid)
 	if errors.Is(err, database.ErrRecordNotFound) {
 		http.Error(w, "user not found", http.StatusNotFound)
 		return
