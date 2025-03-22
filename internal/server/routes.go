@@ -129,7 +129,7 @@ func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.db.UpdateServerName(database.Id(serverid), new_server_name.ServerName)
+	err = s.db.UpdateServerName(serverid, new_server_name.ServerName)
 	if err != nil {
 		http.Error(w, "error: unable to update server name", http.StatusBadRequest)
 		return
@@ -157,7 +157,7 @@ func (s *Server) DeleteServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
 		return
 	}
-	err = s.db.DeleteServer(database.Id(serverid))
+	err = s.db.DeleteServer(serverid)
 	if err != nil {
 		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
 		return
@@ -199,7 +199,7 @@ func (s *Server) UpdateChannel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error: unable to parse request", http.StatusBadRequest)
 		return
 	}
-	err = s.db.UpdateChannel(database.Id(channelid), new_channel_name.UpdatedChannelName)
+	err = s.db.UpdateChannel(channelid, new_channel_name.UpdatedChannelName)
 	if err != nil {
 		http.Error(w, "error: unable to update channel", http.StatusBadRequest)
 		return
@@ -231,7 +231,7 @@ func (s *Server) GetChannelMembers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "user not in channel", http.StatusBadRequest)
 		return
 	}
-	users, err := s.db.GetUsersInChannel(database.Id(channelid))
+	users, err := s.db.GetUsersInChannel(channelid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -306,7 +306,7 @@ func (s *Server) AddChannelMember(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
 		return
 	}
-	inserver, err := s.db.IsUserInServer(database.Id(newuserid), server_info.ServerId)
+	inserver, err := s.db.IsUserInServer(newuserid, server_info.ServerId)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
 		return
@@ -315,7 +315,7 @@ func (s *Server) AddChannelMember(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "user not in server", http.StatusBadRequest)
 		return
 	}
-	err = s.db.AddUserToChannel(database.Id(newuserid), server_info.ServerId)
+	err = s.db.AddUserToChannel(newuserid, server_info.ServerId)
 	if err != nil {
 		http.Error(w, "error: unable to add user to channel", http.StatusBadRequest)
 		return
@@ -338,7 +338,7 @@ func (s *Server) RemoveChannelMember(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	channel, err := s.db.GetChannel(database.Id(channelid))
+	channel, err := s.db.GetChannel(channelid)
 	if err != nil {
 		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
 		return
@@ -476,7 +476,7 @@ func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	channel_info, err := s.db.GetChannel(database.Id(channelid))
+	channel_info, err := s.db.GetChannel(channelid)
 	if err != nil {
 		http.Error(w, "error: unable to locate channel", http.StatusBadRequest)
 		return
@@ -515,7 +515,7 @@ func (s *Server) GetMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	dbmessage, err := s.db.GetMessage(database.Id(messageid))
+	dbmessage, err := s.db.GetMessage(messageid)
 	if err != nil {
 		http.Error(w, "error: internal server error", http.StatusBadRequest)
 		return
@@ -746,7 +746,7 @@ func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userinfo, err := s.db.GetUser(userid)
-	isServerMember, err := s.db.IsUserInServer(userinfo.UserId, database.Id(serverid))
+	isServerMember, err := s.db.IsUserInServer(userinfo.UserId, serverid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -756,7 +756,7 @@ func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channels, err := s.db.GetChannelsOfServer(database.Id(serverid))
+	channels, err := s.db.GetChannelsOfServer(serverid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -789,7 +789,7 @@ func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	servers, err := s.db.GetServersOfUser(database.Id(userid))
+	servers, err := s.db.GetServersOfUser(userid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -870,7 +870,7 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	isServerMember, err := s.db.IsUserInServer(userid, database.Id(serverid))
+	isServerMember, err := s.db.IsUserInServer(userid, serverid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -880,7 +880,7 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channels, err := s.db.GetChannelsOfServer(database.Id(serverid))
+	channels, err := s.db.GetChannelsOfServer(serverid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
