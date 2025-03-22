@@ -39,6 +39,7 @@ type Service interface {
 	IsUserInServer(userid Id, serverid Id) (bool, error)
 
 	AddChannel(serverid Id, channelname string) (Id, error)
+	DeleteChannel(channelid Id) error
 	GetChannel(channelid Id) (Channel, error)
 	GetChannelsOfServer(serverid Id) ([]Channel, error)
 	UpdateChannel(channelid Id, username string) error
@@ -744,4 +745,9 @@ func (r *service) RemoveUserFromChannel(channelid Id, userid Id) error {
 		return ErrRecordNotFound
 	}
 	return nil
+}
+
+func (r *service) DeleteChannel(channelid Id) error {
+	_, err := dbInstance.conn.Exec("DELETE FROM ChannelTable WHERE channelid = ?", channelid)
+	return err
 }
