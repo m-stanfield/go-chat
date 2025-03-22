@@ -34,13 +34,19 @@ type Service interface {
 	GetServersOfUser(userid Id) ([]Server, error)
 	GetServer(serverid Id) (Server, error)
 	CreateServer(ownerid Id, servername string) (Id, error)
+	DeleteServer(serverid Id) error
 	UpdateServerName(serverid Id, servername string) error
 	IsUserInServer(userid Id, serverid Id) (bool, error)
 
 	AddChannel(serverid Id, channelname string) (Id, error)
+	DeleteChannel(channelid Id) error
 	GetChannel(channelid Id) (Channel, error)
 	GetChannelsOfServer(serverid Id) ([]Channel, error)
-	UpdateChannelName(userid Id, username string) error
+	UpdateChannel(channelid Id, username string) error
+	AddUserToChannel(channelid Id, userid Id) error
+	RemoveUserFromChannel(channelid Id, userid Id) error
+	GetUsersInChannel(channelid Id) ([]User, error)
+	IsUserInChannel(userid Id, channelid Id) (bool, error)
 
 	GetMessage(messageid Id) (Message, error)
 	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
@@ -436,6 +442,11 @@ func (r *service) GetUsersOfServer(serverid Id) ([]User, error) {
 	return names, nil
 }
 
+func (r *service) DeleteServer(serverid Id) error {
+	_, err := r.conn.Exec("DELETE FROM ServerTable WHERE serverid = ?", serverid)
+	return err
+}
+
 func (r *service) GetServersOfUser(userid Id) ([]Server, error) {
 	rows, err := r.conn.Query(
 		"SELECT S.serverid, S.ownerid, S.servername FROM UsersServerTable as U INNER JOIN ServerTable as S ON U.serverid = S.serverid WHERE U.userid = ?",
@@ -476,6 +487,35 @@ func (r *service) GetChannelsOfServer(serverid Id) ([]Channel, error) {
 		servers = append(servers, s)
 	}
 	return servers, nil
+}
+
+func (r *service) IsUserInChannel(userid Id, channelid Id) (bool, error) {
+	query := `SELECT COUNT(1) FROM UsersChannelTable WHERE channelid = ? AND userid = ?`
+	var count int
+	err := r.db.QueryRow(query, channelid, userid).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (r *service) AddUserToChannel(userid Id, channelid Id) error {
+	d, err := r.conn.Exec(
+		"INSERT INTO UsersChannelTable ( userid, channelid) VALUES ( ?, ?)",
+		userid,
+		channelid,
+	)
+	if err != nil {
+		return fmt.Errorf("add user - userid: %d err: %w", userid, err)
+	}
+	id, err := d.LastInsertId()
+	if err != nil {
+		return err
+	}
+	if id < 0 {
+		return ErrNegativeRowIndex
+	}
+	return nil
 }
 
 func (r *service) AddChannel(serverid Id, channelname string) (Id, error) {
@@ -539,11 +579,11 @@ func (r *service) GetChannel(channelid Id) (Channel, error) {
 	return channel, nil
 }
 
-func (r *service) UpdateChannelName(userid Id, username string) error {
+func (r *service) UpdateChannel(channelid Id, new_server_name string) error {
 	_, err := r.conn.Exec(
-		"UPDATE ChannelTable SET channelname = ? WHERE channelid=? ",
-		username,
-		userid,
+		"UPDATE ChannelTable SET channelname = ? WHERE channelid = ? ",
+		new_server_name,
+		channelid,
 	)
 	return err
 }
@@ -558,7 +598,9 @@ func (r *service) GetServer(serverid Id) (Server, error) {
 	}
 	defer rows.Close()
 	var server Server
+	server_found := false
 	for rows.Next() {
+		server_found = true
 		err := rows.Scan(
 			&server.ServerId,
 			&server.OwnerId,
@@ -567,6 +609,9 @@ func (r *service) GetServer(serverid Id) (Server, error) {
 		if err != nil {
 			return Server{}, err
 		}
+	}
+	if !server_found {
+		return Server{}, ErrRecordNotFound
 	}
 	return server, nil
 }
@@ -654,4 +699,55 @@ func (r *service) GetMessagesInChannel(channelid Id, number uint) ([]Message, er
 		messages = append(messages, message)
 	}
 	return messages, nil
+}
+
+func (r *service) GetUsersInChannel(channelid Id) ([]User, error) {
+	rows, err := r.conn.Query(
+		"SELECT U.userid, U.username FROM UsersChannelTable as UC INNER JOIN UserTable as U ON UC.userid = U.userid WHERE UC.channelid = ?",
+		channelid,
+	)
+	if err != nil {
+		return []User{}, err
+	}
+	defer rows.Close()
+	var names []User
+	for rows.Next() {
+		var name User
+		err := rows.Scan(&name.UserId, &name.UserName)
+		if err != nil {
+			return []User{}, err
+		}
+		names = append(names, name)
+	}
+	return names, nil
+}
+
+func (r *service) RemoveUserFromChannel(channelid Id, userid Id) error {
+	result, err := r.conn.Exec(
+		"DELETE FROM UsersChannelTable WHERE channelid = ? AND userid = ?",
+		channelid,
+		userid,
+	)
+	// check and ensure that at least one row was deleted
+	if err != nil {
+		return fmt.Errorf(
+			"remove user from channel - channelid: %d userid: %d err: %w",
+			channelid,
+			userid,
+			err,
+		)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
+}
+
+func (r *service) DeleteChannel(channelid Id) error {
+	_, err := dbInstance.conn.Exec("DELETE FROM ChannelTable WHERE channelid = ?", channelid)
+	return err
 }

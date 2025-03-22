@@ -483,7 +483,7 @@ func Test_UpdateChannelName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TestA: err: %v", err)
 	}
-	err = db.UpdateChannelName(user.ChannelId, newChannelName)
+	err = db.UpdateChannel(user.ChannelId, newChannelName)
 	newuser, err := db.GetChannel(id)
 	if err != nil {
 		t.Fatalf("TestA: err: %v", err)
@@ -572,7 +572,11 @@ func Test_CreateServer(t *testing.T) {
 		t.Fatalf("TestA: invalid id. expected: %d got: %d", id, server.ServerId)
 	}
 	if server.ServerName != expectedServerName {
-		t.Fatalf("TestA: invalid username expected: %s got: %s", expectedServerName, server.ServerName)
+		t.Fatalf(
+			"TestA: invalid username expected: %s got: %s",
+			expectedServerName,
+			server.ServerName,
+		)
 	}
 	if server.OwnerId != ownerid {
 		t.Fatalf("TestA: invalid owner id expected: %d got: %d", ownerid, server.OwnerId)
@@ -652,5 +656,85 @@ func Test_IsUserInServer_InValid(t *testing.T) {
 	}
 	if !inserver {
 		t.Fatalf("TestA: valid in server should be invalid")
+	}
+}
+
+func Test_AddUserToChannel_Valid(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	userid := Id(3)
+	channelid := Id(1)
+	inserver, err := db.IsUserInChannel(userid, channelid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if inserver {
+		t.Fatalf("TestA: invalid in server")
+	}
+
+	err = db.AddUserToChannel(userid, channelid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	inserver, err = db.IsUserInChannel(userid, channelid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if !inserver {
+		t.Fatalf("TestA: valid in server should be invalid")
+	}
+}
+
+func Test_IsUserInChannel_Valid(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	userid := Id(1)
+	channelid := Id(1)
+	inserver, err := db.IsUserInChannel(userid, channelid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if !inserver {
+		t.Fatalf("TestA: valid in server should be invalid")
+	}
+}
+
+func Test_IsUserInChannel_Invalid(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	userid := Id(3)
+	channelid := Id(1)
+	inserver, err := db.IsUserInChannel(userid, channelid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if inserver {
+		t.Fatalf("TestA: invalid in server")
+	}
+}
+
+func Test_GetUsersInChannel_Valid(t *testing.T) {
+	db := setup()
+	defer db.Close()
+	serverid := Id(1)
+	users, err := db.GetUsersInChannel(serverid)
+	if err != nil {
+		t.Fatalf("TestA: err: %v", err)
+	}
+	if len(users) != 2 {
+		t.Fatalf("TestA: invalid number of users")
+	}
+	if users[0].UserId != 1 {
+		t.Fatalf("TestA: invalid user id")
+	}
+	if users[0].UserName != "u1" {
+		t.Fatalf("TestA: invalid user name")
+	}
+
+	if users[1].UserId != 2 {
+		t.Fatalf("TestA: invalid user id")
+	}
+	if users[1].UserName != "u2" {
+		t.Fatalf("TestA: invalid user name")
 	}
 }

@@ -1,8 +1,26 @@
 package database
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 type Id = uint
+
+func ParseIntToID(id int) (Id, error) {
+	if id <= 0 {
+		return Id(0), ErrUnsupportedNegativeValue
+	}
+	return Id(id), nil
+}
+
+func ParseStringToID(id string) (Id, error) {
+	intid, err := strconv.Atoi(id)
+	if err != nil {
+		return Id(0), ErrParsingValue
+	}
+	return ParseIntToID(intid)
+}
 
 type User struct {
 	UserId   Id

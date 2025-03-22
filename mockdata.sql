@@ -43,4 +43,5 @@ INSERT INTO "ChannelMessageTable" VALUES (5,1,1,'114','2024-08-16 02:09:00.976',
 INSERT INTO "UsersChannelTable" VALUES (1,1);
 INSERT INTO "UsersChannelTable" VALUES (3,2);
 INSERT INTO "UsersChannelTable" VALUES (2,3);
+INSERT INTO "UsersChannelTable" VALUES (2,1);
 COMMIT;

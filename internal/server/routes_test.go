@@ -107,7 +107,7 @@ func (s *TestServer) getLoginCookie(username, password string) (*http.Cookie, er
 
 	// Send the login POST request
 	resp, err := s.server.Client().Post(
-		s.server.URL+"/api/login",
+		s.server.URL+"/api/auth/login",
 		"application/json",
 		bytes.NewBuffer(loginData),
 	)
@@ -134,7 +134,7 @@ func (s *TestServer) getLoginCookie(username, password string) (*http.Cookie, er
 func TestCreateNewServer_Error_ShortName(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/create"
+	endpoint := "/api/servers"
 	payload := map[string]string{"servername": "te"}
 	resp, err := s.sendAuthRequest(http.MethodPost, endpoint, payload, nil, nil)
 	if err != nil {
@@ -149,7 +149,7 @@ func TestCreateNewServer_Error_ShortName(t *testing.T) {
 func TestCreateNewServer_Error_LongName(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/create"
+	endpoint := "/api/servers"
 
 	payload := map[string]string{
 		"servername": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
@@ -164,7 +164,7 @@ func TestCreateNewServer_Error_LongName(t *testing.T) {
 func TestCreateNewServer_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/create"
+	endpoint := "/api/servers"
 	payload := map[string]string{"servername": "testserver"}
 	expected_server_id := database.Id(3)
 	resp, _ := s.sendAuthRequest(http.MethodPost, endpoint, payload, nil, nil)
@@ -186,7 +186,7 @@ func TestCreateNewServer_Valid(t *testing.T) {
 	}
 	getresp, err := s.sendRequest(
 		http.MethodGet,
-		"/api/server/"+strconv.Itoa(int(expected_server_id)),
+		"/api/servers/"+strconv.Itoa(int(expected_server_id)),
 		nil,
 	)
 	if err != nil {
@@ -210,7 +210,7 @@ func TestCreateNewServer_Valid(t *testing.T) {
 func TestGetUser_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/user/1"
+	endpoint := "/api/users/1"
 	resp, _ := s.sendRequest(http.MethodGet, endpoint, nil)
 	// Assertions
 	if resp.StatusCode != http.StatusOK {
@@ -235,7 +235,7 @@ func TestGetUser_Valid(t *testing.T) {
 func TestGetUser_Invalid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/user/100"
+	endpoint := "/api/users/100"
 	resp, _ := s.sendRequest(http.MethodGet, endpoint, nil)
 	// Assertions
 	if resp.StatusCode != http.StatusNotFound {
@@ -246,7 +246,7 @@ func TestGetUser_Invalid(t *testing.T) {
 func TestCreateUser(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/user/create"
+	endpoint := "/api/users"
 	payload := map[string]string{"username": "new_user", "password": "new_user_password"}
 	resp, _ := s.sendRequest(http.MethodPost, endpoint, payload)
 	// Assertions
@@ -267,7 +267,7 @@ func TestCreateUser(t *testing.T) {
 	if create_result.UserId != 4 {
 		t.Errorf("expected userid to be %v; got %v", 4, create_result.UserId)
 	}
-	user_resp, err := s.sendRequest(http.MethodGet, "/api/user/4", nil)
+	user_resp, err := s.sendRequest(http.MethodGet, "/api/users/4", nil)
 	if err != nil {
 		t.Fatalf("error getting user info. Err: %v", err)
 	}
@@ -288,7 +288,7 @@ func TestCreateUser(t *testing.T) {
 func TestLogin_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/login"
+	endpoint := "/api/auth/login"
 	payload := map[string]string{"username": "u1", "password": "1"}
 	resp, _ := s.sendRequest(http.MethodPost, endpoint, payload)
 	// Assertions
@@ -315,7 +315,7 @@ func TestLogin_Valid(t *testing.T) {
 func TestLogin_Invalid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/login"
+	endpoint := "/api/auth/login"
 	payload := map[string]string{"username": "u1", "password": "notcorrectpassword"}
 	resp, _ := s.sendRequest(http.MethodPost, endpoint, payload)
 	// Assertions
@@ -327,7 +327,7 @@ func TestLogin_Invalid(t *testing.T) {
 func TestGetServerChannels_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/user/1/servers"
+	endpoint := "/api/users/1/servers"
 	payload := map[string]string{"serverid": "1"}
 	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, payload, nil, nil)
 	if err != nil {
@@ -362,7 +362,7 @@ func TestGetServerChannels_Valid(t *testing.T) {
 func TestGetServerChannels_Unauthed(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/user/1/servers"
+	endpoint := "/api/users/1/servers"
 	payload := map[string]string{"serverid": "1"}
 	unauthed_user := "u2"
 	password := "2"
@@ -378,7 +378,7 @@ func TestGetServerChannels_Unauthed(t *testing.T) {
 func TestGetServerInformation_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/1"
+	endpoint := "/api/servers/1"
 	resp, err := s.sendRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		t.Fatalf("error creating session. Err: %v", err)
@@ -411,7 +411,7 @@ func TestGetServerInformation_Valid(t *testing.T) {
 func TestGetServerChannels(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/1/channels"
+	endpoint := "/api/servers/1/channels"
 	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("error creating session. Err: %v", err)
@@ -472,7 +472,7 @@ func TestGetServerChannels(t *testing.T) {
 func TestGetServerMessages(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/1/messages"
+	endpoint := "/api/servers/1/messages"
 	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("error creating session. Err: %v", err)
@@ -486,7 +486,7 @@ func TestGetServerMessages(t *testing.T) {
 	}
 
 	result := struct {
-		Messages []Message `json:"messages"`
+		Messages []ServerMessage `json:"messages"`
 	}{}
 
 	err = json.Unmarshal(body, &result)
@@ -506,7 +506,7 @@ func TestGetServerMessages(t *testing.T) {
 func TestGetServerMembers_Valid(t *testing.T) {
 	s, teardown := setupTest(t)
 	defer teardown(t)
-	endpoint := "/api/server/1/members"
+	endpoint := "/api/servers/1/members"
 	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("error creating session. Err: %v", err)
@@ -540,5 +540,417 @@ func TestGetServerMembers_Valid(t *testing.T) {
 	}
 	if result.Users[1].UserName != "u3" {
 		t.Errorf("expected user name to be %v; got %v", "u2", result.Users[1].UserName)
+	}
+}
+
+func TestUpdateServer_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/servers/1"
+	new_server_name := "new_server_name"
+	payload := map[string]string{"servername": new_server_name}
+	resp, err := s.sendAuthRequest(http.MethodPatch, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	getresp, err := s.sendRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		t.Fatalf("error getting server info. Err: %v", err)
+	}
+	if getresp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", getresp.Status)
+	}
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+
+	result := struct {
+		ServerId   database.Id `json:"serverid"`
+		OwnerId    database.Id `json:"ownerid"`
+		ServerName string      `json:"servername"`
+	}{}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.ServerName != new_server_name {
+		t.Errorf("expected server name to be %v; got %v", "new_server_name", result.ServerName)
+	}
+}
+
+func Test_UpdateServer_InvalidPermissions(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/servers/1"
+	new_server_name := "new_server_name"
+	payload := map[string]string{"servername": new_server_name}
+	username := "u2"
+	password := "2"
+	resp, err := s.sendAuthRequest(http.MethodPatch, endpoint, payload, &username, &password)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("got unexpected status code Err: %v", err)
+	}
+}
+
+func Test_DeleteServer_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/servers/1"
+	resp, err := s.sendAuthRequest(http.MethodDelete, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	getresp, err := s.sendRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		t.Fatalf("error getting server info. Err: %v", err)
+	}
+	if getresp.StatusCode != http.StatusNotFound {
+		t.Errorf("expected status OK; got %v", getresp.Status)
+	}
+}
+
+func Test_UpdateChannel_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1"
+	new_channel_name := "new_channel_name"
+	payload := map[string]string{"channelname": new_channel_name}
+	resp, err := s.sendAuthRequest(http.MethodPatch, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting server info. Err: %v", err)
+	}
+	if getresp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", getresp.Status)
+	}
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+
+	result := struct {
+		ChannelId   database.Id `json:"channelid"`
+		ServerId    database.Id `json:"serverid"`
+		ChannelName string      `json:"channelname"`
+		TimeStamp   string      `json:"timestamp"`
+	}{}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.ChannelName != new_channel_name {
+		t.Errorf("expected server name to be %v; got %v", new_channel_name, result.ChannelName)
+	}
+}
+
+func Test_AddChannelMember_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/members"
+	payload := map[string]string{"userid": "3"}
+	resp, err := s.sendAuthRequest(http.MethodPost, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting server info. Err: %v", err)
+	}
+	if getresp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", getresp.Status)
+	}
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+
+	result := struct {
+		Users []User `json:"users"`
+	}{}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	for _, user := range result.Users {
+		if user.UserID == 3 {
+			return
+		}
+	}
+	t.Errorf("expected user id to be %v; got %v", 3, result.Users)
+}
+
+func TestServer_GetChannelMembers(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/members"
+	resp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	result := struct {
+		Users []User `json:"users"`
+	}{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.Users[0].UserID != database.Id(1) {
+		t.Errorf("expected user id to be %v; got %v", 1, result.Users[0].UserID)
+	}
+	if result.Users[0].UserName != "u1" {
+		t.Errorf("expected user name to be %v; got %v", "u1", result.Users[0].UserName)
+	}
+}
+
+func TestServer_RemoveChannelMember_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/members"
+	payload := map[string]string{"userid": "2"}
+	resp, err := s.sendAuthRequest(http.MethodDelete, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status OK; got %v", resp.Status)
+	}
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting server info. Err: %v", err)
+	}
+	if getresp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", getresp.Status)
+	}
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	result := struct {
+		Users []User `json:"users"`
+	}{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	for _, user := range result.Users {
+		if user.UserID == 2 {
+			t.Errorf("expected user id to be %v; got %v", 2, user.UserID)
+		}
+	}
+}
+
+func TestServer_RemoveChannelMember_NotInChannel(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/members"
+	payload := map[string]string{"userid": "20"}
+	resp, err := s.sendAuthRequest(http.MethodDelete, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Errorf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected status BadRequest; got %v", resp.Status)
+	}
+}
+
+func TestServer_UpdateMessage_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/messages/1"
+	new_message := "updated message"
+	payload := map[string]string{"message": new_message}
+	resp, err := s.sendAuthRequest(http.MethodPatch, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating session. Err: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status StatusOK; got %v", resp.Status)
+	}
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
+	}
+
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	result := ServerMessage{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.Message != new_message {
+		t.Fatalf("error: message was not updated")
+	}
+	// TODO: add check for time to update
+}
+
+func TestServer_GetMessage_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/messages/1"
+	expected_message := "1111"
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
+	}
+
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	result := ServerMessage{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.Message != expected_message {
+		t.Fatalf("error: message was not updated")
+	}
+	// TODO: add check for time to update
+}
+
+func TestServer_DeleteMessage(t *testing.T) {
+	t.Skip("Test not yet implemented")
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.DeleteMessage(tt.w, tt.r)
+		})
+	}
+}
+
+func TestServer_UpdateUser(t *testing.T) {
+	t.Skip("Test not yet implemented")
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.UpdateUser(tt.w, tt.r)
+		})
+	}
+}
+
+func TestServer_DeleteChannel(t *testing.T) {
+	t.Skip("Test not yet implemented")
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.DeleteChannel(tt.w, tt.r)
+		})
+	}
+}
+
+func TestServer_CreateChannel(t *testing.T) {
+	t.Skip("Test not yet implemented")
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.CreateChannel(tt.w, tt.r)
+		})
+	}
+}
+
+func TestServer_CreateChannelMessage(t *testing.T) {
+	t.Skip("Test not yet implemented")
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.CreateChannelMessage(tt.w, tt.r)
+		})
+	}
+}
+
+func TestServer_GetChannelMessages(t *testing.T) {
+	t.Skip("Test not yet implemented")
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.GetChannelMessages(tt.w, tt.r)
+		})
 	}
 }

@@ -16,13 +16,12 @@ import (
 )
 
 var (
-	clients         = make([]chan Message, 0)
-	incomingChannel = make(chan Message)
+	clients         = make([]chan ServerMessage, 0)
+	incomingChannel = make(chan ServerMessage)
 	startTime       = time.Now()
 )
 
-type Message struct {
-	UserName  string      `json:"username"`
+type ServerMessage struct {
 	UserId    database.Id `json:"userid"`
 	MessageID database.Id `json:"messageid"`
 	ChannelId database.Id `json:"channelid"`
@@ -42,11 +41,6 @@ type SubmittedMessage struct {
 	Message   string      `json:"message"`
 }
 
-// redirect so I only have to remember one port during development
-func (s *Server) redirectToReact(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "http://localhost:5173", http.StatusTemporaryRedirect)
-}
-
 func (s *Server) RegisterRoutes() http.Handler {
 	go s.handleIncomingMessages(incomingChannel)
 	mux := http.NewServeMux()
@@ -55,109 +49,704 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.HandleFunc("/", s.redirectToReact)
 	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
-	mux.HandleFunc("POST /api/login", s.loginHandler)
-	mux.HandleFunc("POST /api/user/create", s.createUserHandler)
 
-	mux.HandleFunc("GET /api/user/{userid}", s.GetUserHandler)
-	mux.HandleFunc("GET /api/user/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
+	mux.HandleFunc("POST /api/auth/login", s.loginHandler)
+	mux.HandleFunc("POST /api/auth/logout", s.WithAuthUser(s.LogoutHandler))
 
-	mux.HandleFunc("POST /api/server/create", s.WithAuthUser(s.createNewServer))
-	mux.HandleFunc("GET /api/server/{serverid}", s.GetServerInformation)
-	mux.HandleFunc("GET /api/server/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
+	mux.HandleFunc("POST /api/users", s.createUserHandler)
+	mux.HandleFunc("GET /api/users/{userid}", s.GetUserHandler)
+	mux.HandleFunc("PATCH /api/users/{userid}", s.WithAuthUser(s.UpdateUser))
+	mux.HandleFunc("GET /api/users/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
+
+	mux.HandleFunc("POST /api/servers", s.WithAuthUser(s.createNewServer))
+	mux.HandleFunc("GET /api/servers/{serverid}", s.GetServerInformation)
+	mux.HandleFunc("PATCH /api/servers/{serverid}", s.WithAuthUser(s.UpdateServer))
+	mux.HandleFunc("DELETE /api/servers/{serverid}", s.WithAuthUser(s.DeleteServer))
+	mux.HandleFunc("GET /api/servers/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
+	mux.HandleFunc("POST /api/servers/{serverid}/channels", s.WithAuthUser(s.CreateChannel))
+	mux.HandleFunc("GET /api/servers/{serverid}/members", s.WithAuthUser(s.GetServerMembersHandler))
+	mux.HandleFunc("GET /api/servers/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
+
+	mux.HandleFunc("GET /api/channels/{channelid}", s.WithAuthUser(s.GetChannel))
+	mux.HandleFunc("PATCH /api/channels/{channelid}", s.WithAuthUser(s.UpdateChannel))
+	mux.HandleFunc("DELETE /api/channels/{channelid}", s.WithAuthUser(s.DeleteChannel))
+	mux.HandleFunc("POST /api/channels/{channelid}/members", s.WithAuthUser(s.AddChannelMember))
+	mux.HandleFunc("GET /api/channels/{channelid}/members", s.WithAuthUser(s.GetChannelMembers))
 	mux.HandleFunc(
-		"GET /api/server/{serverid}/members",
-		s.WithAuthUser(s.GetServerMembersHandler),
+		"DELETE /api/channels/{channelid}/members",
+		s.WithAuthUser(s.RemoveChannelMember),
 	)
-	mux.HandleFunc("GET /api/server/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
+
+	mux.HandleFunc("GET /api/channels/{channelid}/messages", s.GetChannelMessages)
+	mux.HandleFunc("POST /api/channels/{channelid}/messages", s.CreateChannelMessage)
+	mux.HandleFunc("GET /api/channels/{channelid}/messages/{messageid}", s.GetMessage)
+	mux.HandleFunc(
+		"PATCH /api/channels/{channelid}/messages/{messageid}",
+		s.WithAuthUser(s.UpdateMessage),
+	)
+	mux.HandleFunc(
+		"DELETE /api/channels/{channelid}/messages/{messageid}",
+		s.WithAuthUser(s.DeleteMessage),
+	)
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(s.logEndpoint(mux))
 }
 
-func (s *Server) logEndpoint(next http.Handler) http.Handler {
-	counter := 0
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counter = counter + 1
-		start_time := time.Since(startTime)
-		// Proceed with the next handler
-		next.ServeHTTP(w, r)
-		end_time := time.Since(startTime.Add(start_time))
+// redirect so I only have to remember one port during development
+func (s *Server) redirectToReact(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "http://localhost:5173", http.StatusTemporaryRedirect)
+}
 
-		fmt.Printf(
-			"%d Endpoint hit: %s took %d ms\n",
-			counter,
-			r.URL,
-			end_time.Milliseconds(),
+func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) {
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	serverid, err := parsePathFromID(r, "serverid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	server_info, err := s.db.GetServer(serverid)
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	if server_info.OwnerId != userid {
+		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+		return
+	}
+
+	new_server_name := struct {
+		ServerName string `json:"servername"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&new_server_name)
+	if err != nil {
+		http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+		return
+	}
+
+	err = s.db.UpdateServerName(serverid, new_server_name.ServerName)
+	if err != nil {
+		http.Error(w, "error: unable to update server name", http.StatusBadRequest)
+		return
+	}
+}
+
+func (s *Server) DeleteServer(w http.ResponseWriter, r *http.Request) {
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	serverid, err := parsePathFromID(r, "serverid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	server_info, err := s.db.GetServer(serverid)
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	if server_info.OwnerId != userid {
+		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+		return
+	}
+	err = s.db.DeleteServer(serverid)
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+}
+
+func (s *Server) UpdateChannel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	channel_info, err := s.db.GetChannel(channelid)
+	if err != nil {
+		http.Error(w, "error: unable to locate channel", http.StatusBadRequest)
+		return
+	}
+	server_info, err := s.db.GetServer(channel_info.ServerId)
+	if server_info.OwnerId != userid {
+		http.Error(w, "error: user not owner of channel", http.StatusBadRequest)
+		return
+	}
+
+	new_channel_name := struct {
+		UpdatedChannelName string `json:"channelname"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&new_channel_name)
+	if err != nil {
+		http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+		return
+	}
+	err = s.db.UpdateChannel(channelid, new_channel_name.UpdatedChannelName)
+	if err != nil {
+		http.Error(w, "error: unable to update channel", http.StatusBadRequest)
+		return
+
+	}
+}
+
+func (s *Server) GetChannelMembers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	inchannel, err := s.db.IsUserInChannel(userid, channelid)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+		return
+	}
+	if !inchannel {
+		http.Error(w, "user not in channel", http.StatusBadRequest)
+		return
+	}
+	users, err := s.db.GetUsersInChannel(channelid)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	// convert users from database.User to server.User
+	newusers := make([]User, len(users))
+	for i, user := range users {
+		newusers[i] = User{
+			UserID:   user.UserId,
+			UserName: user.UserName,
+		}
+	}
+
+	resp := map[string]interface{}{"users": newusers}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
+func (s *Server) AddChannelMember(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	post_data := struct {
+		UserId string `json:"userid"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&post_data)
+	if err != nil {
+		fmt.Printf("error: unable to parse request %s", err)
+		http.Error(w, fmt.Sprintf("error: unable to parse request %s", err), http.StatusBadRequest)
+		return
+	}
+	newuserid_str, err := strconv.Atoi(post_data.UserId)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
+		return
+	}
+	if newuserid_str <= 0 {
+		http.Error(w, "invalid request: invalid user id", http.StatusBadRequest)
+		return
+	}
+	newuserid := database.Id(newuserid_str)
+
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	channel, err := s.db.GetChannel(channelid)
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	server_info, err := s.db.GetServer(channel.ServerId)
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	if server_info.OwnerId != userid {
+		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+		return
+	}
+	inserver, err := s.db.IsUserInServer(newuserid, server_info.ServerId)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+		return
+	}
+	if !inserver {
+		http.Error(w, "user not in server", http.StatusBadRequest)
+		return
+	}
+	err = s.db.AddUserToChannel(newuserid, server_info.ServerId)
+	if err != nil {
+		http.Error(w, "error: unable to add user to channel", http.StatusBadRequest)
+		return
+	}
+}
+
+func (s *Server) RemoveChannelMember(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// get serverid for the channel and make sure the user is the owner
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	channel, err := s.db.GetChannel(channelid)
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	server_info, err := s.db.GetServer(channel.ServerId)
+	if err != nil {
+		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+		return
+	}
+	if server_info.OwnerId != userid {
+
+		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+		return
+	}
+	post_data := struct {
+		UserId string `json:"userid"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&post_data)
+	if err != nil {
+		fmt.Printf("error: unable to parse request %s", err)
+		http.Error(w, fmt.Sprintf("error: unable to parse request %s", err), http.StatusBadRequest)
+		return
+	}
+	newuserid_str, err := strconv.Atoi(post_data.UserId)
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
+		return
+	}
+	if newuserid_str <= 0 {
+		http.Error(w, "invalid request: invalid user id", http.StatusBadRequest)
+		return
+	}
+
+	newuserid := database.Id(newuserid_str)
+	err = s.db.RemoveUserFromChannel(database.Id(channelid), newuserid)
+	if errors.Is(err, database.ErrRecordNotFound) {
+		http.Error(w, "user not in channel", http.StatusBadRequest)
+		return
+	} else if err != nil {
+		http.Error(w, "error: unable to remove user from channel", http.StatusBadRequest)
+		return
+	}
+}
+
+func (s *Server) UpdateMessage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	messageid, err := parsePathFromID(r, "messageid")
+	if err != nil {
+		http.Error(w, "error: unable to parse messageid", http.StatusBadRequest)
+		return
+	}
+	message, err := s.db.GetMessage(messageid)
+	if err != nil {
+		http.Error(w, "error: unable to fetch message", http.StatusBadRequest)
+		return
+	}
+	if message.UserId != userid {
+		http.Error(w, "error: attempting to modify different user message", http.StatusBadRequest)
+		return
+	}
+	in_channel, err := s.db.IsUserInChannel(userid, message.ChannelId)
+	if err != nil {
+		http.Error(w, "error: unable to verify channel permissions", http.StatusBadRequest)
+		return
+	}
+	if !in_channel {
+		http.Error(w, "error: user not in channel", http.StatusBadRequest)
+		return
+	}
+
+	message_data := struct {
+		Message string `json:"message"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&message_data)
+	if err != nil {
+		http.Error(w, "error: unable to parse message from body", http.StatusBadRequest)
+		return
+	}
+	err = s.db.UpdateMessage(message.MessageId, message_data.Message)
+	if err != nil {
+		http.Error(w, "error: issue while updating message", http.StatusBadRequest)
+		return
+	}
+}
+
+func (s *Server) DeleteMessage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	messageid, err := parsePathFromID(r, "messageid")
+	if err != nil {
+		http.Error(w, "error: unable to parse messageid", http.StatusBadRequest)
+		return
+	}
+	message, err := s.db.GetMessage(messageid)
+	if err != nil {
+		http.Error(w, "error: unable to fetch message", http.StatusBadRequest)
+		return
+	}
+	if message.UserId != userid {
+
+		http.Error(w, "error: attempting to modify different user message", http.StatusBadRequest)
+		return
+	}
+	err = s.db.DeleteMessage(message.MessageId)
+	if err != nil {
+		http.Error(w, "error: issue while deleting message", http.StatusBadRequest)
+		return
+	}
+}
+
+func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	user, err := s.db.GetUser(userid)
+	if err != nil {
+		http.Error(w, "error: unable to fetch user", http.StatusBadRequest)
+		return
+	}
+	err = s.db.UpdateUserName(user.UserId, user.UserName)
+	if err != nil {
+		http.Error(w, "error: unable to update username", http.StatusBadRequest)
+		return
+	}
+}
+
+func (s *Server) DeleteChannel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "error: unable to parse channelid", http.StatusBadRequest)
+		return
+	}
+	channel, err := s.db.GetChannel(channelid)
+	if err != nil {
+		http.Error(w, "error: unable to fetch channel", http.StatusBadRequest)
+		return
+	}
+	server, err := s.db.GetServer(channel.ServerId)
+	if err != nil {
+		http.Error(w, "error: unable to fetch server", http.StatusBadRequest)
+		return
+	}
+	if server.OwnerId != userid {
+		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+		return
+	}
+	err = s.db.DeleteChannel(channel.ChannelId)
+	if err != nil {
+		http.Error(w, "error: unable to delete channel", http.StatusBadRequest)
+		return
+	}
+}
+
+func (s *Server) CreateChannel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	channel_data := struct {
+		ChannelName string `json:"channelname"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&channel_data)
+	if err != nil {
+		http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+		return
+	}
+	channelid, err := s.db.AddChannel(userid, channel_data.ChannelName)
+	if err != nil {
+		http.Error(w, "error: unable to create channel", http.StatusBadRequest)
+		return
+	}
+	resp := map[string]interface{}{
+		"channelid": channelid,
+	}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
+func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
+func (s *Server) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	inchannel, err := s.db.IsUserInChannel(userid, channelid)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+		return
+	}
+	if !inchannel {
+		http.Error(w, "user not in channel", http.StatusBadRequest)
+		return
+	}
+	message_data := struct {
+		Message string `json:"message"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&message_data)
+	if err != nil {
+		http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+		return
+	}
+	messageid, err := s.db.AddMessage(userid, channelid, message_data.Message)
+	if err != nil {
+		http.Error(w, "error: unable to create message", http.StatusBadRequest)
+		return
+	}
+	resp := map[string]interface{}{
+		"messageid": messageid,
+	}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
+func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+
+	inchannel, err := s.db.IsUserInChannel(userid, channelid)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+		return
+	}
+	if !inchannel {
+		http.Error(w, "user not in channel", http.StatusBadRequest)
+		return
+	}
+	count_str := r.URL.Query().Get("count")
+	var count uint = 30
+
+	if count_str != "" {
+		tempcount, err := strconv.Atoi(count_str)
+		if err != nil {
+			http.Error(w, "invalid request: unable to parse count", http.StatusBadRequest)
+			return
+		}
+		if tempcount > 0 {
+			count = uint(tempcount)
+		} else {
+			http.Error(w, "invalid request: invalid count", http.StatusBadRequest)
+			return
+		}
+	}
+
+	messages, err := s.db.GetMessagesInChannel(channelid, count)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	resp := map[string]interface{}{"messages": messages}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
+func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	_, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	channel_info, err := s.db.GetChannel(channelid)
+	if err != nil {
+		http.Error(w, "error: unable to locate channel", http.StatusBadRequest)
+		return
+	}
+
+	payload := struct {
+		ChannelId   database.Id `json:"channelid"`
+		ServerId    database.Id `json:"serverid"`
+		ChannelName string      `json:"channelname"`
+		Timestamp   time.Time   `json:"timestamp"`
+	}{
+		ChannelId:   channel_info.ChannelId,
+		ServerId:    channel_info.ServerId,
+		ChannelName: channel_info.ChannelName,
+		Timestamp:   channel_info.Timestamp,
+	}
+	jsonResp, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
+func (s *Server) GetMessage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusBadRequest)
+		return
+	}
+
+	messageid, err := parsePathFromID(r, "messageid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	dbmessage, err := s.db.GetMessage(messageid)
+	if err != nil {
+		http.Error(w, "error: internal server error", http.StatusBadRequest)
+		return
+	}
+	message := fromDBMessageToSeverMessage(dbmessage)
+	jsonResp, err := json.Marshal(message)
+	if err != nil {
+		http.Error(
+			w,
+			"error: internal server error. Unable to process request",
+			http.StatusBadRequest,
 		)
-	})
-}
-
-func (s *Server) WithAuthUser(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookieName := "token"
-		cookie, err := r.Cookie(cookieName)
-		if err != nil {
-			if err == http.ErrNoCookie {
-				// Handle the case where the cookie is not found
-				http.Error(w, "Token cookie not found", http.StatusUnauthorized)
-				return
-			}
-			// Handle other potential errors
-			http.Error(w, "Error retrieving cookie", http.StatusInternalServerError)
-			return
-		}
-
-		// Access the cookie value
-		token := cookie.Value
-		passwordInfo, err := s.db.GetUserLoginInfoFromToken(token)
-		if err != nil {
-			http.Error(w, "unable to locate password", http.StatusBadRequest)
-			return
-		}
-
-		if !s.validSession(passwordInfo, token) {
-			http.Error(w, "invalid token", http.StatusBadRequest)
-			return
-		}
-		next(w, r.WithContext(context.WithValue(r.Context(), "userid", passwordInfo.UserId)))
-	})
-}
-
-func (s *Server) corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
-		w.Header().
-			Set("Access-Control-Allow-Origin", "http://localhost:5173")
-			// Replace "*" with specific origins if needed
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-		w.Header().
-			Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
-		w.Header().
-			Set("Access-Control-Allow-Credentials", "true")
-			// Set to "true" if credentials are required
-
-		// Handle preflight OPTIONS requests
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		// Proceed with the next handler
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (s *Server) validSession(userinfo database.UserLoginInfo, usertoken string) bool {
-	// if no token has been set
-	if userinfo.Token == "" {
-		return false
 	}
-	// if the token has expired
-	if time.Now().After(userinfo.TokenExpireTime) {
-		return false
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
 	}
-	// if the token is not the same as the one in the database
-	return userinfo.Token == usertoken
 }
 
 func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -234,13 +823,12 @@ func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	val := r.Context().Value("userid")
-	userid, ok := val.(database.Id)
-	if !ok {
-		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err := r.ParseForm()
+	err = r.ParseForm()
 	if err != nil {
 		http.Error(w, "Unable to parse form", http.StatusBadRequest)
 		return
@@ -360,25 +948,19 @@ func (s *Server) createUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
-	serverid_str := r.PathValue("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if serverid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
-		return
-	}
 
-	val := r.Context().Value("userid")
-	userid, ok := val.(database.Id)
-	if !ok {
-		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	userinfo, err := s.db.GetUser(userid)
-	isServerMember, err := s.db.IsUserInServer(userinfo.UserId, database.Id(serverid))
+	isServerMember, err := s.db.IsUserInServer(userinfo.UserId, serverid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -388,7 +970,7 @@ func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channels, err := s.db.GetChannelsOfServer(database.Id(serverid))
+	channels, err := s.db.GetChannelsOfServer(serverid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -406,22 +988,14 @@ func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
-	userid_str := r.PathValue("userid")
-	userid_int, err := strconv.Atoi(userid_str)
+	userid, err := parsePathFromID(r, "userid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if userid_int <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
-		return
-	}
-	userid := database.Id(userid_int)
-
-	val := r.Context().Value("userid")
-	autheduserid, ok := val.(database.Id)
-	if !ok {
-		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+	autheduserid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if userid != autheduserid {
@@ -429,7 +1003,7 @@ func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	servers, err := s.db.GetServersOfUser(database.Id(userid))
+	servers, err := s.db.GetServersOfUser(userid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -447,13 +1021,17 @@ func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServerInformation(w http.ResponseWriter, r *http.Request) {
-	serverid_str := r.PathValue("serverid") // r.URL.Query().Get("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	server, err := s.db.GetServer(database.Id(serverid))
+	server, err := s.db.GetServer(serverid)
+	if errors.Is(err, database.ErrRecordNotFound) {
+		// TODO: figure out proper method for valid resopnse but no data
+		http.Error(w, "server not found", http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		http.Error(w, "invalid request: unable to find server", http.StatusNotFound)
 		return
@@ -480,14 +1058,9 @@ func (s *Server) GetServerInformation(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
-	serverid_str := r.PathValue("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
-		return
-	}
-	if serverid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
 		return
 	}
 	count_str := r.URL.Query().Get("count")
@@ -505,18 +1078,13 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err != nil {
-		http.Error(w, "invalid request: unable to parse count", http.StatusBadRequest)
-		return
-	}
 
-	val := r.Context().Value("userid")
-	userid, ok := val.(database.Id)
-	if !ok {
-		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	isServerMember, err := s.db.IsUserInServer(userid, database.Id(serverid))
+	isServerMember, err := s.db.IsUserInServer(userid, serverid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -526,12 +1094,12 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channels, err := s.db.GetChannelsOfServer(database.Id(serverid))
+	channels, err := s.db.GetChannelsOfServer(serverid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
 	}
-	var messages []Message
+	var messages []ServerMessage
 	for _, channel := range channels {
 		db_messages, err := s.db.GetMessagesInChannel(channel.ChannelId, count)
 		if err != nil {
@@ -539,17 +1107,10 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tempmsgs := make([]Message, len(db_messages))
+		tempmsgs := make([]ServerMessage, len(db_messages))
 		for i, dbmsg := range db_messages {
-			userinfo, err := s.db.GetUser(dbmsg.UserId)
-			if err != nil {
-				http.Error(w, "database error", http.StatusInternalServerError)
-				return
-			}
-			username := userinfo.UserName
-			tempmsgs[i] = Message{
+			tempmsgs[i] = ServerMessage{
 				UserId:    dbmsg.UserId,
-				UserName:  username,
 				MessageID: dbmsg.MessageId,
 				ChannelId: dbmsg.ChannelId,
 				Message:   dbmsg.Contents,
@@ -572,18 +1133,13 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request) {
-	serverid_str := r.PathValue("serverid") // r.URL.Query().Get("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if serverid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
-		return
-	}
 
-	users, err := s.db.GetUsersOfServer(database.Id(serverid))
+	users, err := s.db.GetUsersOfServer(serverid)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
@@ -601,18 +1157,13 @@ func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	userid_str := r.PathValue("userid") // r.URL.Query().Get("userid")
-	userid, err := strconv.Atoi(userid_str)
+	userid, err := parsePathFromID(r, "userid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
 		return
 	}
-	if userid <= 0 {
-		http.Error(w, "invalid request: invalid userid", http.StatusBadRequest)
-		return
-	}
 
-	user, err := s.db.GetUser(database.Id(userid))
+	user, err := s.db.GetUser(userid)
 	if errors.Is(err, database.ErrRecordNotFound) {
 		http.Error(w, "user not found", http.StatusNotFound)
 		return
@@ -634,10 +1185,9 @@ func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
-	val := r.Context().Value("userid")
-	passinfo, ok := val.(database.Id)
-	if !ok {
-		http.Error(w, "error fetching authentication", http.StatusInternalServerError)
+	passinfo, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	userinfo, err := s.db.GetUser(passinfo)
@@ -653,7 +1203,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer socket.Close(websocket.StatusGoingAway, "Server closing websocket")
-	outgoingChannel := make(chan Message)
+	outgoingChannel := make(chan ServerMessage)
 	go s.handleMessages(socket, outgoingChannel)
 	clients = append(clients, outgoingChannel)
 
@@ -709,8 +1259,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		msg := Message{
-			UserName:  userinfo.UserName,
+		msg := ServerMessage{
 			UserId:    dbmsg.UserId,
 			MessageID: messageid,
 			ChannelId: dbmsg.ChannelId,
@@ -721,7 +1270,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) handleIncomingMessages(broadcast chan Message) {
+func (s *Server) handleIncomingMessages(broadcast chan ServerMessage) {
 	for {
 		message := <-broadcast
 		for _, ch := range clients {
@@ -730,7 +1279,7 @@ func (s *Server) handleIncomingMessages(broadcast chan Message) {
 	}
 }
 
-func (s *Server) handleMessages(client *websocket.Conn, broadcast chan Message) {
+func (s *Server) handleMessages(client *websocket.Conn, broadcast chan ServerMessage) {
 	for {
 		msg := <-broadcast
 		jsondata, err := json.Marshal(msg)
@@ -741,8 +1290,5 @@ func (s *Server) handleMessages(client *websocket.Conn, broadcast chan Message) 
 		ctx, cancel := context.WithTimeout(context.Background(), 1.0*time.Second)
 		defer cancel()
 		client.Write(ctx, websocket.MessageText, jsondata)
-		if err != nil {
-			fmt.Println(err)
-		}
 	}
 }

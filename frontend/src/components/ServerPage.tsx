@@ -20,7 +20,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
             try {
                 // Send POST request to backend
                 const response = await fetch(
-                    `http://localhost:8080/api/server/${server_id}/messages?count=${number_of_messages}`,
+                    `http://localhost:8080/api/servers/${server_id}/messages?count=${number_of_messages}`,
                     {
                         method: "GET",
                         headers: {
@@ -160,7 +160,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
             try {
                 // Send POST request to backend
                 const response = await fetch(
-                    `http://localhost:8080/api/server/${server_id}/channels`,
+                    `http://localhost:8080/api/servers/${server_id}/channels`,
                     {
                         method: "GET",
                         headers: {

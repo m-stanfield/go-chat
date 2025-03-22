@@ -27,7 +27,7 @@ function App() {
       try {
         // Send POST request to backend
         const response = await fetch(
-          `http://localhost:8080/api/user/${auth.authState.user?.id}/servers`,
+          `http://localhost:8080/api/users/${auth.authState.user?.id}/servers`,
           {
             method: "GET",
             headers: {
