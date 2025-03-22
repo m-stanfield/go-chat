@@ -59,13 +59,9 @@ func (s *Server) validSession(userinfo database.UserLoginInfo, usertoken string)
 }
 
 func (s *Server) GetServerFromRequest(r *http.Request) (database.Server, error) {
-	serverid_str := r.PathValue("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		return database.Server{}, errors.New("invalid request: unable to parse server id")
-	}
-	if serverid <= 0 {
-		return database.Server{}, errors.New("invalid request: invalid server id")
 	}
 	server, err := s.db.GetServer(database.Id(serverid))
 	if err != nil {
@@ -75,15 +71,11 @@ func (s *Server) GetServerFromRequest(r *http.Request) (database.Server, error) 
 }
 
 func (s *Server) GetChannelFromRequest(r *http.Request) (database.Channel, error) {
-	channelid_str := r.PathValue("channelid")
-	channelid, err := strconv.Atoi(channelid_str)
+	channelid, err := parsePathFromID(r, "channelid")
 	if err != nil {
 		return database.Channel{}, errors.New("invalid request: unable to parse server id")
 	}
-	if channelid <= 0 {
-		return database.Channel{}, errors.New("invalid request: invalid server id")
-	}
-	channel, err := s.db.GetChannel(database.Id(channelid))
+	channel, err := s.db.GetChannel(channelid)
 	if err != nil {
 		return database.Channel{}, errors.New("error: unable to locate server")
 	}

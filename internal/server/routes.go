@@ -105,17 +105,12 @@ func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serverid_str := r.PathValue("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if serverid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
-		return
-	}
-	server_info, err := s.db.GetServer(database.Id(serverid))
+	server_info, err := s.db.GetServer(serverid)
 	if err != nil {
 		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
 		return
@@ -148,17 +143,12 @@ func (s *Server) DeleteServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serverid_str := r.PathValue("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if serverid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
-		return
-	}
-	server_info, err := s.db.GetServer(database.Id(serverid))
+	server_info, err := s.db.GetServer(serverid)
 	if err != nil {
 		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
 		return
@@ -185,17 +175,12 @@ func (s *Server) UpdateChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channelid_str := r.PathValue("channelid")
-	channelid, err := strconv.Atoi(channelid_str)
+	channelid, err := parsePathFromID(r, "channelid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if channelid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
-		return
-	}
-	channel_info, err := s.db.GetChannel(database.Id(channelid))
+	channel_info, err := s.db.GetChannel(channelid)
 	if err != nil {
 		http.Error(w, "error: unable to locate channel", http.StatusBadRequest)
 		return
@@ -232,17 +217,12 @@ func (s *Server) GetChannelMembers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	channelid_str := r.PathValue("channelid")
-	channelid, err := strconv.Atoi(channelid_str)
+	channelid, err := parsePathFromID(r, "channelid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if channelid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
-		return
-	}
-	inchannel, err := s.db.IsUserInChannel(userid, database.Id(channelid))
+	inchannel, err := s.db.IsUserInChannel(userid, channelid)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
 		return
@@ -307,17 +287,12 @@ func (s *Server) AddChannelMember(w http.ResponseWriter, r *http.Request) {
 	}
 	newuserid := database.Id(newuserid_str)
 
-	channelid_str := r.PathValue("channelid")
-	channelid, err := strconv.Atoi(channelid_str)
+	channelid, err := parsePathFromID(r, "channelid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	if channelid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
-		return
-	}
-	channel, err := s.db.GetChannel(database.Id(channelid))
+	channel, err := s.db.GetChannel(channelid))
 	if err != nil {
 		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
 		return
@@ -358,14 +333,9 @@ func (s *Server) RemoveChannelMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// get serverid for the channel and make sure the user is the owner
-	channelid_str := r.PathValue("channelid")
-	channelid, err := strconv.Atoi(channelid_str)
+	channelid, err := parsePathFromID(r, "channelid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
-		return
-	}
-	if channelid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
 		return
 	}
 	channel, err := s.db.GetChannel(database.Id(channelid))
@@ -423,17 +393,12 @@ func (s *Server) UpdateMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	message_id_str := r.PathValue("messageid")
-	messageid, err := strconv.Atoi(message_id_str)
+	messageid, err := parsePathFromID(r, "messageid")
 	if err != nil {
 		http.Error(w, "error: unable to parse messageid", http.StatusBadRequest)
 		return
 	}
-	if messageid < 0 {
-		http.Error(w, "error: invalid messageid", http.StatusBadRequest)
-		return
-	}
-	message, err := s.db.GetMessage(database.Id(messageid))
+	message, err := s.db.GetMessage(messageid)
 	if err != nil {
 		http.Error(w, "error: unable to fetch message", http.StatusBadRequest)
 		return
@@ -506,14 +471,9 @@ func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channelid_str := r.PathValue("channelid")
-	channelid, err := strconv.Atoi(channelid_str)
+	channelid, err := parsePathFromID(r, "channelid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
-		return
-	}
-	if channelid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
 		return
 	}
 	channel_info, err := s.db.GetChannel(database.Id(channelid))
@@ -550,14 +510,9 @@ func (s *Server) GetMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message_id_str := r.PathValue("messageid")
-	messageid, err := strconv.Atoi(message_id_str)
+	messageid, err := parsePathFromID(r, "messageid")
 	if err != nil {
-		http.Error(w, "error: unable to parse message id", http.StatusBadRequest)
-		return
-	}
-	if messageid < 0 {
-		http.Error(w, "error: invalid message id. requires postitive values", http.StatusBadRequest)
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
 	dbmessage, err := s.db.GetMessage(database.Id(messageid))
@@ -779,14 +734,9 @@ func (s *Server) createUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
-	serverid_str := r.PathValue("serverid")
-	serverid, err := strconv.Atoi(serverid_str)
+	serverid, err := parsePathFromID(r, "serverid")
 	if err != nil {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
-		return
-	}
-	if serverid <= 0 {
-		http.Error(w, "invalid request: invalid server id", http.StatusBadRequest)
 		return
 	}
 
