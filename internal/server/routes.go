@@ -433,19 +433,130 @@ func (s *Server) UpdateMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) DeleteMessage(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	messageid, err := parsePathFromID(r, "messageid")
+	if err != nil {
+		http.Error(w, "error: unable to parse messageid", http.StatusBadRequest)
+		return
+	}
+	message, err := s.db.GetMessage(messageid)
+	if err != nil {
+		http.Error(w, "error: unable to fetch message", http.StatusBadRequest)
+		return
+	}
+	if message.UserId != userid {
+
+		http.Error(w, "error: attempting to modify different user message", http.StatusBadRequest)
+		return
+	}
+	err = s.db.DeleteMessage(message.MessageId)
+	if err != nil {
+		http.Error(w, "error: issue while deleting message", http.StatusBadRequest)
+		return
+	}
 }
 
 func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	user, err := s.db.GetUser(userid)
+	if err != nil {
+		http.Error(w, "error: unable to fetch user", http.StatusBadRequest)
+		return
+	}
+	err = s.db.UpdateUserName(user.UserId, user.UserName)
+	if err != nil {
+		http.Error(w, "error: unable to update username", http.StatusBadRequest)
+		return
+	}
 }
 
 func (s *Server) DeleteChannel(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "error: unable to parse channelid", http.StatusBadRequest)
+		return
+	}
+	channel, err := s.db.GetChannel(channelid)
+	if err != nil {
+		http.Error(w, "error: unable to fetch channel", http.StatusBadRequest)
+		return
+	}
+	server, err := s.db.GetServer(channel.ServerId)
+	if err != nil {
+		http.Error(w, "error: unable to fetch server", http.StatusBadRequest)
+		return
+	}
+	if server.OwnerId != userid {
+		http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+		return
+	}
+	err = s.db.DeleteChannel(channel.ChannelId)
+	if err != nil {
+		http.Error(w, "error: unable to delete channel", http.StatusBadRequest)
+		return
+	}
 }
 
 func (s *Server) CreateChannel(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	channel_data := struct {
+		ChannelName string `json:"channelname"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&channel_data)
+	if err != nil {
+		http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+		return
+	}
+	channelid, err := s.db.AddChannel(userid, channel_data.ChannelName)
+	if err != nil {
+		http.Error(w, "error: unable to create channel", http.StatusBadRequest)
+		return
+	}
+	resp := map[string]interface{}{
+		"channelid": channelid,
+	}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
 }
 
 func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -453,11 +564,114 @@ func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+	inchannel, err := s.db.IsUserInChannel(userid, channelid)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+		return
+	}
+	if !inchannel {
+		http.Error(w, "user not in channel", http.StatusBadRequest)
+		return
+	}
+	message_data := struct {
+		Message string `json:"message"`
+	}{}
+	err = json.NewDecoder(r.Body).Decode(&message_data)
+	if err != nil {
+		http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+		return
+	}
+	messageid, err := s.db.AddMessage(userid, channelid, message_data.Message)
+	if err != nil {
+		http.Error(w, "error: unable to create message", http.StatusBadRequest)
+		return
+	}
+	resp := map[string]interface{}{
+		"messageid": messageid,
+	}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
 }
 
 func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	channelid, err := parsePathFromID(r, "channelid")
+	if err != nil {
+		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+		return
+	}
+
+	inchannel, err := s.db.IsUserInChannel(userid, channelid)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+		return
+	}
+	if !inchannel {
+		http.Error(w, "user not in channel", http.StatusBadRequest)
+		return
+	}
+	count_str := r.URL.Query().Get("count")
+	var count uint = 30
+
+	if count_str != "" {
+		tempcount, err := strconv.Atoi(count_str)
+		if err != nil {
+			http.Error(w, "invalid request: unable to parse count", http.StatusBadRequest)
+			return
+		}
+		if tempcount > 0 {
+			count = uint(tempcount)
+		} else {
+			http.Error(w, "invalid request: invalid count", http.StatusBadRequest)
+			return
+		}
+	}
+
+	messages, err := s.db.GetMessagesInChannel(channelid, count)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	resp := map[string]interface{}{"messages": messages}
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
 }
 
 func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
