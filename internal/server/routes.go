@@ -292,7 +292,7 @@ func (s *Server) AddChannelMember(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
 		return
 	}
-	channel, err := s.db.GetChannel(channelid))
+	channel, err := s.db.GetChannel(channelid)
 	if err != nil {
 		http.Error(w, "error: unable to locate server", http.StatusBadRequest)
 		return
