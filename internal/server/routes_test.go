@@ -840,3 +840,111 @@ func TestServer_GetMessage_Valid(t *testing.T) {
 	}
 	// TODO: add check for time to update
 }
+
+func TestServer_DeleteMessage(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.DeleteMessage(tt.w, tt.r)
+		})
+	}
+}
+
+func TestServer_UpdateUser(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.UpdateUser(tt.w, tt.r)
+		})
+	}
+}
+
+func TestServer_DeleteChannel(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.DeleteChannel(tt.w, tt.r)
+		})
+	}
+}
+
+func TestServer_CreateChannel(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.CreateChannel(tt.w, tt.r)
+		})
+	}
+}
+
+func TestServer_CreateChannelMessage(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.CreateChannelMessage(tt.w, tt.r)
+		})
+	}
+}
+
+func TestServer_GetChannelMessages(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		w http.ResponseWriter
+		r *http.Request
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			var s Server
+			s.GetChannelMessages(tt.w, tt.r)
+		})
+	}
+}
