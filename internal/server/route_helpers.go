@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,6 +19,18 @@ type serverVerification struct {
 	Validated bool
 	UserId    database.Id
 	Server    database.Server
+}
+
+func parsePathFromID(r *http.Request, field string) (database.Id, error) {
+	fieldIDStr := r.PathValue(field)
+	fieldID, err := strconv.Atoi(fieldIDStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid request: unable to parse %s", field)
+	}
+	if fieldID <= 0 {
+		return 0, fmt.Errorf("invalid request: valid %s id requires >=0", field)
+	}
+	return database.Id(fieldID), nil
 }
 
 func getUserIdFromContext(r *http.Request) (database.Id, error) {
