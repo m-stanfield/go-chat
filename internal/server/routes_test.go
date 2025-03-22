@@ -842,6 +842,7 @@ func TestServer_GetMessage_Valid(t *testing.T) {
 }
 
 func TestServer_DeleteMessage(t *testing.T) {
+	t.Skip("Test not yet implemented")
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -860,6 +861,7 @@ func TestServer_DeleteMessage(t *testing.T) {
 }
 
 func TestServer_UpdateUser(t *testing.T) {
+	t.Skip("Test not yet implemented")
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -878,6 +880,7 @@ func TestServer_UpdateUser(t *testing.T) {
 }
 
 func TestServer_DeleteChannel(t *testing.T) {
+	t.Skip("Test not yet implemented")
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -896,6 +899,7 @@ func TestServer_DeleteChannel(t *testing.T) {
 }
 
 func TestServer_CreateChannel(t *testing.T) {
+	t.Skip("Test not yet implemented")
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -914,6 +918,7 @@ func TestServer_CreateChannel(t *testing.T) {
 }
 
 func TestServer_CreateChannelMessage(t *testing.T) {
+	t.Skip("Test not yet implemented")
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -932,6 +937,7 @@ func TestServer_CreateChannelMessage(t *testing.T) {
 }
 
 func TestServer_GetChannelMessages(t *testing.T) {
+	t.Skip("Test not yet implemented")
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
