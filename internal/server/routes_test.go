@@ -20,7 +20,7 @@ type TestServer struct {
 }
 
 func setupTest(tb testing.TB) (*TestServer, func(tb testing.TB)) {
-	server := database.NewInMemory()
+	server := NewInMemoryDB()
 	if server == nil {
 		tb.Fatal("failed to create server")
 	}

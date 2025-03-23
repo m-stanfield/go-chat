@@ -41,14 +41,14 @@ func loadDB(filename string, schemafile string, datafile string) (*sql.DB, error
 	return db, nil
 }
 
-func setup() *service {
+func setup() *DBService {
 	wd, _ := os.Getwd()
 	fmt.Println(wd)
 	db, err := loadDB(":memory:", "../../schema.sql", "../../mockdata.sql")
 	if err != nil {
 		panic("unable to initialize database for tests")
 	}
-	return &service{db: db, conn: db}
+	return &DBService{db: db, conn: db}
 }
 
 func Test_DeleteMessage(t *testing.T) {
@@ -146,7 +146,7 @@ func Test_AtomicFail(t *testing.T) {
 	db := setup()
 	defer db.Close()
 	var userId *Id = nil
-	err := db.Atomic(context.Background(), func(db Service) error {
+	err := db.Atomic(context.Background(), func(db *DBService) error {
 		u, err := db.CreateUser("aaaaa", "password")
 		if err != nil {
 			t.Fatalf("database - AtomicFail: errored while creating user %v", err)
@@ -170,7 +170,7 @@ func Test_AtomicPass(t *testing.T) {
 	db := setup()
 	defer db.Close()
 	var userId *Id = nil
-	err := db.Atomic(context.Background(), func(db Service) error {
+	err := db.Atomic(context.Background(), func(db *DBService) error {
 		u, err := db.CreateUser("aaaaa", "password")
 		if err != nil {
 			return err
