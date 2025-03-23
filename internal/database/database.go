@@ -22,12 +22,12 @@ type dbConn interface {
 }
 
 type AtomitcDBService struct {
-	service  Service
+	service  *DBService
 	commit   func() error
 	rollback func() error
 }
 
-func (a *AtomitcDBService) Service() Service {
+func (a *AtomitcDBService) Service() *DBService {
 	return a.service
 }
 
@@ -56,12 +56,12 @@ func (r *DBService) ValidateUserLoginInfo(userid Id, password string) (bool, err
 	return comparePassword(user, password), nil
 }
 
-func (db *DBService) withTx(tx *sql.Tx) Service {
+func (db *DBService) withTx(tx *sql.Tx) *DBService {
 	return &DBService{db: db.db, conn: tx}
 }
 
-func (r *DBService) Atomic(ctx context.Context) (AtomicService, error) {
-	tx, err := r.db.BeginTx(ctx, nil)
+func (r *DBService) Atomic(ctx context.Context, opts *sql.TxOptions) (*AtomitcDBService, error) {
+	tx, err := r.db.BeginTx(ctx, opts)
 	if err != nil {
 		return &AtomitcDBService{}, err
 	}

@@ -145,7 +145,7 @@ func Test_GetUser(t *testing.T) {
 func Test_AtomicFail(t *testing.T) {
 	adb := setup()
 	defer adb.Close()
-	atomic, err := adb.Atomic(context.Background())
+	atomic, err := adb.Atomic(context.Background(), nil)
 	db := atomic.Service()
 
 	u, err := db.CreateUser("aaaaa", "password")
