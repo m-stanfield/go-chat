@@ -115,12 +115,11 @@ func NewInMemoryDB() *database.DBService {
 	return database.New(db)
 }
 
-func Atomic(
+func (s *Server) Atomic(
 	ctx context.Context,
-	r *database.DBService,
 	opts *sql.TxOptions,
 ) (*database.AtomitcDBService, error) {
-	a, err := r.Atomic(ctx, opts)
+	a, err := s.Atomic(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -153,12 +152,19 @@ type Server struct {
 func NewServer() *http.Server {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
 	fmt.Printf("opening on port %d", port)
+	db := NewDB()
+
 	NewServer := &Server{
 		port: port,
 
-		db: NewDB(),
+		db: db,
+	}
+	atomicdb, err := db.Atomic(context.Background(), nil)
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	atomicdb.Rollback()
 	// Declare Server config
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", NewServer.port),
