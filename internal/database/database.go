@@ -15,10 +15,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Service represents a service that interacts with a database.
-type Service interface {
-	Atomic(context.Context, AtomicCallback) error
-
+type UserService interface {
 	GetUserIDFromUserName(username string) (Id, error)
 	UpdateUserSessionToken(userid Id) (string, time.Time, error)
 	GetUserLoginInfoFromToken(token string) (UserLoginInfo, error)
@@ -29,7 +26,9 @@ type Service interface {
 	CreateUser(username string, password string) (Id, error)
 	UpdateUserName(userid Id, username string) error
 	GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry, error)
+}
 
+type ServerService interface {
 	GetUsersOfServer(serverid Id) ([]User, error)
 	GetServersOfUser(userid Id) ([]Server, error)
 	GetServer(serverid Id) (Server, error)
@@ -37,7 +36,9 @@ type Service interface {
 	DeleteServer(serverid Id) error
 	UpdateServerName(serverid Id, servername string) error
 	IsUserInServer(userid Id, serverid Id) (bool, error)
+}
 
+type ChannelService interface {
 	AddChannel(serverid Id, channelname string) (Id, error)
 	DeleteChannel(channelid Id) error
 	GetChannel(channelid Id) (Channel, error)
@@ -47,16 +48,28 @@ type Service interface {
 	RemoveUserFromChannel(channelid Id, userid Id) error
 	GetUsersInChannel(channelid Id) ([]User, error)
 	IsUserInChannel(userid Id, channelid Id) (bool, error)
+}
 
+type MessageService interface {
 	GetMessage(messageid Id) (Message, error)
 	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
 	AddMessage(channelid Id, userid Id, message string) (Id, error)
 	UpdateMessage(messageid Id, message string) error
 	DeleteMessage(messageid Id) error
+}
 
-	// Close terminates the database connection.
-	// It returns an error if the connection cannot be closed.
+type LifecycleService interface {
 	Close() error
+}
+
+// Service represents a service that interacts with a database.
+type Service interface {
+	Atomic(context.Context, AtomicCallback) error
+	UserService
+	ServerService
+	ChannelService
+	MessageService
+	LifecycleService
 }
 type DBConn interface {
 	Query(query string, args ...any) (*sql.Rows, error)
@@ -65,8 +78,6 @@ type DBConn interface {
 	Exec(query string, args ...any) (sql.Result, error)
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
-
-type AtomicCallback = func(r Service) error
 
 type service struct {
 	db   *sql.DB
@@ -90,7 +101,9 @@ func (db *service) withTx(tx *sql.Tx) *service {
 	return &service{db: db.db, conn: tx}
 }
 
-func (r *service) Atomic(ctx context.Context, cb func(ds Service) error) error {
+type AtomicCallback = func(r Service) error
+
+func (r *service) Atomic(ctx context.Context, cb AtomicCallback) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
