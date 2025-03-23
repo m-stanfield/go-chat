@@ -21,6 +21,24 @@ type dbConn interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
 
+type AtomitcDBService struct {
+	service  Service
+	commit   func() error
+	rollback func() error
+}
+
+func (a *AtomitcDBService) Service() Service {
+	return a.service
+}
+
+func (a *AtomitcDBService) Commit() error {
+	return a.commit()
+}
+
+func (a *AtomitcDBService) Rollback() error {
+	return a.rollback()
+}
+
 type DBService struct {
 	db   *sql.DB
 	conn dbConn
@@ -38,27 +56,24 @@ func (r *DBService) ValidateUserLoginInfo(userid Id, password string) (bool, err
 	return comparePassword(user, password), nil
 }
 
-func (db *DBService) withTx(tx *sql.Tx) *DBService {
+func (db *DBService) withTx(tx *sql.Tx) Service {
 	return &DBService{db: db.db, conn: tx}
 }
 
-func (r *DBService) Atomic(ctx context.Context, cb func(r *DBService) error) error {
+func (r *DBService) Atomic(ctx context.Context) (AtomicService, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return &AtomitcDBService{}, err
 	}
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				err = fmt.Errorf("tx err: %w, rb err: %w", err, rbErr)
-			}
-		} else {
-			err = tx.Commit()
-		}
-	}()
-	dbTx := r.withTx(tx)
-	err = cb(dbTx)
-	return err
+	commit := func() error {
+		return tx.Commit()
+	}
+
+	rollback := func() error {
+		return tx.Rollback()
+	}
+	a := r.withTx(tx)
+	return &AtomitcDBService{service: a, commit: commit, rollback: rollback}, nil
 }
 
 func hashPassword(password string, salt string) string {
