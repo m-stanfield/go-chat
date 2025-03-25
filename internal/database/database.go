@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"strconv"
 	"time"
 
@@ -15,50 +13,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Service represents a service that interacts with a database.
-type Service interface {
-	Atomic(context.Context, AtomicCallback) error
-
-	GetUserIDFromUserName(username string) (Id, error)
-	UpdateUserSessionToken(userid Id) (string, time.Time, error)
-	GetUserLoginInfoFromToken(token string) (UserLoginInfo, error)
-	GetUserLoginInfo(userid Id) (UserLoginInfo, error)
-	ValidateUserLoginInfo(userid Id, password string) (bool, error)
-
-	GetUser(userid Id) (User, error)
-	CreateUser(username string, password string) (Id, error)
-	UpdateUserName(userid Id, username string) error
-	GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry, error)
-
-	GetUsersOfServer(serverid Id) ([]User, error)
-	GetServersOfUser(userid Id) ([]Server, error)
-	GetServer(serverid Id) (Server, error)
-	CreateServer(ownerid Id, servername string) (Id, error)
-	DeleteServer(serverid Id) error
-	UpdateServerName(serverid Id, servername string) error
-	IsUserInServer(userid Id, serverid Id) (bool, error)
-
-	AddChannel(serverid Id, channelname string) (Id, error)
-	DeleteChannel(channelid Id) error
-	GetChannel(channelid Id) (Channel, error)
-	GetChannelsOfServer(serverid Id) ([]Channel, error)
-	UpdateChannel(channelid Id, username string) error
-	AddUserToChannel(channelid Id, userid Id) error
-	RemoveUserFromChannel(channelid Id, userid Id) error
-	GetUsersInChannel(channelid Id) ([]User, error)
-	IsUserInChannel(userid Id, channelid Id) (bool, error)
-
-	GetMessage(messageid Id) (Message, error)
-	GetMessagesInChannel(channelid Id, number uint) ([]Message, error)
-	AddMessage(channelid Id, userid Id, message string) (Id, error)
-	UpdateMessage(messageid Id, message string) error
-	DeleteMessage(messageid Id) error
-
-	// Close terminates the database connection.
-	// It returns an error if the connection cannot be closed.
-	Close() error
-}
-type DBConn interface {
+type dbConn interface {
 	Query(query string, args ...any) (*sql.Rows, error)
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
@@ -66,19 +21,34 @@ type DBConn interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
 
-type AtomicCallback = func(r Service) error
-
-type service struct {
-	db   *sql.DB
-	conn DBConn
+type AtomitcDBService struct {
+	service  *DBService
+	commit   func() error
+	rollback func() error
 }
 
-var (
-	dburl      = os.Getenv("BLUEPRINT_DB_URL")
-	dbInstance *service
-)
+func (a *AtomitcDBService) Service() *DBService {
+	return a.service
+}
 
-func (r *service) ValidateUserLoginInfo(userid Id, password string) (bool, error) {
+func (a *AtomitcDBService) Commit() error {
+	return a.commit()
+}
+
+func (a *AtomitcDBService) Rollback() error {
+	return a.rollback()
+}
+
+type DBService struct {
+	db   *sql.DB
+	conn dbConn
+}
+
+func New(db *sql.DB) *DBService {
+	return &DBService{db: db, conn: db}
+}
+
+func (r *DBService) ValidateUserLoginInfo(userid Id, password string) (bool, error) {
 	user, err := r.GetUserLoginInfo(userid)
 	if err != nil {
 		return false, err
@@ -86,83 +56,24 @@ func (r *service) ValidateUserLoginInfo(userid Id, password string) (bool, error
 	return comparePassword(user, password), nil
 }
 
-func (db *service) withTx(tx *sql.Tx) *service {
-	return &service{db: db.db, conn: tx}
+func (db *DBService) withTx(tx *sql.Tx) *DBService {
+	return &DBService{db: db.db, conn: tx}
 }
 
-func (r *service) Atomic(ctx context.Context, cb func(ds Service) error) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+func (r *DBService) Atomic(ctx context.Context, opts *sql.TxOptions) (*AtomitcDBService, error) {
+	tx, err := r.db.BeginTx(ctx, opts)
 	if err != nil {
-		return err
+		return &AtomitcDBService{}, err
 	}
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				err = fmt.Errorf("tx err: %w, rb err: %w", err, rbErr)
-			}
-		} else {
-			err = tx.Commit()
-		}
-	}()
-	dbTx := r.withTx(tx)
-	err = cb(dbTx)
-	return err
-}
-
-func executeSQLFile(db *sql.DB, filename string) error {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
+	commit := func() error {
+		return tx.Commit()
 	}
 
-	_, err = db.Exec(string(data))
-	if err != nil {
-		return fmt.Errorf("failed to execute SQL: %w", err)
+	rollback := func() error {
+		return tx.Rollback()
 	}
-
-	return nil
-}
-
-func NewInMemory() Service {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = executeSQLFile(db, "../../schema.sql")
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = executeSQLFile(db, "../../mockdata.sql")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dbInstance = &service{
-		db:   db,
-		conn: db,
-	}
-	return dbInstance
-}
-
-func New() Service {
-	// Reuse Connection
-	if dbInstance != nil {
-		return dbInstance
-	}
-
-	db, err := sql.Open("sqlite3", dburl)
-	if err != nil {
-		// This will not be a connection error, but a DSN parse error or
-		// another initialization error.
-		log.Fatal(err)
-	}
-
-	dbInstance = &service{
-		db:   db,
-		conn: db,
-	}
-	return dbInstance
+	a := r.withTx(tx)
+	return &AtomitcDBService{service: a, commit: commit, rollback: rollback}, nil
 }
 
 func hashPassword(password string, salt string) string {
@@ -177,12 +88,11 @@ func comparePassword(userinfo UserLoginInfo, password string) bool {
 // It logs a message indicating the disconnection from the specific database.
 // If the connection is successfully closed, it returns nil.
 // If an error occurs while closing the connection, it returns the error.
-func (s *service) Close() error {
-	log.Printf("Disconnected from database: %s", dburl)
+func (s *DBService) Close() error {
 	return s.db.Close()
 }
 
-func (r *service) CreateServer(ownerid Id, servername string) (Id, error) {
+func (r *DBService) CreateServer(ownerid Id, servername string) (Id, error) {
 	d, err := r.conn.Exec(
 		"INSERT INTO ServerTable (servername, ownerid) VALUES (?, ?)",
 		servername,
@@ -206,12 +116,12 @@ func (r *service) CreateServer(ownerid Id, servername string) (Id, error) {
 	return Id(id), nil
 }
 
-func (r *service) DeleteMessage(messageid Id) error {
+func (r *DBService) DeleteMessage(messageid Id) error {
 	_, err := r.conn.Exec("DELETE FROM ChannelMessageTable WHERE messageid = ?", messageid)
 	return err
 }
 
-func (r *service) UpdateMessage(messageid Id, message string) error {
+func (r *DBService) UpdateMessage(messageid Id, message string) error {
 	_, err := r.conn.Exec(
 		"UPDATE ChannelMessageTable SET contents = ? WHERE messageid=? ",
 		message,
@@ -220,7 +130,7 @@ func (r *service) UpdateMessage(messageid Id, message string) error {
 	return err
 }
 
-func (r *service) GetUserIDFromUserName(username string) (Id, error) {
+func (r *DBService) GetUserIDFromUserName(username string) (Id, error) {
 	rows, err := r.conn.Query("SELECT userid FROM UserTable WHERE username = ?", username)
 	if err != nil {
 		return 0, err
@@ -244,7 +154,7 @@ func (r *service) GetUserIDFromUserName(username string) (Id, error) {
 	return userid, nil
 }
 
-func (r *service) UpdateUserSessionToken(userid Id) (string, time.Time, error) {
+func (r *DBService) UpdateUserSessionToken(userid Id) (string, time.Time, error) {
 	token := "token" + strconv.FormatUint(uint64(userid), 10)
 	expire := time.Now().Add(24 * time.Hour)
 	_, err := r.conn.Exec(
@@ -259,7 +169,7 @@ func (r *service) UpdateUserSessionToken(userid Id) (string, time.Time, error) {
 	return token, expire, nil
 }
 
-func (r *service) GetUserLoginInfo(userid Id) (UserLoginInfo, error) {
+func (r *DBService) GetUserLoginInfo(userid Id) (UserLoginInfo, error) {
 	rows, err := r.conn.Query(
 		"SELECT userid, passwordhash, salt, token, token_expire_time FROM UserLoginTable WHERE userid = ?",
 		userid,
@@ -292,7 +202,7 @@ func (r *service) GetUserLoginInfo(userid Id) (UserLoginInfo, error) {
 	return user, nil
 }
 
-func (r *service) GetUserLoginInfoFromToken(token string) (UserLoginInfo, error) {
+func (r *DBService) GetUserLoginInfoFromToken(token string) (UserLoginInfo, error) {
 	rows, err := r.conn.Query(
 		"SELECT userid, passwordhash, salt, token, token_expire_time FROM UserLoginTable WHERE token = ?",
 		token,
@@ -325,7 +235,7 @@ func (r *service) GetUserLoginInfoFromToken(token string) (UserLoginInfo, error)
 	return user, nil
 }
 
-func (r *service) GetUser(userid Id) (User, error) {
+func (r *DBService) GetUser(userid Id) (User, error) {
 	rows, err := r.conn.Query("SELECT userid, username FROM UserTable WHERE userid = ?", userid)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrRecordNotFound
@@ -352,7 +262,7 @@ func (r *service) GetUser(userid Id) (User, error) {
 	return user, nil
 }
 
-func (r *service) CreateUser(username string, password string) (Id, error) {
+func (r *DBService) CreateUser(username string, password string) (Id, error) {
 	d, err := r.conn.Exec("INSERT INTO UserTable (username) VALUES (?)", username)
 	var sqliteErr sqlite3.Error
 	if errors.As(err, &sqliteErr) && sqliteErr.Code == sqlite3.ErrConstraint &&
@@ -385,12 +295,12 @@ func (r *service) CreateUser(username string, password string) (Id, error) {
 	return Id(id), nil
 }
 
-func (r *service) UpdateUserName(userid Id, username string) error {
+func (r *DBService) UpdateUserName(userid Id, username string) error {
 	_, err := r.conn.Exec("UPDATE UserTable SET username = ? WHERE userid=? ", username, userid)
 	return err
 }
 
-func (r *service) UpdateServerName(serverid Id, servername string) error {
+func (r *DBService) UpdateServerName(serverid Id, servername string) error {
 	_, err := r.conn.Exec(
 		"UPDATE ServerTable SET servername = ? WHERE serverid=? ",
 		servername,
@@ -399,7 +309,7 @@ func (r *service) UpdateServerName(serverid Id, servername string) error {
 	return err
 }
 
-func (r *service) GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry, error) {
+func (r *DBService) GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry, error) {
 	rows, err := r.conn.Query(
 		"SELECT userid, username, timestamp FROM UserNameLogTable WHERE userid = ? ORDER BY timestamp DESC LIMIT ?",
 		userid,
@@ -421,7 +331,7 @@ func (r *service) GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry
 	return names, nil
 }
 
-func (r *service) GetUsersOfServer(serverid Id) ([]User, error) {
+func (r *DBService) GetUsersOfServer(serverid Id) ([]User, error) {
 	rows, err := r.conn.Query(
 		"SELECT U.userid, U.username FROM UsersServerTable as US INNER JOIN UserTable as U ON US.userid = U.userid WHERE US.serverid = ?",
 		serverid,
@@ -442,12 +352,12 @@ func (r *service) GetUsersOfServer(serverid Id) ([]User, error) {
 	return names, nil
 }
 
-func (r *service) DeleteServer(serverid Id) error {
+func (r *DBService) DeleteServer(serverid Id) error {
 	_, err := r.conn.Exec("DELETE FROM ServerTable WHERE serverid = ?", serverid)
 	return err
 }
 
-func (r *service) GetServersOfUser(userid Id) ([]Server, error) {
+func (r *DBService) GetServersOfUser(userid Id) ([]Server, error) {
 	rows, err := r.conn.Query(
 		"SELECT S.serverid, S.ownerid, S.servername FROM UsersServerTable as U INNER JOIN ServerTable as S ON U.serverid = S.serverid WHERE U.userid = ?",
 		userid,
@@ -468,7 +378,7 @@ func (r *service) GetServersOfUser(userid Id) ([]Server, error) {
 	return servers, nil
 }
 
-func (r *service) GetChannelsOfServer(serverid Id) ([]Channel, error) {
+func (r *DBService) GetChannelsOfServer(serverid Id) ([]Channel, error) {
 	rows, err := r.conn.Query(
 		"SELECT channelid, serverid, channelname, timestamp FROM ChannelTable WHERE serverid = ?",
 		serverid,
@@ -489,7 +399,7 @@ func (r *service) GetChannelsOfServer(serverid Id) ([]Channel, error) {
 	return servers, nil
 }
 
-func (r *service) IsUserInChannel(userid Id, channelid Id) (bool, error) {
+func (r *DBService) IsUserInChannel(userid Id, channelid Id) (bool, error) {
 	query := `SELECT COUNT(1) FROM UsersChannelTable WHERE channelid = ? AND userid = ?`
 	var count int
 	err := r.db.QueryRow(query, channelid, userid).Scan(&count)
@@ -499,7 +409,7 @@ func (r *service) IsUserInChannel(userid Id, channelid Id) (bool, error) {
 	return count > 0, nil
 }
 
-func (r *service) AddUserToChannel(userid Id, channelid Id) error {
+func (r *DBService) AddUserToChannel(userid Id, channelid Id) error {
 	d, err := r.conn.Exec(
 		"INSERT INTO UsersChannelTable ( userid, channelid) VALUES ( ?, ?)",
 		userid,
@@ -518,7 +428,7 @@ func (r *service) AddUserToChannel(userid Id, channelid Id) error {
 	return nil
 }
 
-func (r *service) AddChannel(serverid Id, channelname string) (Id, error) {
+func (r *DBService) AddChannel(serverid Id, channelname string) (Id, error) {
 	d, err := r.conn.Exec(
 		"INSERT INTO ChannelTable ( serverid, channelname) VALUES ( ?, ?)",
 		serverid,
@@ -537,7 +447,7 @@ func (r *service) AddChannel(serverid Id, channelname string) (Id, error) {
 	return Id(id), nil
 }
 
-func (r *service) IsUserInServer(userid Id, serverid Id) (bool, error) {
+func (r *DBService) IsUserInServer(userid Id, serverid Id) (bool, error) {
 	query := `SELECT COUNT(1) FROM UsersServerTable WHERE serverid = ? AND userid = ?`
 	var count int
 	err := r.db.QueryRow(query, serverid, userid).Scan(&count)
@@ -547,7 +457,7 @@ func (r *service) IsUserInServer(userid Id, serverid Id) (bool, error) {
 	return count > 0, nil
 }
 
-func (r *service) GetChannel(channelid Id) (Channel, error) {
+func (r *DBService) GetChannel(channelid Id) (Channel, error) {
 	rows, err := r.conn.Query(
 		"SELECT channelid, channelname, serverid, timestamp FROM ChannelTable WHERE channelid = ?",
 		channelid,
@@ -579,7 +489,7 @@ func (r *service) GetChannel(channelid Id) (Channel, error) {
 	return channel, nil
 }
 
-func (r *service) UpdateChannel(channelid Id, new_server_name string) error {
+func (r *DBService) UpdateChannel(channelid Id, new_server_name string) error {
 	_, err := r.conn.Exec(
 		"UPDATE ChannelTable SET channelname = ? WHERE channelid = ? ",
 		new_server_name,
@@ -588,7 +498,7 @@ func (r *service) UpdateChannel(channelid Id, new_server_name string) error {
 	return err
 }
 
-func (r *service) GetServer(serverid Id) (Server, error) {
+func (r *DBService) GetServer(serverid Id) (Server, error) {
 	rows, err := r.conn.Query(
 		"SELECT serverid, ownerid, servername FROM ServerTable WHERE serverid = ? ",
 		serverid,
@@ -616,7 +526,7 @@ func (r *service) GetServer(serverid Id) (Server, error) {
 	return server, nil
 }
 
-func (r *service) GetMessage(messageid Id) (Message, error) {
+func (r *DBService) GetMessage(messageid Id) (Message, error) {
 	rows, err := r.conn.Query(
 		"SELECT messageid, channelid, userid, contents, timestamp, editted, edittimestamp FROM ChannelMessageTable WHERE messageid = ? ",
 		messageid,
@@ -648,7 +558,7 @@ func (r *service) GetMessage(messageid Id) (Message, error) {
 	return message, nil
 }
 
-func (r *service) AddMessage(channelid Id, userid Id, message string) (Id, error) {
+func (r *DBService) AddMessage(channelid Id, userid Id, message string) (Id, error) {
 	if userid == 0 || channelid == 0 {
 		return 0, fmt.Errorf("add message - zero userid or channel id")
 	}
@@ -671,7 +581,7 @@ func (r *service) AddMessage(channelid Id, userid Id, message string) (Id, error
 	return Id(id), nil
 }
 
-func (r *service) GetMessagesInChannel(channelid Id, number uint) ([]Message, error) {
+func (r *DBService) GetMessagesInChannel(channelid Id, number uint) ([]Message, error) {
 	rows, err := r.conn.Query(
 		"SELECT messageid, channelid, userid, contents, timestamp, editted, edittimestamp FROM ChannelMessageTable WHERE channelid = ? ORDER BY timestamp DESC LIMIT ?",
 		channelid,
@@ -701,7 +611,7 @@ func (r *service) GetMessagesInChannel(channelid Id, number uint) ([]Message, er
 	return messages, nil
 }
 
-func (r *service) GetUsersInChannel(channelid Id) ([]User, error) {
+func (r *DBService) GetUsersInChannel(channelid Id) ([]User, error) {
 	rows, err := r.conn.Query(
 		"SELECT U.userid, U.username FROM UsersChannelTable as UC INNER JOIN UserTable as U ON UC.userid = U.userid WHERE UC.channelid = ?",
 		channelid,
@@ -722,7 +632,7 @@ func (r *service) GetUsersInChannel(channelid Id) ([]User, error) {
 	return names, nil
 }
 
-func (r *service) RemoveUserFromChannel(channelid Id, userid Id) error {
+func (r *DBService) RemoveUserFromChannel(channelid Id, userid Id) error {
 	result, err := r.conn.Exec(
 		"DELETE FROM UsersChannelTable WHERE channelid = ? AND userid = ?",
 		channelid,
@@ -747,7 +657,7 @@ func (r *service) RemoveUserFromChannel(channelid Id, userid Id) error {
 	return nil
 }
 
-func (r *service) DeleteChannel(channelid Id) error {
-	_, err := dbInstance.conn.Exec("DELETE FROM ChannelTable WHERE channelid = ?", channelid)
+func (r *DBService) DeleteChannel(channelid Id) error {
+	_, err := r.conn.Exec("DELETE FROM ChannelTable WHERE channelid = ?", channelid)
 	return err
 }
