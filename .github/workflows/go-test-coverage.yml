@@ -7,17 +7,21 @@ on:
   pull_request:
     branches:
       - main
+permissions:
+  contents: write
 
 jobs:
   test:
     name: Run Go Tests
     runs-on: ubuntu-latest
 
-    env: 
-        RUNNER_TOOL_CACHE: /toolcache # Runner Tool Cache
+    env:
+      RUNNER_TOOL_CACHE: /toolcache
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Ensures all branches are fetched for gh-pages deployment
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -33,15 +37,12 @@ jobs:
 
       - name: Generate HTML coverage report
         run: |
-          go tool cover -html=coverage.out -o coverage.html
+          go tool cover -html=coverage.out -o public/coverage.html
 
-      - name: Upload coverage report to GitHub Pages
-        run: |
-          mkdir -p public
-          mv coverage.html public/
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          personal_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
-          keep_files: true
           publish_branch: gh-pages
+          keep_files: true
