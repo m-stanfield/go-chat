@@ -19,7 +19,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -35,9 +34,14 @@ jobs:
       - name: Generate HTML coverage report
         run: |
           go tool cover -html=coverage.out -o coverage.html
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+
+      - name: Upload coverage report to GitHub Pages
+        run: |
+          mkdir -p public
+          mv coverage.html public/
+        uses: peaceiris/actions-gh-pages@v3
         with:
-            name: coverage-report
-            path: coverage.html
-            retention-days: 7  # Keeps the report for 7 days
+          personal_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          keep_files: true
+          publish_branch: gh-pages
