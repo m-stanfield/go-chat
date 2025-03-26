@@ -15,34 +15,32 @@ jobs:
     name: Run Go Tests
     runs-on: ubuntu-latest
 
-    env:
-      RUNNER_TOOL_CACHE: /toolcache
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Ensures all branches are fetched for gh-pages deployment
+          fetch-depth: 0 # Required for gh-pages deployment
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
 
-      - name: Download dependencies
+      - name: Install Dependencies
         run: go mod tidy
 
-      - name: Run tests with coverage
+      - name: Run Tests and Generate Coverage Report
         run: |
           go test ./... -coverprofile=coverage.out -covermode=atomic
+          mkdir -p public
+          go tool cover -html=coverage.out -o public/index.html  # Use index.html for default page
 
-      - name: Generate HTML coverage report
-        run: |
-          go tool cover -html=coverage.out -o public/coverage.html
-
-      - name: Deploy to GitHub Pages
+      - name: Deploy Coverage Report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
           publish_branch: gh-pages
-          keep_files: true
+          keep_files: false # Ensures a clean deployment
+          force_orphan: true # Creates a fresh commit history
+          enable_jekyll: false # Prevents Jekyll from interfering with `.html` files
