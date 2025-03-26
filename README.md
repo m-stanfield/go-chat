@@ -1,6 +1,6 @@
 # Project go-chat
 
-Code Coverage Report: https://m-stanfield.github.io/go-chat/
+[Code Coverage Report](https://m-stanfield.github.io/go-chat/)
 
 A side project I wanted to do to learn a variety of topics better. The overall goal of this would be to create a "chat app" similar to Teams or Discord, where users could send and recieve messages in different "chat rooms" that are user defined.
 
