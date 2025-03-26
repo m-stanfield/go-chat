@@ -33,13 +33,7 @@ jobs:
         run: |
           go test ./... -coverprofile=coverage.out -covermode=atomic
           mkdir -p public
-          go tool cover -html=coverage.out -o public/coverage.html
-
-      - name: Upload Coverage Report as Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-report
-          path: public/
+          go tool cover -html=coverage.out -o public/index.html  # Use index.html for default page
 
       - name: Deploy Coverage Report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
@@ -47,5 +41,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
           publish_branch: gh-pages
-          keep_files: true
-          force_orphan: true
+          keep_files: false # Ensures a clean deployment
+          force_orphan: true # Creates a fresh commit history
+          enable_jekyll: false # Prevents Jekyll from interfering with `.html` files
