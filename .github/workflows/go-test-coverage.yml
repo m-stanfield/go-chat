@@ -13,8 +13,8 @@ jobs:
     name: Run Go Tests
     runs-on: ubuntu-latest
 
-    env: 
-        RUNNER_TOOL_CACHE: /toolcache # Runner Tool Cache
+    env:
+      RUNNER_TOOL_CACHE: /toolcache # Runner Tool Cache
     steps:
       - name: Check out code
         uses: actions/checkout@v4
