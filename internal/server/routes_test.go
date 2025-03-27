@@ -842,59 +842,78 @@ func TestServer_GetMessage_Valid(t *testing.T) {
 }
 
 func TestServer_DeleteMessage(t *testing.T) {
-	t.Skip("Test not yet implemented")
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		w http.ResponseWriter
-		r *http.Request
-	}{
-		// TODO: Add test cases.
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/messages/1"
+	delresp, err := s.sendAuthRequest(http.MethodDelete, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// TODO: construct the receiver type.
-			var s Server
-			s.DeleteMessage(tt.w, tt.r)
-		})
+	if delresp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status OK; got %v", delresp.Status)
+	}
+
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
+	}
+	if getresp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected status NotFound; got %v", getresp.Status)
 	}
 }
 
 func TestServer_UpdateUser(t *testing.T) {
-	t.Skip("Test not yet implemented")
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		w http.ResponseWriter
-		r *http.Request
-	}{
-		// TODO: Add test cases.
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/messages/1"
+	expected_message := "1111"
+	payload := map[string]string{"message": expected_message}
+	updateresp, err := s.sendAuthRequest(http.MethodPatch, endpoint, payload, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// TODO: construct the receiver type.
-			var s Server
-			s.UpdateUser(tt.w, tt.r)
-		})
+	if updateresp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status OK; got %v", updateresp.Status)
 	}
+
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
+	}
+
+	body, err := io.ReadAll(getresp.Body)
+	if err != nil {
+		t.Fatalf("error reading response body. Err: %v", err)
+	}
+	result := ServerMessage{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		t.Fatalf("error unmarshalling response body. Err: %v", err)
+	}
+	if result.Message != expected_message {
+		t.Fatalf("error: message was not updated")
+	}
+	// TODO: add check for time to update
 }
 
 func TestServer_DeleteChannel(t *testing.T) {
-	t.Skip("Test not yet implemented")
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		w http.ResponseWriter
-		r *http.Request
-	}{
-		// TODO: Add test cases.
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1"
+	delresp, err := s.sendAuthRequest(http.MethodDelete, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// TODO: construct the receiver type.
-			var s Server
-			s.DeleteChannel(tt.w, tt.r)
-		})
+	if delresp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status OK; got %v", delresp.Status)
+	}
+
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
+	}
+	if getresp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected status NotFound; got %v", getresp.Status)
 	}
 }
 

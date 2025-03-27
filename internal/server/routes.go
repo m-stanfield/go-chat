@@ -516,6 +516,11 @@ func (s *Server) DeleteChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = s.db.DeleteChannel(channel.ChannelId)
+	if errors.Is(err, database.ErrRecordNotFound) {
+		http.Error(w, "error: unable to locate channel", http.StatusNotFound)
+		return
+	}
+
 	if err != nil {
 		http.Error(w, "error: unable to delete channel", http.StatusBadRequest)
 		return
@@ -691,6 +696,10 @@ func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	channel_info, err := s.db.GetChannel(channelid)
+	if errors.Is(err, database.ErrRecordNotFound) {
+		http.Error(w, "error: unable to locate channel", http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		http.Error(w, "error: unable to locate channel", http.StatusBadRequest)
 		return
@@ -730,6 +739,10 @@ func (s *Server) GetMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dbmessage, err := s.db.GetMessage(messageid)
+	if errors.Is(err, database.ErrRecordNotFound) {
+		http.Error(w, "error: unable to locate message", http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		http.Error(w, "error: internal server error", http.StatusBadRequest)
 		return

@@ -117,8 +117,18 @@ func (r *DBService) CreateServer(ownerid Id, servername string) (Id, error) {
 }
 
 func (r *DBService) DeleteMessage(messageid Id) error {
-	_, err := r.conn.Exec("DELETE FROM ChannelMessageTable WHERE messageid = ?", messageid)
-	return err
+	a, err := r.conn.Exec("DELETE FROM ChannelMessageTable WHERE messageid = ?", messageid)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := a.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *DBService) UpdateMessage(messageid Id, message string) error {
@@ -658,6 +668,16 @@ func (r *DBService) RemoveUserFromChannel(channelid Id, userid Id) error {
 }
 
 func (r *DBService) DeleteChannel(channelid Id) error {
-	_, err := r.conn.Exec("DELETE FROM ChannelTable WHERE channelid = ?", channelid)
-	return err
+	a, err := r.conn.Exec("DELETE FROM ChannelTable WHERE channelid = ?", channelid)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := a.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }
