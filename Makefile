@@ -3,17 +3,10 @@
 # Build the application
 all: build test
 
-build:
-	@echo "Building..."
-	
-	
-	@go build -o main cmd/api/main.go
 
-# Run the application
-run:
-	@go run cmd/api/main.go &
-	@npm install --prefix ./frontend
-	@npm run dev --prefix ./frontend
+backend:
+	@cd backend && go run cmd/api/main.go 
+
 
 front:
 	@npm install --prefix ./frontend
@@ -22,23 +15,19 @@ front:
 # Test the application
 test:
 	@echo "Testing..."
-	@go test ./... -v
+	@cd backend && go test ./... -v
 
-# Clean the binary
-clean:
-	@echo "Cleaning..."
-	@rm -f main
 
 # Live Reload
 watch:
 	@if command -v air > /dev/null; then \
-            air; \
+            cd backend && air; \
             echo "Watching...";\
         else \
             read -p "Go's 'air' is not installed on your machine. Do you want to install it? [Y/n] " choice; \
             if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
                 go install github.com/air-verse/air@latest; \
-                air; \
+                cd backend && air; \
                 echo "Watching...";\
             else \
                 echo "You chose not to install air. Exiting..."; \
@@ -46,4 +35,5 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch front
+.PHONY: all build run test clean watch front backend
+
