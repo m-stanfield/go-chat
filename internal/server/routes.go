@@ -730,6 +730,10 @@ func (s *Server) GetMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dbmessage, err := s.db.GetMessage(messageid)
+	if errors.Is(err, database.ErrRecordNotFound) {
+		http.Error(w, "error: unable to locate message", http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		http.Error(w, "error: internal server error", http.StatusBadRequest)
 		return
