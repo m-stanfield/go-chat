@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -16,7 +16,7 @@ func (s *Server) logEndpoint(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		end_time := time.Since(startTime.Add(start_time))
 
-		fmt.Printf(
+		log.Printf(
 			"%d Endpoint hit: %s took %d ms\n",
 			counter,
 			r.URL,
@@ -61,7 +61,6 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 		// Set CORS headers
 		w.Header().
 			Set("Access-Control-Allow-Origin", "http://localhost:5173")
-
 			// Replace "*" with specific origins if needed
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 		w.Header().

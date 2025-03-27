@@ -27,10 +27,13 @@ jobs:
           go-version: stable
 
       - name: Install Dependencies
-        run: go mod tidy
+        run: |
+          cd backend
+          go mod tidy
 
       - name: Run Tests and Generate Coverage Report
         run: |
+          cd backend
           go test ./... -coverprofile=coverage.out -covermode=atomic
           mkdir -p public
           go tool cover -html=coverage.out -o public/index.html  # Use index.html for default page
