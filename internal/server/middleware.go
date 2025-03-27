@@ -61,6 +61,7 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 		// Set CORS headers
 		w.Header().
 			Set("Access-Control-Allow-Origin", "http://localhost:5173")
+
 			// Replace "*" with specific origins if needed
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 		w.Header().
