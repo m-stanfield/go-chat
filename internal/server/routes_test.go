@@ -842,21 +842,23 @@ func TestServer_GetMessage_Valid(t *testing.T) {
 }
 
 func TestServer_DeleteMessage(t *testing.T) {
-	t.Skip("Test not yet implemented")
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		w http.ResponseWriter
-		r *http.Request
-	}{
-		// TODO: Add test cases.
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/channels/1/messages/1"
+	delresp, err := s.sendAuthRequest(http.MethodDelete, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// TODO: construct the receiver type.
-			var s Server
-			s.DeleteMessage(tt.w, tt.r)
-		})
+	if delresp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status OK; got %v", delresp.Status)
+	}
+
+	getresp, err := s.sendAuthRequest(http.MethodGet, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
+	}
+	if getresp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected status NotFound; got %v", getresp.Status)
 	}
 }
 
