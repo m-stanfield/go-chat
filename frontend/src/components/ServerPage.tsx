@@ -35,10 +35,11 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                     const data = await response.json();
                     const messageDataArray: MessageData[] = data["messages"].map(
                         (msg) => {
+                            const username = msg.username ? msg.username : "User" + msg.userid;
                             const obj = {
                                 message_id: msg.messageid,
                                 channel_id: msg.channelid,
-                                author: msg.username,
+                                author: username,
                                 author_id: msg.userid,
                                 date: new Date(msg.date), // Convert to JavaScript Date object
                                 message: msg.message,
