@@ -136,11 +136,13 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     return (
         <div className="flex flex-row h-full">
             <div className="mr-4 h-full">
-                <div className="sticky top-0">
+                <div className="sticky top-0 p-2">
                     <IconBanner
                         icon_info={channelInformationArray}
                         onServerSelect={setSelectedChannelId}
                         direction="vertical"
+                        displayMode="text"
+                        selectedIconId={selectedChannelId}
                     />
                 </div>
             </div>

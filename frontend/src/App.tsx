@@ -79,11 +79,12 @@ function App() {
     <div className="flex-col h-screen w-screen bg-gray-500 flex py-12 px-4 sm:px-6 lg:px-8">
       {auth.authState.isAuthenticated ? (
         <div className="flex flex-col flex-grow overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 p-2">
             <IconBanner
               icon_info={server_icons}
               onServerSelect={onServerSelect}
               direction="horizontal"
+              selectedIconId={selectedServerId.icon_id}
             />
             <button
               onClick={auth.logout}
