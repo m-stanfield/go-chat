@@ -134,17 +134,23 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
         })();
     }, [server_id]);
     return (
-        <div className="flex flex-col flex-grow overflow-y-auto">
-            <IconBanner
-                icon_info={channelInformationArray}
-                onServerSelect={setSelectedChannelId}
-                direction="vertical"
-            />
-            <ChatPage
-                channel_id={selectedChannelId}
-                onSubmit={onSubmit}
-                messages={channnelMessages.get(selectedChannelId) || []}
-            />
+        <div className="flex flex-row h-full">
+            <div className="mr-4 h-full">
+                <div className="sticky top-0">
+                    <IconBanner
+                        icon_info={channelInformationArray}
+                        onServerSelect={setSelectedChannelId}
+                        direction="vertical"
+                    />
+                </div>
+            </div>
+            <div className="flex-grow">
+                <ChatPage
+                    channel_id={selectedChannelId}
+                    onSubmit={onSubmit}
+                    messages={channnelMessages.get(selectedChannelId) || []}
+                />
+            </div>
         </div>
     );
 }

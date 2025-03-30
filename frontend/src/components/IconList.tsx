@@ -10,9 +10,10 @@ interface IconBannerProps {
     icon_info: IconInfo[];
     onServerSelect: (icon_id: number) => void;
     direction?: "horizontal" | "vertical";  // New prop with default horizontal
+    displayMode?: "image" | "text"; // New prop to control display mode
 }
 
-function IconBanner({ icon_info, onServerSelect, direction = "horizontal" }: IconBannerProps) {
+function IconBanner({ icon_info, onServerSelect, direction = "horizontal", displayMode = "image" }: IconBannerProps) {
     function onServerSelectGenerator(server_id: number) {
         return (t: React.MouseEvent<HTMLElement>) => {
             t.preventDefault();
@@ -32,7 +33,7 @@ function IconBanner({ icon_info, onServerSelect, direction = "horizontal" }: Ico
             onClick={onServerSelectGenerator(s.icon_id)}
             className="relative group"
         >
-            {s.image_url != undefined ? (
+            {displayMode === "image" && s.image_url ? (
                 <>
                     <img
                         src={s.image_url}
@@ -44,7 +45,7 @@ function IconBanner({ icon_info, onServerSelect, direction = "horizontal" }: Ico
                     </div>
                 </>
             ) : (
-                <div className="w-16 h-16 rounded-full bg-gray-600 flex items-center justify-center text-white hover:bg-gray-500">
+                <div className="w-full px-4 py-2 bg-gray-600 flex items-center justify-center text-white hover:bg-gray-500 rounded">
                     {s.name}
                 </div>
             )}
