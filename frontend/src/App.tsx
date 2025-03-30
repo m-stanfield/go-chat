@@ -83,6 +83,7 @@ function App() {
             <IconBanner
               icon_info={server_icons}
               onServerSelect={onServerSelect}
+              direction="horizontal"
             />
             <button
               onClick={auth.logout}

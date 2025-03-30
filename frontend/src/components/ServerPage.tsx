@@ -138,6 +138,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
             <IconBanner
                 icon_info={channelInformationArray}
                 onServerSelect={setSelectedChannelId}
+                direction="vertical"
             />
             <ChatPage
                 channel_id={selectedChannelId}
