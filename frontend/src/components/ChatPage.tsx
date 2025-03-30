@@ -1,7 +1,6 @@
 import MessageSubmitWindow from "./MessageSubmitWindow";
 import { SyntheticEvent, useEffect, useRef } from "react";
 import Message, { MessageData } from "./Message"; // Import your Message component
-import { useAuth } from "../AuthContext";
 
 interface ChatPageProps {
     channel_id: number | undefined;
@@ -19,8 +18,6 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
 
     return (
         <div className="flex flex-col h-full bg-gray-600 p-2 rounded-lg">
-            <div className="mb-2">Channel ID: {channel_id}</div>
-            {/* Message list with fixed height and scrolling */}
             <div className="flex-grow overflow-y-auto min-h-0">
                 <ul className="space-y-1 rounded-lg">
                     {messages.map((m) => (
