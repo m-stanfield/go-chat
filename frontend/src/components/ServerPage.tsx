@@ -75,7 +75,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                     channel_id: json.channelid,
                     message: json.message,
                     date: new Date(json.date),
-                    author: json.username,
+                    author: json.username ?? "User " + json.userid,
                     author_id: json.userid,
                 };
                 const channel_id = newMessage.channel_id;
