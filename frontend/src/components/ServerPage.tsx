@@ -2,6 +2,7 @@ import ChatPage from "./ChatPage";
 import { SyntheticEvent, useEffect, useRef, useState } from "react";
 import { MessageData } from "./Message";
 import IconBanner, { IconInfo } from "./IconList";
+import { fetchServerMessages, fetchChannels } from "../api/serverApi";
 
 interface ServerPageProps {
     server_id: number;
@@ -18,58 +19,20 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                 return;
             }
             try {
-                // Send POST request to backend
-                const response = await fetch(
-                    `http://localhost:8080/api/servers/${server_id}/messages?count=${number_of_messages}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        credentials: "include",
-                    },
-                );
-
-                // Handle response
-                if (response.ok) {
-                    const data = await response.json();
-                    const messageDataArray: MessageData[] = data["messages"].map(
-                        (msg) => {
-                            const obj = {
-                                message_id: msg.messageid,
-                                channel_id: msg.channelid,
-                                author: msg.username,
-                                author_id: msg.userid,
-                                date: new Date(msg.date), // Convert to JavaScript Date object
-                                message: msg.message,
-                            };
-                            return obj;
-                        },
-                    );
-                    messageDataArray.sort((a, b) => a.message_id - b.message_id);
-                    console.log(data);
-                    const newmap = messageDataArray.reduce((map, obj) => {
-                        const { channel_id } = obj;
-                        if (!map.has(channel_id)) {
-                            map.set(channel_id, []);
-                        }
-                        map.get(channel_id).push(obj);
-                        return map;
-                    }, new Map());
-                    setChannelMessages(() => {
-                        return newmap;
-                    });
-                } else {
-                    console.error("Login failed:", response.statusText);
-                    setChannelMessages(() => {
-                        return new Map();
-                    });
-
-                    return;
-                }
+                const messageDataArray = await fetchServerMessages(server_id, number_of_messages);
+                const newmap = messageDataArray.reduce((map, obj) => {
+                    const { channel_id } = obj;
+                    if (!map.has(channel_id)) {
+                        map.set(channel_id, []);
+                    }
+                    map.get(channel_id).push(obj);
+                    return map;
+                }, new Map());
+                
+                setChannelMessages(() => newmap);
             } catch (error) {
-                console.error("Error submitting login:", error);
-                return;
+                console.error("Error fetching messages:", error);
+                setChannelMessages(new Map());
             }
         })();
     }, [server_id, selectedChannelId, number_of_messages]);
@@ -112,7 +75,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                     channel_id: json.channelid,
                     message: json.message,
                     date: new Date(json.date),
-                    author: json.username,
+                    author: json.username ?? "User " + json.userid,
                     author_id: json.userid,
                 };
                 const channel_id = newMessage.channel_id;
@@ -158,61 +121,38 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                 return;
             }
             try {
-                // Send POST request to backend
-                const response = await fetch(
-                    `http://localhost:8080/api/servers/${server_id}/channels`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        credentials: "include",
-                    },
-                );
-
-                // Handle response
-                if (response.ok) {
-                    const data = await response.json();
-                    const channelInfoArray: IconInfo[] = data["channels"].map((msg) => {
-                        const obj: IconInfo = {
-                            icon_id: msg.ChannelId,
-                            name: msg.ChannelName,
-                            image_url: undefined,
-                        };
-                        return obj;
-                    });
-                    channelInfoArray.sort((a, b) => a.icon_id - b.icon_id);
-                    setChannelInformationArray(() => {
-                        return channelInfoArray;
-                    });
-                    if (channelInfoArray.length > 0) {
-                        setSelectedChannelId(channelInfoArray[0].icon_id);
-                    }
-                } else {
-                    console.error("Login failed:", response.statusText);
-                    setChannelInformationArray(() => {
-                        return [];
-                    });
-
-                    return;
+                const channelInfoArray = await fetchChannels(server_id);
+                setChannelInformationArray(channelInfoArray);
+                
+                if (channelInfoArray.length > 0) {
+                    setSelectedChannelId(channelInfoArray[0].icon_id);
                 }
             } catch (error) {
-                console.error("Error submitting login:", error);
-                return;
+                console.error("Error fetching channels:", error);
+                setChannelInformationArray([]);
             }
         })();
     }, [server_id]);
     return (
-        <div className="flex flex-col flex-grow overflow-y-auto">
-            <IconBanner
-                icon_info={channelInformationArray}
-                onServerSelect={setSelectedChannelId}
-            />
-            <ChatPage
-                channel_id={selectedChannelId}
-                onSubmit={onSubmit}
-                messages={channnelMessages.get(selectedChannelId) || []}
-            />
+        <div className="flex flex-row h-full">
+            <div className="mr-4 h-full">
+                <div className="sticky top-0 p-2">
+                    <IconBanner
+                        icon_info={channelInformationArray}
+                        onServerSelect={setSelectedChannelId}
+                        direction="vertical"
+                        displayMode="text"
+                        selectedIconId={selectedChannelId}
+                    />
+                </div>
+            </div>
+            <div className="flex-grow">
+                <ChatPage
+                    channel_id={selectedChannelId}
+                    onSubmit={onSubmit}
+                    messages={channnelMessages.get(selectedChannelId) || []}
+                />
+            </div>
         </div>
     );
 }
