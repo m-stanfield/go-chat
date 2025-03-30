@@ -1,8 +1,8 @@
-import Login from "./components/login";
 import { useAuth } from "./AuthContext";
 import { useEffect, useState } from "react";
 import ServerPage from "./components/ServerPage";
 import IconBanner, { IconInfo } from "./components/IconList";
+import AuthPage from "./components/AuthPage";
 
 type ServerIconResponse = {
   ServerId: number;
@@ -97,7 +97,7 @@ function App() {
           </div>
         </div>
       ) : (
-        <Login />
+        <AuthPage />
       )}
     </div>
   );
