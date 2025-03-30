@@ -1,10 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-interface SignUpProps {
-    onSwitchToLogin: () => void;
-}
-
-function SignUp({ onSwitchToLogin }: SignUpProps) {
+function SignUp() {
+    const navigate = useNavigate();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [confirmedPassword, setConfirmedPassword] = useState("");
@@ -121,7 +119,7 @@ function SignUp({ onSwitchToLogin }: SignUpProps) {
 
             <div className="mt-6 text-center">
                 <button
-                    onClick={onSwitchToLogin}
+                    onClick={() => navigate("/login")}
                     className="text-sm text-indigo-400 hover:text-indigo-300"
                 >
                     Already have an account? Log in

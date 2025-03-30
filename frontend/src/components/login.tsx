@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../AuthContext.tsx";
 import { loginUser } from "../api/auth";
+import { useNavigate } from "react-router-dom";
 
 interface LoginProps {
     onSwitchToSignUp: () => void;
@@ -10,6 +11,7 @@ function Login({ onSwitchToSignUp }: LoginProps) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const auth = useAuth();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -84,7 +86,7 @@ function Login({ onSwitchToSignUp }: LoginProps) {
 
                 <div className="mt-10 text-center">
                     <button
-                        onClick={onSwitchToSignUp}
+                        onClick={() => navigate("/signup")}
                         className="text-sm text-indigo-400 hover:text-indigo-300"
                     >
                         Don't have an account? Sign up

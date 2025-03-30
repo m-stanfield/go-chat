@@ -3,18 +3,50 @@ import { SyntheticEvent, useEffect, useRef, useState } from "react";
 import { MessageData } from "./Message";
 import IconBanner, { IconInfo } from "./IconList";
 import { fetchServerMessages, fetchChannels } from "../api/serverApi";
+import { useParams } from "react-router-dom";
 
 interface ServerPageProps {
-    server_id: number;
     number_of_messages: number;
 }
-function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
+
+function ServerPage({ number_of_messages }: ServerPageProps) {
+    const { serverId } = useParams();
+    const server_id = parseInt(serverId || "-1");
     const [selectedChannelId, setSelectedChannelId] = useState<number>(0);
-    const [channnelMessages, setChannelMessages] = useState<
-        Map<number, MessageData[]>
-    >(new Map());
+    const [channnelMessages, setChannelMessages] = useState<Map<number, MessageData[]>>(new Map());
+    const [channelInformationArray, setChannelInformationArray] = useState<IconInfo[]>([]);
+    const ws = useRef<WebSocket | null>(null);
+
+    // Reset state when server changes
     useEffect(() => {
-        (async () => {
+        setSelectedChannelId(0);
+        setChannelMessages(new Map());
+        setChannelInformationArray([]);
+        
+        // Fetch channels for new server
+        const fetchChannelsForServer = async () => {
+            if (server_id < 0) {
+                return;
+            }
+            try {
+                const channelInfoArray = await fetchChannels(server_id);
+                setChannelInformationArray(channelInfoArray);
+                
+                if (channelInfoArray.length > 0) {
+                    setSelectedChannelId(channelInfoArray[0].icon_id);
+                }
+            } catch (error) {
+                console.error("Error fetching channels:", error);
+                setChannelInformationArray([]);
+            }
+        };
+
+        fetchChannelsForServer();
+    }, [server_id]); // Only re-run when server_id changes
+
+    // Fetch messages when server or channel changes
+    useEffect(() => {
+        const fetchMessages = async () => {
             if (server_id < 0) {
                 return;
             }
@@ -29,14 +61,16 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                     return map;
                 }, new Map());
                 
-                setChannelMessages(() => newmap);
+                setChannelMessages(newmap);
             } catch (error) {
                 console.error("Error fetching messages:", error);
                 setChannelMessages(new Map());
             }
-        })();
+        };
+
+        fetchMessages();
     }, [server_id, selectedChannelId, number_of_messages]);
-    const ws = useRef<WebSocket | null>(null);
+
     const onSubmit = (t: SyntheticEvent, inputValue: string): string => {
         t.preventDefault();
         if (inputValue.length === 0) {
@@ -111,28 +145,6 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
         };
     }, [number_of_messages]);
 
-    const [channelInformationArray, setChannelInformationArray] = useState<
-        IconInfo[]
-    >([]);
-
-    useEffect(() => {
-        (async () => {
-            if (server_id < 0) {
-                return;
-            }
-            try {
-                const channelInfoArray = await fetchChannels(server_id);
-                setChannelInformationArray(channelInfoArray);
-                
-                if (channelInfoArray.length > 0) {
-                    setSelectedChannelId(channelInfoArray[0].icon_id);
-                }
-            } catch (error) {
-                console.error("Error fetching channels:", error);
-                setChannelInformationArray([]);
-            }
-        })();
-    }, [server_id]);
     return (
         <div className="flex flex-row h-full">
             <div className="mr-4 h-full">
