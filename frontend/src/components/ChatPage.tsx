@@ -10,7 +10,6 @@ interface ChatPageProps {
 }
 
 function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
-    const auth = useAuth();
     const messageEndRef = useRef<HTMLDivElement>(null);
 
     // Scroll to bottom whenever messages change or channel changes
