@@ -4,7 +4,7 @@
 all: build test
 
 
-backend:
+back:
 	@cd backend && go run cmd/api/main.go 
 
 
@@ -35,5 +35,5 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch front backend
+.PHONY: all build run test clean watch front back
 
