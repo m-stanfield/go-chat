@@ -8,36 +8,35 @@ interface ChatPageProps {
     messages: MessageData[];
     onSubmit: (t: SyntheticEvent, inputValue: string) => string;
 }
+
 function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
     const auth = useAuth();
-    const messageEndRef = useRef(null);
+    const messageEndRef = useRef<HTMLDivElement>(null);
 
+    // Scroll to bottom whenever messages change or channel changes
     useEffect(() => {
-        const lastMessage = messages[messages.length - 1];
-        if (lastMessage && lastMessage.author_id == auth.authState.user?.id) {
-            messageEndRef.current?.scrollIntoView({
-                behavior: "smooth",
-            });
-        }
-    }, [auth.authState.user?.id, messages, channel_id]);
+        messageEndRef.current?.scrollIntoView();
+    }, [messages, channel_id]);
 
     return (
-        <div className="flex flex-grow flex-col overflow-y-auto bg-gray-600 p-2 rounded-lg">
-            <div className="">Channel ID: {channel_id}</div>
-            <div className="overflow-y-auto">
-                <ul className="flex-grow space-y-1 rounded-lg ">
-                    {messages.map((m, index) => (
+        <div className="flex flex-col h-full bg-gray-600 p-2 rounded-lg">
+            <div className="mb-2">Channel ID: {channel_id}</div>
+            {/* Message list with fixed height and scrolling */}
+            <div className="flex-grow overflow-y-auto min-h-0">
+                <ul className="space-y-1 rounded-lg">
+                    {messages.map((m) => (
                         <li
                             key={m.message_id}
                             className="flex flex-grow bg-slate-700 hover:bg-slate-600 rounded-lg"
-                            ref={index === messages.length - 1 ? messageEndRef : null}
                         >
                             <Message message={m} />
                         </li>
                     ))}
                 </ul>
+                <div ref={messageEndRef} /> {/* Add scroll anchor at the bottom */}
             </div>
-            <div className="">
+            {/* Fixed input at bottom */}
+            <div className="mt-2">
                 <MessageSubmitWindow onSubmit={onSubmit} />
             </div>
         </div>
