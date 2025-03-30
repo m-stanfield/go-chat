@@ -3,12 +3,8 @@ import { useEffect, useState, useRef } from "react";
 import ServerPage from "./components/ServerPage";
 import IconBanner, { IconInfo } from "./components/IconList";
 import AuthPage from "./components/AuthPage";
+import { fetchUserServers } from "./api/serverApi";
 
-type ServerIconResponse = {
-  ServerId: number;
-  ServerName: string;
-  image_url: string | undefined;
-};
 function App() {
   const auth = useAuth();
   const number_of_messages = 20;
@@ -36,48 +32,23 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const _call = async () => {
+    const fetchServers = async () => {
       if (auth.authState.user?.id === undefined) {
         return;
       }
 
       try {
-        // Send POST request to backend
-        const response = await fetch(
-          `http://localhost:8080/api/users/${auth.authState.user?.id}/servers`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          },
-        );
-        if (response.ok) {
-          const data = await response.json();
-          const servers_ids: IconInfo[] = data.servers.map(
-            (server: ServerIconResponse) => {
-              return {
-                icon_id: server.ServerId,
-                name: server.ServerName,
-                image_url:
-                  "https://miro.medium.com/v2/resize:fit:720/format:webp/0*UD_CsUBIvEDoVwzc.png",
-              };
-            },
-          );
-          setServerId(servers_ids);
-          if (servers_ids.length > 0) {
-            setSelectedServerId(servers_ids[0]);
-          }
-        } else {
-          console.error("Login failed:", response.statusText);
+        const servers_ids = await fetchUserServers(auth.authState.user.id);
+        setServerId(servers_ids);
+        if (servers_ids.length > 0) {
+          setSelectedServerId(servers_ids[0]);
         }
       } catch (error) {
-        console.error("Error submitting login:", error);
-        return;
+        console.error("Error fetching servers:", error);
       }
     };
-    _call();
+
+    fetchServers();
   }, [auth.authState.user]);
 
   const [server_icons, setServerId] = useState<IconInfo[]>([]);

@@ -4,7 +4,7 @@ export type LogoutCallback = () => void;
 export type LogoutCallbackCancel = () => void;
 
 export type User = {
-    id: string;
+    id: number;
     name: string;
 };
 

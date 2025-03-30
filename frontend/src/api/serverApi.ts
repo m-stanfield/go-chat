@@ -15,6 +15,12 @@ interface RawChannelData {
     ChannelName: string;
 }
 
+interface ServerIconResponse {
+    ServerId: number;
+    ServerName: string;
+    image_url: string | undefined;
+}
+
 export const fetchServerMessages = async (serverId: number, messageCount: number): Promise<MessageData[]> => {
     const response = await fetch(
         `http://localhost:8080/api/servers/${serverId}/messages?count=${messageCount}`,
@@ -71,4 +77,28 @@ export const fetchChannels = async (serverId: number): Promise<IconInfo[]> => {
     }));
 
     return channelInfoArray.sort((a, b) => a.icon_id - b.icon_id);
+};
+
+export const fetchUserServers = async (userId: number): Promise<IconInfo[]> => {
+    const response = await fetch(
+        `http://localhost:8080/api/users/${userId}/servers`,
+        {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch servers: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.servers.map((server: ServerIconResponse) => ({
+        icon_id: server.ServerId,
+        name: server.ServerName,
+        image_url: "https://miro.medium.com/v2/resize:fit:720/format:webp/0*UD_CsUBIvEDoVwzc.png",
+    }));
 }; 

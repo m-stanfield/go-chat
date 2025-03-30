@@ -4,7 +4,7 @@ interface LoginPayload {
 }
 
 interface LoginResponse {
-    userid: string;
+    userid: number;
     // Add other response fields if needed
 }
 
