@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../AuthContext.tsx";
 import SignUp from "./signup.tsx";
+import { loginUser } from "../api/auth";
 
 function Login() {
     const [username, setUsername] = useState("");
@@ -9,35 +10,18 @@ function Login() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // Handle login logic here, e.g., send request to backend
-        const payload = {
-            username: username,
-            password: password,
-        };
-
+        
         try {
-            // Send POST request to backend
-            const response = await fetch("http://localhost:8080/api/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify(payload),
+            const data = await loginUser({
+                username,
+                password,
             });
-
-            // Handle response
-            if (response.ok) {
-                const data = await response.json();
-                console.log(data);
-                auth.login({
-                    name: username,
-                    id: data.userid,
-                });
-                console.log("Login successful:", data);
-            } else {
-                console.error("Login failed:", response.statusText);
-            }
+            
+            auth.login({
+                name: username,
+                id: data.userid,
+            });
+            console.log("Login successful:", data);
         } catch (error) {
             console.error("Error submitting login:", error);
         }
