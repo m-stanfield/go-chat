@@ -18,6 +18,7 @@ import (
 type UserService interface {
 	GetUserIDFromUserName(username string) (database.Id, error)
 	UpdateUserSessionToken(userid database.Id) (string, time.Time, error)
+	DeleteUserSessionToken(userid database.Id) error
 	GetUserLoginInfoFromToken(token string) (database.UserLoginInfo, error)
 	GetUserLoginInfo(userid database.Id) (database.UserLoginInfo, error)
 	ValidateUserLoginInfo(userid database.Id, password string) (bool, error)
