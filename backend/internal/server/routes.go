@@ -51,6 +51,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
 
 	mux.HandleFunc("POST /api/auth/login", s.loginHandler)
+	mux.HandleFunc("POST /api/auth/session", s.WithAuthUser(s.sessionHandler))
 	mux.HandleFunc("POST /api/auth/logout", s.WithAuthUser(s.LogoutHandler))
 
 	mux.HandleFunc("POST /api/users", s.createUserHandler)
@@ -565,7 +566,34 @@ func (s *Server) CreateChannel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = s.db.DeleteUserSessionToken(userid)
+	if err != nil {
+		http.Error(w, "error: unable to delete session token", http.StatusBadRequest)
+		return
+	}
+	cookie := &http.Cookie{
+		Name:     "token", // Replace with your actual cookie name
+		Value:    "",
+		Path:     "/", // Ensure this matches the cookie's original path
+		HttpOnly: true,
+		Secure:   false, // Set to true if your site uses HTTPS
+		SameSite: http.SameSiteStrictMode,
+		Expires:  time.Now().Add(-time.Hour), // Set the expiration time to the past
+		MaxAge:   -1,                         // Set MaxAge to 0 or a negative value to delete the cookie immediately
+	}
+
+	// Set the expired cookie in the response header.
+	http.SetCookie(w, cookie)
+	return
 }
 
 func (s *Server) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
@@ -756,6 +784,40 @@ func (s *Server) GetMessage(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest,
 		)
 	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(jsonResp); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
+}
+
+func (s *Server) sessionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	userid, err := getUserIdFromContext(r)
+	if err != nil {
+		http.Error(w, "Unable to get user from context", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := s.db.GetUser(userid)
+	if err != nil {
+		http.Error(w, "Unable to find user", http.StatusInternalServerError)
+		return
+	}
+
+	resp := map[string]interface{}{
+		"userid":   userid,
+		"username": user.UserName,
+	}
+
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(jsonResp); err != nil {
 		log.Printf("Failed to write response: %v", err)

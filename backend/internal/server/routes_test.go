@@ -973,3 +973,64 @@ func TestServer_GetChannelMessages(t *testing.T) {
 		})
 	}
 }
+
+func TestLogout_Valid(t *testing.T) {
+	s, teardown := setupTest(t)
+	defer teardown(t)
+	endpoint := "/api/auth/logout"
+
+	cookie, err := s.getLoginCookie("u1", "1")
+	if err != nil {
+		t.Fatalf("error getting login cookie. Err: %v", err)
+	}
+
+	_, err = s.sendAuthRequest(http.MethodPost, endpoint, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error getting messages")
+	}
+
+	req, err := s.buildRequest(http.MethodGet, "/api/users/1/servers", nil)
+	if err != nil {
+		t.Fatalf("failed to create request: %v", err)
+	}
+	req.AddCookie(cookie)
+	resp, err := s.server.Client().Do(req)
+	if err != nil {
+		t.Fatalf("failed to send request: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected status OK; got %v", resp.Status)
+	}
+}
+
+func TestSession_Valid(t *testing.T) {
+	/*
+		s, teardown := setupTest(t)
+		defer teardown(t)
+		endpoint := "/api/auth/session"
+		resp, _ := s.sendAuthRequest(http.MethodPost, endpoint, nil, nil, nil)
+		// Assertions
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status OK; got %v", resp.Status)
+		}
+		// build a cookie with a token and send it as a post to the /api/auth/session endpoint
+		// check that the response is 200
+
+		cookie := &http.Cookie{
+			Name:  "token",
+			Value: "token1",
+		}
+		req, err := http.NewRequest(http.MethodPost, , nil)
+		if err != nil {
+			t.Fatalf("failed to create request: %v", err)
+		}
+		req.AddCookie(cookie)
+		resp, err = s.server.Client().Do(req)
+		if err != nil {
+			t.Fatalf("failed to send request: %v", err)
+		}
+		if resp.StatusCode == http.StatusOK {
+			t.Errorf("expected status OK; got %v", resp.Status)
+		}
+	*/
+}
