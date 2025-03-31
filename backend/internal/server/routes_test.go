@@ -989,7 +989,7 @@ func TestLogout_Valid(t *testing.T) {
 		t.Fatalf("error getting messages")
 	}
 
-	req, err := s.buildRequest(http.MethodPost, "/api/users/1/servers", nil)
+	req, err := s.buildRequest(http.MethodGet, "/api/users/1/servers", nil)
 	if err != nil {
 		t.Fatalf("failed to create request: %v", err)
 	}
@@ -998,7 +998,7 @@ func TestLogout_Valid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to send request: %v", err)
 	}
-	if resp.StatusCode != http.StatusNotFound {
+	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("expected status OK; got %v", resp.Status)
 	}
 }
