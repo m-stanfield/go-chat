@@ -48,6 +48,29 @@ func New(db *sql.DB) *DBService {
 	return &DBService{db: db, conn: db}
 }
 
+func (r *DBService) DeleteUserSessionToken(userid Id) error {
+	random_token := "TODO_FIND_METHODALATER"
+	expire := time.Now().Add(-24 * time.Hour)
+	result, err := r.conn.Exec(
+		"UPDATE UserLoginTable SET token = ?, token_expire_time = ? WHERE userid=? ",
+		random_token,
+		expire,
+		userid,
+	)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
+}
+
 func (r *DBService) ValidateUserLoginInfo(userid Id, password string) (bool, error) {
 	user, err := r.GetUserLoginInfo(userid)
 	if err != nil {

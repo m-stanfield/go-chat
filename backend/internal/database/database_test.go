@@ -737,3 +737,45 @@ func Test_GetUsersInChannel_Valid(t *testing.T) {
 		t.Fatalf("TestA: invalid user name")
 	}
 }
+
+func TestDBService_DeleteUserSessionToken(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for receiver constructor.
+		// Named input parameters for target function.
+		userid  Id
+		wantErr bool
+	}{
+		{
+			name:    "Test DeleteUserSessionToken",
+			userid:  1,
+			wantErr: false,
+		},
+		{
+			name:    "Test DeleteUserSessionToken",
+			userid:  10,
+			wantErr: true,
+		},
+
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := setup()
+			gotErr := r.DeleteUserSessionToken(tt.userid)
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("DeleteUserSessionToken() failed: %v", gotErr)
+				}
+				return
+			}
+			userinfo, err := r.GetUserLoginInfo(tt.userid)
+			if err != nil {
+				t.Fatalf("DeleteUserSessionToken() failed: %v", err)
+			}
+			if userinfo.TokenExpireTime.After(time.Now()) {
+				t.Fatalf("DeleteUserSessionToken() failed: token not deleted")
+			}
+		})
+	}
+}
