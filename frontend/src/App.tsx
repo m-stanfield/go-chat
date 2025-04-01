@@ -1,10 +1,16 @@
 import { Routes, Route } from "react-router-dom";
-import Sidebar from "./components/Sidebar";
-
+import { SidebarProvider, SidebarTrigger } from "./components/ui/sidebar";
+import { AppSidebar } from "./components/app-sidebar";
 function App() {
   return (
     <div className="flex h-screen w-screen bg-gray-100">
-      <Sidebar />
+      <SidebarProvider>
+        <AppSidebar />
+        <main>
+          <SidebarTrigger />
+          <div>Hello</div>
+        </main>
+      </SidebarProvider>
       <div className="flex-1 p-6 md:ml-64">
         <div className="mx-auto max-w-7xl">
           <Routes>
