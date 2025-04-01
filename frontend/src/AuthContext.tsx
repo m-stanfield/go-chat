@@ -39,9 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const addLogoutCallback = (callback: LogoutCallback) => {
     const removeCallback = () => {
       setAuthState((prevState) => {
-        const cbs_removed = prevState.logoutCallbacks.filter(
-          (cb) => cb !== callback,
-        );
+        const cbs_removed = prevState.logoutCallbacks.filter((cb) => cb !== callback);
         return {
           ...prevState,
           logoutCallbacks: cbs_removed,
@@ -58,9 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return removeCallback;
   };
   return (
-    <AuthContext.Provider
-      value={{ authState, login, logout, addLogoutCallback }}
-    >
+    <AuthContext.Provider value={{ authState, login, logout, addLogoutCallback }}>
       {children}
     </AuthContext.Provider>
   );
