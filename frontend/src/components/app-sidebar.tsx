@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarMenuItem {
   title: string;
@@ -21,6 +22,7 @@ interface SidebarMenuItemProps {
 }
 
 export function AppSidebar({ items }: SidebarMenuItemProps) {
+  const navigate = useNavigate();
   return (
     <Sidebar>
       <SidebarContent>
@@ -30,11 +32,11 @@ export function AppSidebar({ items }: SidebarMenuItemProps) {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                  <SidebarMenuButton asChild onClick={() => navigate(item.url)}>
+                    <div>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </div>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
