@@ -22,8 +22,6 @@ body {
   height: 100vh;
 }
 
-
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -95,8 +93,6 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
-
-
 
 @layer base {
   * {
