@@ -68,7 +68,6 @@ const items = [
               <div className="rounded-md bg-primary/10 p-4">
                 <h3 className="font-medium">Getting Started</h3>
                 <p className="mt-2 text-sm">
-                  {" "}
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
                   incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
                   exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
