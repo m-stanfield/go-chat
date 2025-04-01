@@ -16,9 +16,9 @@ function App() {
     <div className="flex h-screen w-screen bg-background">
       <SidebarProvider>
         <AppSidebar items={items} />
-        <main className="flex-1 overflow-auto">
-          <div className="px-2 py-6 sm:px-4">
-            <div className="mb-6 flex items-center justify-between">
+        <main className="flex flex-1 flex-col">
+          <div className="sticky top-0 z-10 bg-background px-2 py-4 shadow-sm">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="ml-1" />
                 <h1 className="text-2xl font-bold">My Application</h1>
@@ -27,6 +27,8 @@ function App() {
                 {/* Add any right-side elements here if needed */}
               </div>
             </div>
+          </div>
+          <div className="flex-1 overflow-auto px-2 py-6 sm:px-4">
             <div className="mx-auto max-w-4xl px-2 sm:px-4">
               <Routes>
                 <Route path="/" element={<HomePage />} />
