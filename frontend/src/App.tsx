@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, NavLink } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "./components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import { Toaster } from "sonner";
@@ -143,6 +143,7 @@ const items = [
 function About() {
   return (
     <div className="rounded-lg bg-card p-6 shadow">
+      <NavLink to="/home">Home</NavLink>
       <h1 className="mb-4 text-2xl font-bold text-card-foreground">About Page</h1>
       <p className="mb-4 text-muted-foreground">This is the about page of the application.</p>
       <div className="prose max-w-none">
