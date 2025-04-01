@@ -1,5 +1,3 @@
-import { Info, Home } from "lucide-react";
-
 import {
   Sidebar,
   SidebarContent,
@@ -13,21 +11,16 @@ import {
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 
-// Menu items.
-const items = [
-  {
-    title: "Home",
-    url: "/",
-    icon: Home,
-  },
-  {
-    title: "About",
-    url: "/about",
-    icon: Info,
-  },
-];
+interface SidebarMenuItem {
+  title: string;
+  url: string;
+  icon: React.FC;
+}
+interface SidebarMenuItemProps {
+  items: SidebarMenuItem[];
+}
 
-export function AppSidebar() {
+export function AppSidebar({ items }: SidebarMenuItemProps) {
   return (
     <Sidebar>
       <SidebarContent>

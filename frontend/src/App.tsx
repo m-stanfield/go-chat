@@ -3,11 +3,25 @@ import { SidebarProvider, SidebarTrigger } from "./components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import { Toaster } from "sonner";
 
+import { Info, Home } from "lucide-react";
+// Menu items.
+const items = [
+  {
+    title: "Home",
+    url: "/",
+    icon: Home,
+  },
+  {
+    title: "About",
+    url: "/about",
+    icon: Info,
+  },
+];
 function App() {
   return (
     <div className="flex h-screen w-screen bg-background">
       <SidebarProvider>
-        <AppSidebar />
+        <AppSidebar items={items} />
         <main className="flex-1 overflow-auto">
           <div className="px-2 py-6 sm:px-4">
             <div className="mb-6 flex items-center justify-between">
@@ -21,7 +35,7 @@ function App() {
             </div>
             <div className="mx-auto max-w-4xl px-2 sm:px-4">
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<HomePage />} />
                 <Route path="/about" element={<About />} />
               </Routes>
             </div>
@@ -34,7 +48,7 @@ function App() {
 }
 
 // Simple page components
-function Home() {
+function HomePage() {
   return (
     <div className="rounded-lg bg-card p-6 shadow">
       <h1 className="mb-4 text-2xl font-bold text-card-foreground">Home Page</h1>
