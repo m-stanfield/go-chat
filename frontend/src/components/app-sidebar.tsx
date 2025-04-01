@@ -1,4 +1,4 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
+import { Info, Home } from "lucide-react";
 
 import {
   Sidebar,
@@ -10,33 +10,20 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Button } from "./ui/button";
+import { toast } from "sonner";
 
 // Menu items.
 const items = [
   {
     title: "Home",
-    url: "/home",
+    url: "/",
     icon: Home,
   },
   {
-    title: "Inbox",
-    url: "/inbox",
-    icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "/calendar",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "/search",
-    icon: Search,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
+    title: "About",
+    url: "/about",
+    icon: Info,
   },
 ];
 
@@ -58,6 +45,24 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              <SidebarMenuItem key="toast-button">
+                <SidebarMenuButton asChild>
+                  <Button
+                    onClick={() =>
+                      toast("Event has been created", {
+                        description: "Sunday, December 03, 2023 at 9:00 AM",
+                        action: {
+                          label: "Undo",
+                          onClick: () => console.log("Undo"),
+                        },
+                      })
+                    }
+                  >
+                    Toast
+                  </Button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "./components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
+import { Toaster } from "sonner";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           </div>
         </main>
       </SidebarProvider>
+      <Toaster />
     </div>
   );
 }
