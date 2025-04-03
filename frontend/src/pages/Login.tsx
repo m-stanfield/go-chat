@@ -1,19 +1,21 @@
 import React, { useState } from "react";
-import { useAuth } from "../AuthContext.tsx";
-import { loginUser } from "@/api/auth.tsx";
+import { useAuth } from "@/AuthContext";
+import { authApi } from "@/api";
 import { NavLink, useNavigate } from "react-router-dom";
 
 function Login() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
     const auth = useAuth();
-
     const navigate = useNavigate();
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setError("");
 
         try {
-            const data = await loginUser({
+            const data = await authApi.login({
                 username,
                 password,
             });
@@ -23,8 +25,12 @@ function Login() {
                 id: data.userid,
             });
             navigate("/");
-            console.log("Login successful:", data);
         } catch (error) {
+            if (error instanceof Error) {
+                setError(error.message);
+            } else {
+                setError("An unknown error occurred");
+            }
             console.error("Error submitting login:", error);
         }
     };

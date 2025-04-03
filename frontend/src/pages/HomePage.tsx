@@ -4,13 +4,13 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/AuthContext";
-import { fetchUserServers } from "@/api/serverApi";
-import SignUp from "./SignUp";
+import { serverApi } from "@/api";
 
 export function HomePage() {
   const auth = useAuth();
   const [serverIds, setServerIds] = useState<number[]>([]);
   const [selectedServerId, setSelectedServerIds] = useState<number>(-1);
+  
   useEffect(() => {
     auth.addLogoutCallback(() => {
       console.log("logout callback");
@@ -19,15 +19,11 @@ export function HomePage() {
 
   useEffect(() => {
     const fetchServers = async () => {
-      if (auth.authState.user?.id === undefined) {
-        return;
-      }
+      if (!auth.authState.user?.id) return;
 
       try {
-        const servers_ids = await fetchUserServers(auth.authState.user.id);
-        const ids = servers_ids.map((s) => {
-          return s.ServerId;
-        });
+        const servers = await serverApi.fetchUserServers(auth.authState.user.id);
+        const ids = servers.map(s => s.ServerId);
         setServerIds(ids);
         if (ids.length > 0) {
           setSelectedServerIds(ids[0]);
@@ -40,34 +36,18 @@ export function HomePage() {
     fetchServers();
   }, [auth.authState.user]);
 
-  const items = [
-    {
-      title: "Home",
-      url: "/",
-      icon: Home,
-    },
-    {
-      title: "Login",
-      url: "/login",
-      icon: LogIn,
-    },
-    {
-      title: "Sign Up",
-      url: "/signup",
-      icon: LogIn,
-    },
-    {
-      title: "About",
-      url: "/about",
-      icon: Info,
-    },
+  const navItems = [
+    { title: "Home", url: "/", icon: Home },
+    { title: "Login", url: "/login", icon: LogIn },
+    { title: "Sign Up", url: "/signup", icon: LogIn },
+    { title: "About", url: "/about", icon: Info },
   ];
 
   return (
     <div className="flex h-full w-full">
       <Toaster />
       <SidebarProvider>
-        <AppSidebar items={items} />
+        <AppSidebar items={navItems} />
         <div className="flex flex-1 flex-col">
           <div className="sticky top-0 z-10 bg-background px-2 py-4 shadow-sm">
             <div className="flex items-center justify-between">

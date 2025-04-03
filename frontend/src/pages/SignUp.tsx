@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { authApi } from "@/api";
 
 function SignUp() {
   const [username, setUsername] = useState("");
@@ -10,36 +11,27 @@ function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
 
     if (password !== confirmedPassword) {
       setError("Passwords do not match");
       return;
     }
 
-    const payload = {
-      username: username,
-      password: password,
-    };
-
     try {
-      const response = await fetch("/api/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+      await authApi.register({
+        username,
+        password,
       });
-
-      if (response.ok) {
-        navigate("/login");
-      } else {
-        setError(response.statusText);
-        console.error("Signup failed:", response.statusText);
-      }
+      navigate("/login");
     } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("An unknown error occurred");
+      }
       console.error("Error submitting signup:", error);
     }
-    console.log("log");
   };
 
   return (
