@@ -1,9 +1,45 @@
 import { Toaster } from "sonner";
-import { Home, Info } from "lucide-react";
+import { Home, Info, LogIn } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/AuthContext";
+import { fetchUserServers } from "@/api/serverApi";
+import SignUp from "./SignUp";
 
 export function HomePage() {
+  const auth = useAuth();
+  const [serverIds, setServerIds] = useState<number[]>([]);
+  const [selectedServerId, setSelectedServerIds] = useState<number>(-1);
+  useEffect(() => {
+    auth.addLogoutCallback(() => {
+      console.log("logout callback");
+    });
+  }, []);
+
+  useEffect(() => {
+    const fetchServers = async () => {
+      if (auth.authState.user?.id === undefined) {
+        return;
+      }
+
+      try {
+        const servers_ids = await fetchUserServers(auth.authState.user.id);
+        const ids = servers_ids.map((s) => {
+          return s.ServerId;
+        });
+        setServerIds(ids);
+        if (ids.length > 0) {
+          setSelectedServerIds(ids[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching servers:", error);
+      }
+    };
+
+    fetchServers();
+  }, [auth.authState.user]);
+
   const items = [
     {
       title: "Home",
@@ -11,9 +47,14 @@ export function HomePage() {
       icon: Home,
     },
     {
-      title: "Home 2",
-      url: "/home",
-      icon: Home,
+      title: "Login",
+      url: "/login",
+      icon: LogIn,
+    },
+    {
+      title: "Sign Up",
+      url: "/signup",
+      icon: LogIn,
     },
     {
       title: "About",
@@ -21,7 +62,7 @@ export function HomePage() {
       icon: Info,
     },
   ];
-  
+
   return (
     <div className="flex h-full w-full">
       <Toaster />
@@ -48,8 +89,228 @@ export function HomePage() {
                 <p className="mt-2 text-sm">
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
                   incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+                  labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+                  ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt ut labore et
+                  dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
+                  laboris nisi ut aliquip ex ea commodo consequat. incididunt ut labore et dolore
+                  magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+                  nisi ut aliquip ex ea commodo consequat. incididunt ut labore et dolore magna
+                  aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+                  aliquip ex ea commodo consequat. incididunt ut labore et dolore magna aliqua. Ut
+                  enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
+                  ea commodo consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad
+                  minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+                  commodo consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+                  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+                  consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+                  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+                  labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+                  ullamco laboris nisi ut aliquip ex ea commodo consequat. Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+                  dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
+                  laboris nisi ut aliquip ex ea commodo consequat. incididunt ut labore et dolore
+                  magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+                  nisi ut aliquip ex ea commodo consequat. incididunt ut labore et dolore magna
+                  aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+                  aliquip ex ea commodo consequat. incididunt ut labore et dolore magna aliqua. Ut
+                  enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
+                  ea commodo consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad
+                  minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+                  commodo consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+                  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+                  consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+                  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+                  labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+                  ullamco laboris nisi ut aliquip ex ea commodo consequat. Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+                  dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
+                  laboris nisi ut aliquip ex ea commodo consequat. incididunt ut labore et dolore
+                  magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+                  nisi ut aliquip ex ea commodo consequat. incididunt ut labore et dolore magna
+                  aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+                  aliquip ex ea commodo consequat. incididunt ut labore et dolore magna aliqua. Ut
+                  enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
+                  ea commodo consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad
+                  minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+                  commodo consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+                  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+                  consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+                  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Lorem ipsum
+                  dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+                  labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+                  ullamco laboris nisi ut aliquip ex ea commodo consequat. Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor Lorem ipsum dolor sit
+                  amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+                  dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
+                  laboris nisi ut aliquip ex ea commodo consequat. incididunt ut labore et dolore
+                  magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+                  nisi ut aliquip ex ea commodo consequat. incididunt ut labore et dolore magna
+                  aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+                  aliquip ex ea commodo consequat. incididunt ut labore et dolore magna aliqua. Ut
+                  enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
+                  ea commodo consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad
+                  minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+                  commodo consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+                  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+                  consequat. incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+                  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. incididunt
+                  ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
                   exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                  {/* Long lorem ipsum text truncated for brevity */}
                 </p>
               </div>
               <div className="rounded-md bg-secondary/10 p-4">
@@ -62,4 +323,4 @@ export function HomePage() {
       </SidebarProvider>
     </div>
   );
-} 
+}
