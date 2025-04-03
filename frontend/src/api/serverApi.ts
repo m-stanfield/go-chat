@@ -1,3 +1,5 @@
+const BASE_URL = "/api";
+
 interface RawMessageData {
     messageid: number;
     channelid: number;
@@ -23,7 +25,7 @@ export const fetchServerMessages = async (
     messageCount: number
 ): Promise<RawMessageData[]> => {
     const response = await fetch(
-        `http://localhost:8080/api/servers/${serverId}/messages?count=${messageCount}`,
+        `${BASE_URL}/servers/${serverId}/messages?count=${messageCount}`,
         {
             method: "GET",
             headers: {
@@ -47,7 +49,7 @@ export const fetchServerMessages = async (
 };
 
 export const fetchChannels = async (serverId: number): Promise<RawChannelData[]> => {
-    const response = await fetch(`http://localhost:8080/api/servers/${serverId}/channels`, {
+    const response = await fetch(`${BASE_URL}/servers/${serverId}/channels`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -65,7 +67,7 @@ export const fetchChannels = async (serverId: number): Promise<RawChannelData[]>
 };
 
 export const fetchUserServers = async (userId: number): Promise<ServerIconResponse[]> => {
-    const response = await fetch(`http://localhost:8080/api/users/${userId}/servers`, {
+    const response = await fetch(`${BASE_URL}/users/${userId}/servers`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
