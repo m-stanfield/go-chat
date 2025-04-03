@@ -40,7 +40,6 @@ export function HomePage() {
     { title: "Home", url: "/", icon: Home },
     { title: "Login", url: "/login", icon: LogIn },
     { title: "Sign Up", url: "/signup", icon: LogIn },
-    { title: "About", url: "/about", icon: Info },
   ];
 
   return (
