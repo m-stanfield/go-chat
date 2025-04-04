@@ -1,7 +1,9 @@
 import { Routes, Route } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
+import { ServerPage } from "./pages/ServerPage";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -12,6 +14,14 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route 
+              path="/servers/:serverId" 
+              element={
+                <ProtectedRoute>
+                  <HomePage />
+                </ProtectedRoute>
+              } 
+            />
           </Routes>
         </div>
       </main>
