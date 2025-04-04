@@ -1,15 +1,17 @@
 import { Toaster } from "sonner";
-import { Home, LogIn } from "lucide-react";
+import { Home } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/AuthContext";
 import { serverApi, ServerData } from "@/api";
-import { Navigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 export function HomePage() {
   const auth = useAuth();
-  const [serverdata, setServerIds] = useState<ServerData[]>([]);
+  const { serverId } = useParams<{ serverId: string }>();
+  const [serverdata, setServers] = useState<ServerData[]>([]);
+  const [selectedServer, setSelectedServer] = useState<ServerData | null>(null);
 
   useEffect(() => {
     auth.addLogoutCallback(() => {
@@ -23,14 +25,19 @@ export function HomePage() {
 
       try {
         const servers = await serverApi.fetchUserServers(auth.authState.user.id);
-        setServerIds(servers);
+        // Set the selected server if serverId is provided
+        if (serverId) {
+          const server = servers.find((s) => s.ServerId === parseInt(serverId));
+          setSelectedServer(server || null);
+        }
+        setServers(servers);
       } catch (error) {
         console.error("Error fetching servers:", error);
       }
     };
 
     fetchServers();
-  }, [auth.authState.user]);
+  }, [auth.authState.user, serverId]);
 
   // make nav items dynamic based on server data
   const serverNavItems = serverdata.map((server: ServerData) => ({
@@ -52,7 +59,7 @@ export function HomePage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="ml-1" />
-                <h1 className="text-2xl font-bold">My Application</h1>
+                <h1 className="text-2xl font-bold">{selectedServer.ServerName}</h1>
               </div>
             </div>
           </div>
