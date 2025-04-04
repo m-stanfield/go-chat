@@ -1,7 +1,6 @@
-// context/AuthContext.tsx
-
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { AuthContextType, AuthState, LogoutCallback, User } from "./auth";
+import { logoutUser, reconnectSession } from "./api/auth";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -11,6 +10,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user: null,
     logoutCallbacks: [],
   });
+  const [loading, setLoading] = useState(true);
+
+  // Check for existing session on component mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const data = await reconnectSession();
+        if (data === null) {
+          setLoading(false);
+          return;
+        }
+        login({
+          id: data.userid,
+          name: data.username,
+        });
+      } catch (error) {
+        console.error("Session check failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
+  }, []);
 
   const login = (user: User) => {
     setAuthState((prevState) => {
@@ -22,10 +45,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const logout = () => {
+  const logout = async () => {
     if (!authState.isAuthenticated) {
       return;
     }
+
+    await logoutUser();
+
     setAuthState((prevState) => {
       prevState.logoutCallbacks.forEach((callback) => callback());
       return {
@@ -55,6 +81,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return removeCallback;
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-t-2 border-gray-900 dark:border-white"></div>
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={{ authState, login, logout, addLogoutCallback }}>
       {children}
