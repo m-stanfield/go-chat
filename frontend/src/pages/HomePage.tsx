@@ -1,5 +1,5 @@
 import { Toaster } from "sonner";
-import { Home, Info, LogIn } from "lucide-react";
+import { Home, LogIn } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useEffect, useState } from "react";
@@ -37,11 +37,7 @@ export function HomePage() {
     fetchServers();
   }, [auth.authState.user]);
 
-  const navItems = [
-    { title: "Home", url: "/", icon: Home },
-    { title: "Login", url: "/login", icon: LogIn },
-    { title: "Sign Up", url: "/signup", icon: LogIn },
-  ];
+  const navItems = [{ title: "Home", url: "/", icon: Home }];
 
   return auth.authState.isAuthenticated ? (
     <div className="flex h-full w-full">
