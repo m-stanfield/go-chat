@@ -11,6 +11,7 @@ import {
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/AuthContext";
 
 interface SidebarMenuItem {
   title: string;
@@ -23,6 +24,7 @@ interface SidebarMenuItemProps {
 
 export function AppSidebar({ items }: SidebarMenuItemProps) {
   const navigate = useNavigate();
+  const auth = useAuth();
   return (
     <Sidebar>
       <SidebarContent>
@@ -55,6 +57,22 @@ export function AppSidebar({ items }: SidebarMenuItemProps) {
                     }
                   >
                     Toast
+                  </Button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem key="logout-button">
+                <SidebarMenuButton asChild>
+                  <Button
+                    onClick={() => {
+                      auth.logout();
+                      toast("Logged out successfully", {
+                        description: "You have been logged out",
+                      });
+                      navigate("/login");
+                    }}
+                  >
+                    Logout
                   </Button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
