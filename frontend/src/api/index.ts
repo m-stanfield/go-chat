@@ -1,7 +1,13 @@
 // Create a centralized API client
-import { LoginPayload, LoginResponse } from './types';
+import { LoginPayload, LoginResponse } from "./types";
 
 const API_BASE_URL = "/api";
+
+interface ServerData {
+  ServerId: number;
+  ServerName: string;
+  ImageUrl: string;
+}
 
 // Create a reusable fetch wrapper with common options
 const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
@@ -36,7 +42,7 @@ export const authApi = {
       body: JSON.stringify(payload),
     });
   },
-  
+
   register: async (payload: LoginPayload): Promise<void> => {
     return apiFetch("/users", {
       method: "POST",
@@ -55,18 +61,18 @@ export const serverApi = {
     }));
     return messageDataArray.sort((a: any, b: any) => a.messageid - b.messageid);
   },
-  
+
   fetchChannels: async (serverId: number) => {
     const data = await apiFetch(`/servers/${serverId}/channels`);
     return data.channels;
   },
-  
-  fetchUserServers: async (userId: number) => {
+
+  fetchUserServers: async (userId: number): Promise<ServerData> => {
     const data = await apiFetch(`/users/${userId}/servers`);
-    return data.servers.map((server: any) => ({
+    return data.servers.map((server: { ServerId: string; ServerName: string }) => ({
       ServerId: server.ServerId,
       ServerName: server.ServerName,
       ImageUrl: "https://miro.medium.com/v2/resize:fit:720/format:webp/0*UD_CsUBIvEDoVwzc.png",
     }));
   },
-}; 
+};
