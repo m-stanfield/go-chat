@@ -4,13 +4,12 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/AuthContext";
-import { serverApi } from "@/api";
+import { serverApi, ServerData } from "@/api";
 import { Navigate } from "react-router-dom";
 
 export function HomePage() {
   const auth = useAuth();
-  const [serverIds, setServerIds] = useState<number[]>([]);
-  const [selectedServerId, setSelectedServerIds] = useState<number>(-1);
+  const [serverdata, setServerIds] = useState<ServerData[]>([]);
 
   useEffect(() => {
     auth.addLogoutCallback(() => {
@@ -24,11 +23,7 @@ export function HomePage() {
 
       try {
         const servers = await serverApi.fetchUserServers(auth.authState.user.id);
-        const ids = servers.map((s) => s.ServerId);
-        setServerIds(ids);
-        if (ids.length > 0) {
-          setSelectedServerIds(ids[0]);
-        }
+        setServerIds(servers);
       } catch (error) {
         console.error("Error fetching servers:", error);
       }
@@ -37,13 +32,18 @@ export function HomePage() {
     fetchServers();
   }, [auth.authState.user]);
 
-  const navItems = [{ title: "Home", url: "/", icon: Home }];
+  // make nav items dynamic based on server data
+  const serverNavItems = serverdata.map((server: ServerData) => ({
+    title: server.ServerName,
+    url: `/servers/${server.ServerId}`,
+    icon: Home,
+  }));
 
   return auth.authState.isAuthenticated ? (
     <div className="flex h-full w-full">
       <Toaster />
       <SidebarProvider>
-        <AppSidebar items={navItems} />
+        <AppSidebar items={serverNavItems} />
         <div className="flex flex-1 flex-col">
           <div className="sticky top-0 z-10 bg-background px-2 py-4 shadow-sm">
             <div className="flex items-center justify-between">
