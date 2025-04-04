@@ -3,7 +3,7 @@ import { LoginPayload, LoginResponse } from "./types";
 
 const API_BASE_URL = "/api";
 
-interface ServerData {
+export interface ServerData {
   ServerId: number;
   ServerName: string;
   ImageUrl: string;
@@ -67,7 +67,7 @@ export const serverApi = {
     return data.channels;
   },
 
-  fetchUserServers: async (userId: number): Promise<ServerData> => {
+  fetchUserServers: async (userId: number): Promise<ServerData[]> => {
     const data = await apiFetch(`/users/${userId}/servers`);
     return data.servers.map((server: { ServerId: string; ServerName: string }) => ({
       ServerId: server.ServerId,
