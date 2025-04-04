@@ -5,12 +5,13 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/AuthContext";
 import { serverApi } from "@/api";
+import { Navigate } from "react-router-dom";
 
 export function HomePage() {
   const auth = useAuth();
   const [serverIds, setServerIds] = useState<number[]>([]);
   const [selectedServerId, setSelectedServerIds] = useState<number>(-1);
-  
+
   useEffect(() => {
     auth.addLogoutCallback(() => {
       console.log("logout callback");
@@ -23,7 +24,7 @@ export function HomePage() {
 
       try {
         const servers = await serverApi.fetchUserServers(auth.authState.user.id);
-        const ids = servers.map(s => s.ServerId);
+        const ids = servers.map((s) => s.ServerId);
         setServerIds(ids);
         if (ids.length > 0) {
           setSelectedServerIds(ids[0]);
@@ -42,7 +43,7 @@ export function HomePage() {
     { title: "Sign Up", url: "/signup", icon: LogIn },
   ];
 
-  return (
+  return auth.authState.isAuthenticated ? (
     <div className="flex h-full w-full">
       <Toaster />
       <SidebarProvider>
@@ -301,5 +302,7 @@ export function HomePage() {
         </div>
       </SidebarProvider>
     </div>
-  );
+  ) : (
+    <Navigate to="/login" replace />
+  ); // Redirect to login if not authenticated
 }
