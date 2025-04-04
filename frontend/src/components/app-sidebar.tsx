@@ -3,6 +3,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarFooter,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
@@ -12,6 +13,9 @@ import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/AuthContext";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import { ChevronUp, User2 } from "lucide-react";
+import { DropdownMenuContent } from "./ui/dropdown-menu";
 
 interface SidebarMenuItem {
   title: string;
@@ -60,26 +64,41 @@ export function AppSidebar({ items }: SidebarMenuItemProps) {
                   </Button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-
-              <SidebarMenuItem key="logout-button">
-                <SidebarMenuButton asChild>
-                  <Button
-                    onClick={() => {
-                      auth.logout();
-                      toast("Logged out successfully", {
-                        description: "You have been logged out",
-                      });
-                      navigate("/login");
-                    }}
-                  >
-                    Logout
-                  </Button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton>
+                  <User2 /> @{auth.authState.user?.name}
+                  <ChevronUp className="ml-auto" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" className="w-[--radix-popper-anchor-width]">
+                <DropdownMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Button
+                      onClick={() => {
+                        auth.logout();
+                        toast("Logged out successfully", {
+                          description: "You have been logged out",
+                        });
+                        navigate("/login");
+                      }}
+                    >
+                      Logout
+                    </Button>
+                  </SidebarMenuButton>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
