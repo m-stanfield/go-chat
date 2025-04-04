@@ -5,13 +5,15 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/AuthContext";
 import { serverApi, ServerData } from "@/api";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 export function HomePage() {
   const auth = useAuth();
+  const navigate = useNavigate();
   const { serverId } = useParams<{ serverId: string }>();
   const [serverdata, setServers] = useState<ServerData[]>([]);
   const [selectedServer, setSelectedServer] = useState<ServerData | null>(null);
+  const [currentName, setCurrentName] = useState<string>("");
 
   useEffect(() => {
     auth.addLogoutCallback(() => {
@@ -29,6 +31,9 @@ export function HomePage() {
         if (serverId) {
           const server = servers.find((s) => s.ServerId === parseInt(serverId));
           setSelectedServer(server || null);
+          setCurrentName(server?.ServerName || "");
+        } else {
+          navigate(`/servers/${servers[0]?.ServerId}`);
         }
         setServers(servers);
       } catch (error) {
@@ -37,7 +42,7 @@ export function HomePage() {
     };
 
     fetchServers();
-  }, [auth.authState.user, serverId]);
+  }, [auth.authState.user, serverId, navigate]);
 
   // make nav items dynamic based on server data
   const serverNavItems = serverdata.map((server: ServerData) => ({
@@ -59,9 +64,7 @@ export function HomePage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="ml-1" />
-                <h1 className="text-2xl font-bold">
-                  {selectedServer?.ServerName ?? "Unknown Server"}
-                </h1>
+                <h1 className="text-2xl font-bold">{currentName || ""}</h1>
               </div>
             </div>
           </div>
