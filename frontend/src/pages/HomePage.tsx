@@ -59,7 +59,9 @@ export function HomePage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="ml-1" />
-                <h1 className="text-2xl font-bold">{selectedServer.ServerName}</h1>
+                <h1 className="text-2xl font-bold">
+                  {selectedServer?.ServerName ?? "Unknown Server"}
+                </h1>
               </div>
             </div>
           </div>
