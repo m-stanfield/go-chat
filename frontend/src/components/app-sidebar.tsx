@@ -21,6 +21,7 @@ interface SidebarMenuItem {
   title: string;
   url: string;
   icon: React.FC;
+  selected: boolean;
 }
 interface SidebarMenuItemProps {
   items: SidebarMenuItem[];
@@ -39,7 +40,7 @@ export function AppSidebar({ items }: SidebarMenuItemProps) {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild onClick={() => navigate(item.url)}>
-                    <div>
+                    <div className={`${item.selected ? "bg-slate-400" : ""}`}>
                       <item.icon />
                       <span>{item.title}</span>
                     </div>

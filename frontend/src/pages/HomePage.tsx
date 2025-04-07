@@ -12,7 +12,6 @@ export function HomePage() {
   const navigate = useNavigate();
   const { serverId } = useParams<{ serverId: string }>();
   const [serverdata, setServers] = useState<ServerData[]>([]);
-  const [selectedServer, setSelectedServer] = useState<ServerData | null>(null);
   const [currentName, setCurrentName] = useState<string>("");
 
   useEffect(() => {
@@ -30,7 +29,6 @@ export function HomePage() {
         // Set the selected server if serverId is provided
         if (serverId) {
           const server = servers.find((s) => s.ServerId === parseInt(serverId));
-          setSelectedServer(server || null);
           setCurrentName(server?.ServerName || "");
         } else {
           navigate(`/servers/${servers[0]?.ServerId}`);
@@ -49,6 +47,7 @@ export function HomePage() {
     title: server.ServerName,
     url: `/servers/${server.ServerId}`,
     icon: Home,
+    selected: server.ServerId === parseInt(serverId || ""),
   }));
 
   // create placeholder text that is 10k characters
