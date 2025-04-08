@@ -17,16 +17,16 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
     }, [messages, channel_id]);
 
     return (
-        <div className="flex flex-col h-full bg-gray-600 p-2 rounded-lg">
-            <div className="flex-grow overflow-y-auto min-h-0">
+        <div className="flex h-full flex-col rounded-lg bg-gray-600 p-2">
+            <div className="min-h-0 flex-grow overflow-y-auto">
                 <ul className="space-y-1 rounded-lg">
                     {messages.map((m) => (
-                        <li
+                        <div
                             key={m.message_id}
-                            className="flex flex-grow bg-slate-700 hover:bg-slate-600 rounded-lg"
+                            className="flex flex-grow rounded-lg bg-slate-700 hover:bg-slate-600"
                         >
                             <Message message={m} />
-                        </li>
+                        </div>
                     ))}
                 </ul>
                 <div ref={messageEndRef} /> {/* Add scroll anchor at the bottom */}

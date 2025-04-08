@@ -1,21 +1,20 @@
-import ChatPage from "./ChatPage";
 import { SyntheticEvent, useEffect, useRef, useState } from "react";
-import { MessageData } from "./Message";
-import IconBanner, { IconInfo } from "./IconList";
 import { fetchServerMessages, fetchChannels } from "../api/serverApi";
-
+import ChatPage from "@/components/ChatWindow";
+import { MessageData } from "@/components/Message";
+import ChannelSidebar from "@/components/ChannelSidebar";
+import { Channel } from "@/types/channel";
 interface ServerPageProps {
     server_id: number;
     number_of_messages: number;
 }
 function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
-    const [selectedChannelId, setSelectedChannelId] = useState<number>(0);
-    const [channnelMessages, setChannelMessages] = useState<
-        Map<number, MessageData[]>
-    >(new Map());
+    const [selectedChannelId, setSelectedChannelId] = useState<number>(1);
+    const [channels, setChannels] = useState<Channel[]>([]);
+    const [channnelMessages, setChannelMessages] = useState<Map<number, MessageData[]>>(new Map());
     useEffect(() => {
         (async () => {
-            if (server_id < 0) {
+            if (server_id < 0 || !server_id) {
                 return;
             }
             try {
@@ -28,7 +27,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                     map.get(channel_id).push(obj);
                     return map;
                 }, new Map());
-                
+
                 setChannelMessages(() => newmap);
             } catch (error) {
                 console.error("Error fetching messages:", error);
@@ -89,10 +88,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                     }
                     channel_messages = [...channel_messages, newMessage];
                     if (channel_messages.length > number_of_messages) {
-                        messages.set(
-                            channel_id,
-                            channel_messages.slice(-number_of_messages),
-                        );
+                        messages.set(channel_id, channel_messages.slice(-number_of_messages));
                     } else {
                         messages.set(channel_id, channel_messages);
                     }
@@ -111,41 +107,32 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
         };
     }, [number_of_messages]);
 
-    const [channelInformationArray, setChannelInformationArray] = useState<
-        IconInfo[]
-    >([]);
-
     useEffect(() => {
-        (async () => {
-            if (server_id < 0) {
-                return;
-            }
+        async function getChannels() {
+            if (server_id < 0 || !server_id) return;
+
             try {
-                const channelInfoArray = await fetchChannels(server_id);
-                setChannelInformationArray(channelInfoArray);
-                
-                if (channelInfoArray.length > 0) {
-                    setSelectedChannelId(channelInfoArray[0].icon_id);
+                const channels = await fetchChannels(server_id);
+                setChannels(channels);
+                if (channels.length > 0 && !selectedChannelId) {
+                    setSelectedChannelId(channels[0].ChannelId);
                 }
             } catch (error) {
                 console.error("Error fetching channels:", error);
-                setChannelInformationArray([]);
+                setChannels([]);
             }
-        })();
+        }
+
+        getChannels();
     }, [server_id]);
+
     return (
-        <div className="flex flex-row h-full">
-            <div className="mr-4 h-full">
-                <div className="sticky top-0 p-2">
-                    <IconBanner
-                        icon_info={channelInformationArray}
-                        onServerSelect={setSelectedChannelId}
-                        direction="vertical"
-                        displayMode="text"
-                        selectedIconId={selectedChannelId}
-                    />
-                </div>
-            </div>
+        <div className="flex h-full flex-row">
+            <ChannelSidebar
+                channels={channels}
+                selectedChannelId={selectedChannelId}
+                onChannelSelect={setSelectedChannelId}
+            />
             <div className="flex-grow">
                 <ChatPage
                     channel_id={selectedChannelId}

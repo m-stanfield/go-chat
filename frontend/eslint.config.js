@@ -25,4 +25,13 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'quotes': 'off',
+      'semi': 'off',
+      'comma-dangle': 'off',
+      'max-len': 'off',
+    },
+  }
 )

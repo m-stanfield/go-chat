@@ -1,37 +1,42 @@
 import React, { useState } from "react";
-import { useAuth } from "../AuthContext.tsx";
-import { loginUser } from "../api/auth";
+import { useAuth } from "@/AuthContext";
+import { authApi } from "@/api";
+import { NavLink, useNavigate } from "react-router-dom";
 
-interface LoginProps {
-    onSwitchToSignUp: () => void;
-}
-
-function Login({ onSwitchToSignUp }: LoginProps) {
+function Login() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
     const auth = useAuth();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        
+        setError("");
+
         try {
-            const data = await loginUser({
+            const data = await authApi.login({
                 username,
                 password,
             });
-            
+
             auth.login({
                 name: username,
                 id: data.userid,
             });
-            console.log("Login successful:", data);
+            navigate("/");
         } catch (error) {
+            if (error instanceof Error) {
+                setError(error.message);
+            } else {
+                setError("An unknown error occurred");
+            }
             console.error("Error submitting login:", error);
         }
     };
 
     return (
-        <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8 bg-slate-700">
+        <div className="flex min-h-full flex-col justify-center bg-slate-700 px-6 py-12 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-sm">
                 <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-white">
                     Sign in to your account
@@ -51,7 +56,7 @@ function Login({ onSwitchToSignUp }: LoginProps) {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 required
-                                className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                className="block w-full rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                             />
                         </div>
                     </div>
@@ -67,7 +72,7 @@ function Login({ onSwitchToSignUp }: LoginProps) {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                className="block w-full rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                             />
                         </div>
                     </div>
@@ -83,12 +88,7 @@ function Login({ onSwitchToSignUp }: LoginProps) {
                 </form>
 
                 <div className="mt-10 text-center">
-                    <button
-                        onClick={onSwitchToSignUp}
-                        className="text-sm text-indigo-400 hover:text-indigo-300"
-                    >
-                        Don't have an account? Sign up
-                    </button>
+                    <NavLink to="/signup">Don't have an account? Sign up</NavLink>
                 </div>
             </div>
         </div>

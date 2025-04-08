@@ -35,5 +35,7 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch front back
+
+develop: front watch 
+.PHONY: all build run test clean watch front back develop 
 

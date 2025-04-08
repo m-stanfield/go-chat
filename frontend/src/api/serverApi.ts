@@ -1,37 +1,41 @@
-import { MessageData } from "../components/Message";
-import { IconInfo } from "../components/IconList";
+import { MessageData } from "@/components/Message";
+import { Channel } from "@/types/channel";
+
+const BASE_URL = "/api";
 
 interface RawMessageData {
     messageid: number;
     channelid: number;
     userid: number;
     username?: string;
-    date: string;
+    date: Date;
     message: string;
 }
 
 interface RawChannelData {
     ChannelId: number;
+    ServerId: number;
     ChannelName: string;
+    Timestamp: Date;
 }
 
 interface ServerIconResponse {
     ServerId: number;
     ServerName: string;
-    image_url: string | undefined;
+    ImageUrl: string | undefined;
 }
 
-export const fetchServerMessages = async (serverId: number, messageCount: number): Promise<MessageData[]> => {
-    const response = await fetch(
-        `http://localhost:8080/api/servers/${serverId}/messages?count=${messageCount}`,
-        {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
-        }
-    );
+export const fetchServerMessages = async (
+    serverId: number,
+    messageCount: number
+): Promise<MessageData[]> => {
+    const response = await fetch(`${BASE_URL}/servers/${serverId}/messages?count=${messageCount}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+    });
 
     if (!response.ok) {
         throw new Error(`Failed to fetch messages: ${response.statusText}`);
@@ -39,57 +43,55 @@ export const fetchServerMessages = async (serverId: number, messageCount: number
 
     const data = await response.json();
     const messageDataArray: MessageData[] = data["messages"].map((msg: RawMessageData) => {
-        const username = msg.username ? msg.username : "User" + msg.userid;
-        return {
+        const message: MessageData = {
             message_id: msg.messageid,
             channel_id: msg.channelid,
-            author: username,
-            author_id: msg.userid,
+
+            author: msg.username ? msg.username : "User" + msg.userid,
+            author_id: msg.userid.toString(),
             date: new Date(msg.date),
             message: msg.message,
         };
+
+        return message;
     });
 
     return messageDataArray.sort((a, b) => a.message_id - b.message_id);
 };
 
-export const fetchChannels = async (serverId: number): Promise<IconInfo[]> => {
-    const response = await fetch(
-        `http://localhost:8080/api/servers/${serverId}/channels`,
-        {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
-        }
-    );
+export const fetchChannels = async (serverId: number): Promise<Channel[]> => {
+    const response = await fetch(`${BASE_URL}/servers/${serverId}/channels`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+    });
 
     if (!response.ok) {
         throw new Error(`Failed to fetch channels: ${response.statusText}`);
     }
 
     const data = await response.json();
-    const channelInfoArray: IconInfo[] = data["channels"].map((msg: RawChannelData) => ({
-        icon_id: msg.ChannelId,
-        name: msg.ChannelName,
-        image_url: undefined,
-    }));
-
-    return channelInfoArray.sort((a, b) => a.icon_id - b.icon_id);
+    const channelInfoArray: Channel[] = data["channels"].map((channel: RawChannelData) => {
+        return {
+            ChannelId: channel.ChannelId,
+            ServerId: serverId,
+            ChannelName: channel.ChannelName,
+            Timestamp: channel.Timestamp,
+        };
+    });
+    return channelInfoArray;
 };
 
-export const fetchUserServers = async (userId: number): Promise<IconInfo[]> => {
-    const response = await fetch(
-        `http://localhost:8080/api/users/${userId}/servers`,
-        {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
-        }
-    );
+export const fetchUserServers = async (userId: number): Promise<ServerIconResponse[]> => {
+    const response = await fetch(`${BASE_URL}/users/${userId}/servers`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+    });
 
     if (!response.ok) {
         throw new Error(`Failed to fetch servers: ${response.statusText}`);
@@ -97,8 +99,8 @@ export const fetchUserServers = async (userId: number): Promise<IconInfo[]> => {
 
     const data = await response.json();
     return data.servers.map((server: ServerIconResponse) => ({
-        icon_id: server.ServerId,
-        name: server.ServerName,
-        image_url: "https://miro.medium.com/v2/resize:fit:720/format:webp/0*UD_CsUBIvEDoVwzc.png",
+        ServerId: server.ServerId,
+        ServerName: server.ServerName,
+        ImageUrl: "https://miro.medium.com/v2/resize:fit:720/format:webp/0*UD_CsUBIvEDoVwzc.png",
     }));
-}; 
+};

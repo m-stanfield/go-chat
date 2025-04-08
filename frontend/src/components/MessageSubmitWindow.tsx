@@ -9,7 +9,7 @@ function MessageSubmitWindow(props: MessageSubmitWindowProps) {
         setInputValue(e.target.value);
     };
     return (
-        <div className=" flex w-full h-full  ">
+        <div className="flex h-full w-full">
             <textarea
                 name="text"
                 value={inputValue}
@@ -24,7 +24,7 @@ function MessageSubmitWindow(props: MessageSubmitWindowProps) {
                         setInputValue(newValue);
                     }
                 }}
-                className="overflow-auto text-black flex w-full h-full rounded-lg px-2"
+                className="flex h-full w-full overflow-auto rounded-lg px-2 text-black"
             ></textarea>
         </div>
     );
