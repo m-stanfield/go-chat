@@ -40,7 +40,9 @@ export function AppSidebar({ items }: SidebarMenuItemProps) {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild onClick={() => navigate(item.url)}>
-                    <div className={`${item.selected ? "bg-slate-400" : ""}`}>
+                    <div
+                      className={`${item.selected ? "bg-slate-400 hover:bg-blue-800" : "hover:bg-blue-800"}`}
+                    >
                       <item.icon />
                       <span>{item.title}</span>
                     </div>
@@ -56,7 +58,11 @@ export function AppSidebar({ items }: SidebarMenuItemProps) {
                         description: "Sunday, December 03, 2023 at 9:00 AM",
                         action: {
                           label: "Undo",
-                          onClick: () => console.log("Undo"),
+                          onClick: () => {
+                            // generate random number between 0 and 1
+                            const randomNumber = Math.random();
+                            navigate(`/servers/${randomNumber > 0.5 ? 1 : 2}`);
+                          },
                         },
                       })
                     }
