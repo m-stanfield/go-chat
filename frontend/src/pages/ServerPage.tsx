@@ -2,13 +2,15 @@ import { SyntheticEvent, useEffect, useRef, useState } from "react";
 import { fetchServerMessages, fetchChannels } from "../api/serverApi";
 import ChatPage from "@/components/ChatWindow";
 import { MessageData } from "@/components/Message";
-
+import ChannelSidebar from "@/components/ChannelSidebar";
+import { Channel } from "@/types/channel";
 interface ServerPageProps {
     server_id: number;
     number_of_messages: number;
 }
 function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     const [selectedChannelId, setSelectedChannelId] = useState<number>(1);
+    const [channels, setChannels] = useState<Channel[]>([]);
     const [channnelMessages, setChannelMessages] = useState<Map<number, MessageData[]>>(new Map());
     useEffect(() => {
         (async () => {
@@ -105,8 +107,32 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
         };
     }, [number_of_messages]);
 
+    useEffect(() => {
+        async function getChannels() {
+            if (server_id < 0 || !server_id) return;
+
+            try {
+                const channels = await fetchChannels(server_id);
+                setChannels(channels);
+                if (channels.length > 0 && !selectedChannelId) {
+                    setSelectedChannelId(channels[0].ChannelId);
+                }
+            } catch (error) {
+                console.error("Error fetching channels:", error);
+                setChannels([]);
+            }
+        }
+
+        getChannels();
+    }, [server_id]);
+
     return (
         <div className="flex h-full flex-row">
+            <ChannelSidebar
+                channels={channels}
+                selectedChannelId={selectedChannelId}
+                onChannelSelect={setSelectedChannelId}
+            />
             <div className="flex-grow">
                 <ChatPage
                     channel_id={selectedChannelId}

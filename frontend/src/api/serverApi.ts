@@ -1,4 +1,5 @@
 import { MessageData } from "@/components/Message";
+import { Channel } from "@/types/channel";
 
 const BASE_URL = "/api";
 
@@ -13,7 +14,9 @@ interface RawMessageData {
 
 interface RawChannelData {
     ChannelId: number;
+    ServerId: number;
     ChannelName: string;
+    Timestamp: Date;
 }
 
 interface ServerIconResponse {
@@ -56,7 +59,7 @@ export const fetchServerMessages = async (
     return messageDataArray.sort((a, b) => a.message_id - b.message_id);
 };
 
-export const fetchChannels = async (serverId: number): Promise<RawChannelData[]> => {
+export const fetchChannels = async (serverId: number): Promise<Channel[]> => {
     const response = await fetch(`${BASE_URL}/servers/${serverId}/channels`, {
         method: "GET",
         headers: {
@@ -70,7 +73,14 @@ export const fetchChannels = async (serverId: number): Promise<RawChannelData[]>
     }
 
     const data = await response.json();
-    const channelInfoArray: RawChannelData[] = data["channels"];
+    const channelInfoArray: Channel[] = data["channels"].map((channel: RawChannelData) => {
+        return {
+            ChannelId: channel.ChannelId,
+            ServerId: serverId,
+            ChannelName: channel.ChannelName,
+            Timestamp: channel.Timestamp,
+        };
+    });
     return channelInfoArray;
 };
 
