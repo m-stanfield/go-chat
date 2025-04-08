@@ -1,3 +1,5 @@
+import { MessageData } from "@/components/Message";
+
 const BASE_URL = "/api";
 
 interface RawMessageData {
@@ -5,7 +7,7 @@ interface RawMessageData {
     channelid: number;
     userid: number;
     username?: string;
-    date: string;
+    date: Date;
     message: string;
 }
 
@@ -23,29 +25,35 @@ interface ServerIconResponse {
 export const fetchServerMessages = async (
     serverId: number,
     messageCount: number
-): Promise<RawMessageData[]> => {
-    const response = await fetch(
-        `${BASE_URL}/servers/${serverId}/messages?count=${messageCount}`,
-        {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
-        }
-    );
+): Promise<MessageData[]> => {
+    const response = await fetch(`${BASE_URL}/servers/${serverId}/messages?count=${messageCount}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+    });
 
     if (!response.ok) {
         throw new Error(`Failed to fetch messages: ${response.statusText}`);
     }
 
     const data = await response.json();
-    const messageDataArray: RawMessageData[] = data["messages"].map((msg: RawMessageData) => {
-        msg.username = msg.username ? msg.username : "User" + msg.userid;
-        return msg;
+    const messageDataArray: MessageData[] = data["messages"].map((msg: RawMessageData) => {
+        const message: MessageData = {
+            message_id: msg.messageid,
+            channel_id: msg.channelid,
+
+            author: msg.username ? msg.username : "User" + msg.userid,
+            author_id: msg.userid.toString(),
+            date: new Date(msg.date),
+            message: msg.message,
+        };
+
+        return message;
     });
 
-    return messageDataArray.sort((a, b) => a.messageid - b.messageid);
+    return messageDataArray.sort((a, b) => a.message_id - b.message_id);
 };
 
 export const fetchChannels = async (serverId: number): Promise<RawChannelData[]> => {
