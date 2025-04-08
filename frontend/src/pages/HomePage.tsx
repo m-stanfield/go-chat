@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/AuthContext";
 import { serverApi, ServerData } from "@/api";
 import { useNavigate, useParams } from "react-router-dom";
+import ServerPage from "./ServerPage";
 
 interface ServerNavItem {
   title: string;
@@ -64,9 +65,6 @@ export function HomePage() {
     setServerNavItem(serverNavItems);
   }, [serverId, serverdata]);
 
-  // create placeholder text that is 10k characters
-  const placeholderText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ".repeat(2000);
-
   return (
     <div className="flex h-full w-full">
       <Toaster />
@@ -75,26 +73,11 @@ export function HomePage() {
         <div className="flex flex-1 flex-col">
           <div className="sticky top-0 z-10 bg-background px-2 py-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <SidebarTrigger className="ml-1" />
-                <h1 className="text-2xl font-bold">{currentName || ""}</h1>
-              </div>
+              <SidebarTrigger className="ml-1" />
+              <h1 className="text-2xl font-bold">{currentName || ""}</h1>
             </div>
           </div>
-          <div className="rounded-lg bg-card p-6 shadow">
-            <h1 className="mb-4 text-2xl font-bold text-card-foreground">Home Page</h1>
-            <p className="text-muted-foreground">Welcome to the home page of the application.</p>
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <div className="rounded-md bg-primary/10 p-4">
-                <h3 className="font-medium">Getting Started</h3>
-                <p className="mt-2 text-sm">{placeholderText}</p>
-              </div>
-              <div className="rounded-md bg-secondary/10 p-4">
-                <h3 className="font-medium">Features</h3>
-                <p className="mt-2 text-sm">Explore the powerful features available to you.</p>
-              </div>
-            </div>
-          </div>
+          <ServerPage server_id={parseInt(serverId || "")} number_of_messages={25} />
         </div>
       </SidebarProvider>
     </div>
