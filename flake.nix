@@ -30,6 +30,7 @@
           # The Nix packages provided in the environment  
           hardeningDisable = ["fortify"];
           packages = with pkgs; [  
+            air
             gofumpt
             goimports-reviser
             golines
