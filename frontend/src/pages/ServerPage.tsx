@@ -4,10 +4,12 @@ import ChatPage from "@/components/ChatWindow";
 import { MessageData } from "@/components/Message";
 import ChannelSidebar from "@/components/ChannelSidebar";
 import { Channel } from "@/types/channel";
+
 interface ServerPageProps {
     server_id: number;
     number_of_messages: number;
 }
+
 function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     const [selectedChannelId, setSelectedChannelId] = useState<number>(1);
     const [channels, setChannels] = useState<Channel[]>([]);
