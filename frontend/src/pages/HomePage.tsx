@@ -20,7 +20,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const { serverId } = useParams<{ serverId: string }>();
   const [serverNaveItem, setServerNavItem] = useState<ServerNavItem[]>([]);
-  const [serverdata, setServers] = useState<ServerData[]>([]);
+  const [servers, setServers] = useState<ServerData[]>([]);
   const [currentName, setCurrentName] = useState<string>("");
 
   useEffect(() => {
@@ -38,9 +38,9 @@ export function HomePage() {
       }
 
       try {
-        const servers = await serverApi.fetchUserServers(auth.authState.user.id);
+        const retrievedServers = await serverApi.fetchUserServers(auth.authState.user.id);
         // Set the selected server if serverId is provided
-        setServers(servers);
+        setServers(retrievedServers);
       } catch (error) {
         console.error("Error fetching servers:", error);
       }
@@ -50,20 +50,24 @@ export function HomePage() {
   }, [auth.authState.user]);
 
   useEffect(() => {
-    const server = serverdata.find((s) => s.ServerId === parseInt(serverId || ""));
-    if (serverId) {
-      setCurrentName(server?.ServerName || "");
-    } else {
-      navigate(`/servers/${serverdata[0]?.ServerId}`);
+    if (!serverId) {
+      navigate(`/servers/${servers[0]?.ServerId}`, { replace: true });
     }
-    const serverNavItems = serverdata.map((server: ServerData) => ({
+    const server = servers.find((s) => s.ServerId === parseInt(serverId || ""));
+
+    if (!server) {
+      return;
+    }
+    setCurrentName(server?.ServerName || "");
+    const serverNavItems = servers.map((server: ServerData) => ({
       title: server.ServerName,
       url: `/servers/${server.ServerId}`,
       icon: Home,
       selected: server.ServerId === parseInt(serverId || ""),
     }));
     setServerNavItem(serverNavItems);
-  }, [serverId, serverdata]);
+    navigate(`/servers/${server.ServerId}`);
+  }, [serverId, servers, navigate]);
 
   return (
     <div className="flex h-full w-full">
@@ -77,7 +81,7 @@ export function HomePage() {
               <h1 className="text-2xl font-bold">{currentName || ""}</h1>
             </div>
           </div>
-          <ServerPage server_id={parseInt(serverId || "")} number_of_messages={25} />
+            <ServerPage server_id={parseInt(serverId || "")} number_of_messages={25} />
         </div>
       </SidebarProvider>
     </div>
