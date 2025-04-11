@@ -70,7 +70,7 @@ export function HomePage() {
   }, [serverId, servers, navigate]);
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex flex-1">
       <Toaster />
       <SidebarProvider>
         <AppSidebar items={serverNaveItem} />
@@ -81,7 +81,9 @@ export function HomePage() {
               <h1 className="text-2xl font-bold">{currentName || ""}</h1>
             </div>
           </div>
+          <div className="flex flex-1 flex-col overflow-hidden">
             <ServerPage server_id={parseInt(serverId || "")} number_of_messages={25} />
+          </div>
         </div>
       </SidebarProvider>
     </div>

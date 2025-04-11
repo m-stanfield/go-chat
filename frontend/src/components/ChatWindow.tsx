@@ -17,8 +17,8 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
     }, [messages, channel_id]);
 
     return (
-        <div className="flex h-full flex-col rounded-lg bg-gray-600 p-2">
-            <div className="min-h-0 flex-grow overflow-y-auto">
+        <div className="flex flex-1 flex-col rounded-lg bg-gray-600 p-2">
+            <div className="flex min-h-0 overflow-y-scroll">
                 <ul className="space-y-1 rounded-lg">
                     {messages.map((m) => (
                         <div
@@ -32,7 +32,7 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
                 <div ref={messageEndRef} /> {/* Add scroll anchor at the bottom */}
             </div>
             {/* Fixed input at bottom */}
-            <div className="mt-2">
+            <div className="mt-2 flex">
                 <MessageSubmitWindow onSubmit={onSubmit} />
             </div>
         </div>

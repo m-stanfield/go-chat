@@ -129,13 +129,13 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     }, [server_id]);
 
     return (
-        <div className="flex h-full flex-row">
+        <div className="flex flex-1">
             <ChannelSidebar
                 channels={channels}
                 selectedChannelId={selectedChannelId}
                 onChannelSelect={setSelectedChannelId}
             />
-            <div className="flex-grow">
+            <div className="flex flex-1">
                 <ChatPage
                     channel_id={selectedChannelId}
                     onSubmit={onSubmit}
