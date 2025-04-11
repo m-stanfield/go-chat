@@ -7,7 +7,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
-    <main className="flex h-screen w-screen flex-col bg-background">
+    <main className="h-screen w-screen bg-background">
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
