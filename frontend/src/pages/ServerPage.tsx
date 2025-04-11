@@ -135,7 +135,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                 selectedChannelId={selectedChannelId}
                 onChannelSelect={setSelectedChannelId}
             />
-            <div className="flex flex-grow">
+            <div className="flex flex-shrink-0 flex-grow">
                 <ChatPage
                     channel_id={selectedChannelId}
                     onSubmit={onSubmit}

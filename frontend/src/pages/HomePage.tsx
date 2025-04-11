@@ -70,19 +70,21 @@ export function HomePage() {
   }, [serverId, servers, navigate]);
 
   return (
-    <div className="h-full w-full">
+    <div className="flex h-full w-full">
       <Toaster />
       <SidebarProvider>
         <AppSidebar items={serverNaveItem} />
         <div className="flex flex-grow flex-col">
-          <div className="sticky top-0 z-10 bg-background px-2 py-4 shadow-sm">
+          <div className="sticky top-0 z-10 flex bg-background px-2 py-4 shadow-sm">
             <div className="flex items-center justify-between">
               <SidebarTrigger className="ml-1" />
               <h1 className="text-2xl font-bold">{currentName || ""}</h1>
             </div>
           </div>
-          <div className="flex flex-grow flex-col">
-            <ServerPage server_id={parseInt(serverId || "")} number_of_messages={25} />
+          <div className="flex flex-grow flex-col overflow-hidden">
+            <div className="flex h-full w-full">
+              <ServerPage server_id={parseInt(serverId || "")} number_of_messages={25} />
+            </div>
           </div>
         </div>
       </SidebarProvider>
