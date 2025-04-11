@@ -12,7 +12,7 @@ export default function ChannelSidebar({
     onChannelSelect,
 }: ChannelSidebarProps) {
     return (
-        <div className="w-64 bg-gray-800 p-4 text-white">
+        <div className="flex w-64 flex-col bg-gray-800 p-4 text-white">
             <h2 className="mb-4 text-xl font-bold">Channels</h2>
             <ul className="space-y-2">
                 {channels.map((channel) => (
