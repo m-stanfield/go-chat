@@ -13,7 +13,13 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
 
     // Scroll to bottom whenever messages change or channel changes
     useEffect(() => {
-        messageEndRef.current?.scrollIntoView();
+        setTimeout(() => {
+            messageEndRef.current?.scrollIntoView({
+                behavior: "smooth", // Add smooth scrolling
+                block: "end", // Align to the bottom
+                inline: "nearest", // Avoid horizontal scrolling
+            });
+        }, 0);
     }, [messages, channel_id]);
 
     return (
