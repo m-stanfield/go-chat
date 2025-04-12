@@ -50,8 +50,12 @@ export function HomePage() {
   }, [auth.authState.user]);
 
   useEffect(() => {
-    if (!serverId) {
+    if (servers.length === 0) {
+      return;
+    }
+    if (serverId === undefined) {
       navigate(`/servers/${servers[0]?.ServerId}`, { replace: true });
+      return;
     }
     const server = servers.find((s) => s.ServerId === parseInt(serverId || ""));
 
