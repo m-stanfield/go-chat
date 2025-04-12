@@ -14,31 +14,29 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
     // Scroll to bottom whenever messages change or channel changes
     useEffect(() => {
         setTimeout(() => {
-            messageEndRef.current?.scrollIntoView({
-                behavior: "smooth", // Add smooth scrolling
-                block: "end", // Align to the bottom
-                inline: "nearest", // Avoid horizontal scrolling
-            });
+            messageEndRef.current?.scrollIntoView({});
         }, 0);
     }, [messages, channel_id]);
 
     return (
-        <div className="flex flex-grow flex-col rounded-lg bg-gray-600 p-2">
-            <div className="flex min-h-0 flex-col overflow-y-auto">
-                <ul className="space-y-1 rounded-lg">
-                    {messages.map((m) => (
-                        <div
-                            key={m.message_id}
-                            className="flex flex-grow rounded-lg bg-slate-700 hover:bg-slate-600"
-                        >
-                            <Message message={m} />
-                        </div>
-                    ))}
-                </ul>
-                <div ref={messageEndRef} /> {/* Add scroll anchor at the bottom */}
+        <div className="flex h-full w-full flex-col rounded-lg bg-gray-600 p-2">
+            <div className="flex flex-1  overflow-hidden">
+                <div className="flex-1 overflow-y-scroll">
+                    <ul className="space-y-1 p-2">
+                        {messages.map((m) => (
+                            <div
+                                key={m.message_id}
+                                className="flex flex-grow rounded-lg bg-slate-700 hover:bg-slate-600"
+                            >
+                                <Message message={m} />
+                            </div>
+                        ))}
+                    </ul>
+                    <div ref={messageEndRef} /> {/* Add scroll anchor at the bottom */}
+                </div>
             </div>
             {/* Fixed input at bottom */}
-            <div className="mt-2 flex flex-shrink">
+            <div className="flex-shrink-0 p-2">
                 <MessageSubmitWindow onSubmit={onSubmit} />
             </div>
         </div>
