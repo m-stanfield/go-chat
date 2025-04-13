@@ -16,17 +16,17 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
         setTimeout(() => {
             messageEndRef.current?.scrollIntoView({});
         }, 0);
-    }, [ channel_id]);
+    }, [channel_id]);
 
     useEffect(() => {
         setTimeout(() => {
             messageEndRef.current?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'end',
-                inline: 'nearest'
+                behavior: "smooth",
+                block: "end",
+                inline: "nearest",
             });
         }, 0);
-    }, [ messages]);
+    }, [messages]);
 
     return (
         <div className="flex h-full w-full flex-col rounded-lg bg-gray-600 p-2">
@@ -42,11 +42,19 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
                             </div>
                         ))}
                     </ul>
-                    <div ref={messageEndRef} /> 
+                    <div ref={messageEndRef} />
                 </div>
             </div>
             <div className="flex-shrink-0 p-2">
-                <MessageSubmitWindow onSubmit={onSubmit} />
+                <MessageSubmitWindow
+                    onSubmit={onSubmit}
+                    validateMessage={(x) => {
+                        if (x.length > 20) {
+                            return "Message is too long";
+                        }
+                        return "";
+                    }}
+                />
             </div>
         </div>
     );
