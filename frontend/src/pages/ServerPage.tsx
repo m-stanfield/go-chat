@@ -6,7 +6,7 @@ import ChannelSidebar from "@/components/ChannelSidebar";
 import { Channel } from "@/types/channel";
 import { useAuth } from "@/AuthContext";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface ServerPageProps {
     server_id: number;
@@ -16,8 +16,9 @@ interface ServerPageProps {
 function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     const auth = useAuth();
     const navigate = useNavigate();
+    const { channelId: channelIdStr } = useParams<{ channelId: string }>();
+    const channelId = channelIdStr ? parseInt(channelIdStr) : -1;
 
-    const [selectedChannelId, setSelectedChannelId] = useState<number>(1);
     const [channels, setChannels] = useState<Channel[]>([]);
     const [channnelMessages, setChannelMessages] = useState<Map<number, MessageData[]>>(new Map());
     useEffect(() => {
@@ -42,7 +43,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                 setChannelMessages(new Map());
             }
         })();
-    }, [server_id, selectedChannelId, number_of_messages]);
+    }, [server_id, channelId, number_of_messages]);
     const ws = useRef<WebSocket | null>(null);
     const onSubmit = (t: SyntheticEvent, inputValue: string): string => {
         t.preventDefault();
@@ -52,7 +53,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
             return inputValue;
         }
         const stringified = JSON.stringify({
-            channel_id: selectedChannelId,
+            channel_id: channelId,
             message: inputValue,
         });
         if (ws === null) {
@@ -137,8 +138,8 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
             try {
                 const channels = await fetchChannels(server_id);
                 setChannels(channels);
-                if (channels.length > 0 && !selectedChannelId) {
-                    setSelectedChannelId(channels[0].ChannelId);
+                if (channels.length > 0 && channelId < 1) {
+                    navigate(`/servers/${server_id}/channels/${channels[0].ChannelId}`);
                 }
             } catch (error) {
                 console.error("Error fetching channels:", error);
@@ -148,21 +149,27 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
 
         getChannels();
     }, [server_id]);
+    const onChannelSelect = (newChannelId: number) => {
+        if (newChannelId === channelId) {
+            return;
+        }
+        navigate(`/servers/${server_id}/channels/${newChannelId}`);
+    };
 
     return (
         <div className="flex flex-grow">
             <div className="flex flex-shrink-0">
                 <ChannelSidebar
                     channels={channels}
-                    selectedChannelId={selectedChannelId}
-                    onChannelSelect={setSelectedChannelId}
+                    selectedChannelId={channelId}
+                    onChannelSelect={onChannelSelect}
                 />
             </div>
             <div className="flex flex-grow">
                 <ChatPage
-                    channel_id={selectedChannelId}
+                    channel_id={channelId}
                     onSubmit={onSubmit}
-                    messages={channnelMessages.get(selectedChannelId) || []}
+                    messages={channnelMessages.get(channelId) || []}
                 />
             </div>
         </div>

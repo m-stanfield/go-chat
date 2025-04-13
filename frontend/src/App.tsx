@@ -26,6 +26,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/servers/:serverId/channels/:channelId"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </main>
   );
