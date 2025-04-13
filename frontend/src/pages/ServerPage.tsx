@@ -4,8 +4,9 @@ import ChatPage from "@/components/ChatWindow";
 import { MessageData } from "@/components/Message";
 import ChannelSidebar from "@/components/ChannelSidebar";
 import { Channel } from "@/types/channel";
-import { toast } from "sonner";
 import { useAuth } from "@/AuthContext";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface ServerPageProps {
     server_id: number;
@@ -14,6 +15,8 @@ interface ServerPageProps {
 
 function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     const auth = useAuth();
+    const navigate = useNavigate();
+
     const [selectedChannelId, setSelectedChannelId] = useState<number>(1);
     const [channels, setChannels] = useState<Channel[]>([]);
     const [channnelMessages, setChannelMessages] = useState<Map<number, MessageData[]>>(new Map());
@@ -86,11 +89,6 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                 if (!channel_id) {
                     return;
                 }
-                if (newMessage.author_id != auth.authState.user?.id) {
-                    toast(`New message from ${newMessage.author}`, {
-                        description: newMessage.message,
-                    });
-                }
                 setChannelMessages((messages) => {
                     let channel_messages = messages.get(channel_id);
                     if (!channel_messages) {
@@ -104,6 +102,21 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                     }
                     return new Map(messages);
                 });
+
+                if (newMessage.author_id != auth.authState.user?.id) {
+                    toast(`New message from ${newMessage.author}`, {
+                        description: newMessage.message,
+                        action: {
+                            label: "View",
+                            onClick: () => {
+                                // add navigation to server 2 here
+                                //
+                                console.log("implementing navigation later");
+                                // navigate(`/servers/2`);
+                            },
+                        },
+                    });
+                }
             } catch (err) {
                 console.log(err);
             }
