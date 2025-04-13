@@ -130,11 +130,13 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
 
     return (
         <div className="flex flex-grow">
-            <ChannelSidebar
-                channels={channels}
-                selectedChannelId={selectedChannelId}
-                onChannelSelect={setSelectedChannelId}
-            />
+            <div className="flex flex-shrink-0">
+                <ChannelSidebar
+                    channels={channels}
+                    selectedChannelId={selectedChannelId}
+                    onChannelSelect={setSelectedChannelId}
+                />
+            </div>
             <div className="flex flex-grow">
                 <ChatPage
                     channel_id={selectedChannelId}
