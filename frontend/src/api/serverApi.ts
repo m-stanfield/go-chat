@@ -48,7 +48,7 @@ export const fetchServerMessages = async (
             channel_id: msg.channelid,
 
             author: msg.username ? msg.username : "User" + msg.userid,
-            author_id: msg.userid.toString(),
+            author_id: msg.userid,
             date: new Date(msg.date),
             message: msg.message,
         };

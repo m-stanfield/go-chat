@@ -4,6 +4,8 @@ import ChatPage from "@/components/ChatWindow";
 import { MessageData } from "@/components/Message";
 import ChannelSidebar from "@/components/ChannelSidebar";
 import { Channel } from "@/types/channel";
+import { toast } from "sonner";
+import { useAuth } from "@/AuthContext";
 
 interface ServerPageProps {
     server_id: number;
@@ -11,6 +13,7 @@ interface ServerPageProps {
 }
 
 function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
+    const auth = useAuth();
     const [selectedChannelId, setSelectedChannelId] = useState<number>(1);
     const [channels, setChannels] = useState<Channel[]>([]);
     const [channnelMessages, setChannelMessages] = useState<Map<number, MessageData[]>>(new Map());
@@ -82,6 +85,11 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                 const channel_id = newMessage.channel_id;
                 if (!channel_id) {
                     return;
+                }
+                if (newMessage.author_id != auth.authState.user?.id) {
+                    toast(`New message from ${newMessage.author}`, {
+                        description: newMessage.message,
+                    });
                 }
                 setChannelMessages((messages) => {
                     let channel_messages = messages.get(channel_id);
