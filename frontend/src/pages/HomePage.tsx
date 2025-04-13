@@ -18,7 +18,9 @@ interface ServerNavItem {
 export function HomePage() {
   const auth = useAuth();
   const navigate = useNavigate();
-  const { serverId } = useParams<{ serverId: string }>();
+  const { serverId: serverIdStr } = useParams<{ serverId: string }>();
+  const serverId = serverIdStr ? parseInt(serverIdStr) : undefined;
+  const [currentServerId, setCurrentServerId] = useState<number | null>(null);
   const [serverNaveItem, setServerNavItem] = useState<ServerNavItem[]>([]);
   const [servers, setServers] = useState<ServerData[]>([]);
   const [currentName, setCurrentName] = useState<string>("");
@@ -33,6 +35,7 @@ export function HomePage() {
     const fetchServers = async () => {
       if (auth.authState.user === null) {
         setCurrentName("");
+        setCurrentServerId(null);
         setServers([]);
         return;
       }
@@ -57,17 +60,21 @@ export function HomePage() {
       navigate(`/servers/${servers[0]?.ServerId}`, { replace: true });
       return;
     }
-    const server = servers.find((s) => s.ServerId === parseInt(serverId || ""));
+    if (currentServerId === serverId) {
+      return;
+    }
+    const server = servers.find((s) => s.ServerId === serverId);
 
     if (!server) {
       return;
     }
+    setCurrentServerId(server.ServerId);
     setCurrentName(server?.ServerName || "");
     const serverNavItems = servers.map((server: ServerData) => ({
       title: server.ServerName,
       url: `/servers/${server.ServerId}`,
       icon: Home,
-      selected: server.ServerId === parseInt(serverId || ""),
+      selected: server.ServerId === serverId,
     }));
     setServerNavItem(serverNavItems);
     navigate(`/servers/${server.ServerId}`);
