@@ -131,7 +131,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                             label: "View",
                             onClick: () => {
                                 // add navigation to server 2 here
-                                navigate(`/servers/2`);
+                                navigate(`/servers/${newMessage.server_id}/channels/${newMessage.channel_id}`);
                             },
                         },
                     });
