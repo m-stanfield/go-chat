@@ -43,7 +43,26 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                 setChannelMessages(new Map());
             }
         })();
-    }, [server_id, channelId, number_of_messages]);
+    }, [server_id, number_of_messages]);
+
+    useEffect(() => {
+        (async () => {
+            const channels = await fetchChannels(server_id);
+            setChannels(channels);
+        })();
+    }, [server_id]);
+    useEffect(() => {
+        const inChannels = channels.find((channel) => channel.ChannelId === channelId);
+        try {
+            if (channels.length > 0 && !inChannels) {
+                navigate(`/servers/${server_id}/channels/${channels[0].ChannelId}`);
+            }
+        } catch (error) {
+            console.error("Error fetching channels:", error);
+            setChannels([]);
+        }
+    }, [channelId, channels]);
+
     const ws = useRef<WebSocket | null>(null);
     const onSubmit = (t: SyntheticEvent, inputValue: string): string => {
         t.preventDefault();
@@ -131,24 +150,6 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
         };
     }, [number_of_messages]);
 
-    useEffect(() => {
-        async function getChannels() {
-            if (server_id < 0 || !server_id) return;
-
-            try {
-                const channels = await fetchChannels(server_id);
-                setChannels(channels);
-                if (channels.length > 0 && channelId < 1) {
-                    navigate(`/servers/${server_id}/channels/${channels[0].ChannelId}`);
-                }
-            } catch (error) {
-                console.error("Error fetching channels:", error);
-                setChannels([]);
-            }
-        }
-
-        getChannels();
-    }, [server_id]);
     const onChannelSelect = (newChannelId: number) => {
         if (newChannelId === channelId) {
             return;
