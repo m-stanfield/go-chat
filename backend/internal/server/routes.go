@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	clients         = make([]chan ServerMessage, 0)
+	clients         = make(map[database.Id]chan ServerMessage, 0)
 	incomingChannel = make(chan ServerMessage)
 	startTime       = time.Now()
 )
@@ -1284,9 +1284,20 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer socket.Close(websocket.StatusGoingAway, "Server closing websocket")
-	outgoingChannel := make(chan ServerMessage)
-	go s.handleMessages(socket, outgoingChannel)
-	clients = append(clients, outgoingChannel)
+	if _, ok := clients[userinfo.UserId]; ok {
+		close(clients[userinfo.UserId])
+		delete(clients, userinfo.UserId)
+		log.Printf("new connected for %d. deleted previous channel", userinfo.UserId)
+	}
+	clients[userinfo.UserId] = make(chan ServerMessage, 0)
+	defer func() {
+		if _, ok := clients[userinfo.UserId]; ok {
+			close(clients[userinfo.UserId])
+			delete(clients, userinfo.UserId)
+		}
+		log.Printf("deleted channel for user %d", userinfo.UserId)
+	}()
+	go s.handleMessages(userinfo.UserId, socket, clients[userinfo.UserId])
 
 	fmt.Printf("starting websocket loop: %d ms",
 		time.Since(startTime).Milliseconds(),
@@ -1350,27 +1361,45 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		incomingChannel <- msg
 	}
+
+	log.Printf("websocketHandler: closing channel for user %d", userinfo.UserId)
 }
 
-func (s *Server) handleIncomingMessages(broadcast chan ServerMessage) {
+func (s *Server) handleIncomingMessages(messages chan ServerMessage) {
 	for {
-		message := <-broadcast
+		message := <-messages
 		for _, ch := range clients {
 			ch <- message
 		}
 	}
 }
 
-func (s *Server) handleMessages(client *websocket.Conn, broadcast chan ServerMessage) {
+func handleMessageContext(user database.Id, client *websocket.Conn, msg ServerMessage) error {
+	if user == msg.UserId {
+		log.Printf("skipping message to self %d", user)
+	}
+	log.Printf("sending message to %d", user)
+	jsondata, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 1.0*time.Second)
+	defer cancel()
+	err = client.Write(ctx, websocket.MessageText, jsondata)
+	log.Printf("message sent %d", user)
+	return err
+}
+
+func (s *Server) handleMessages(
+	user database.Id,
+	client *websocket.Conn,
+	messageChan chan ServerMessage,
+) {
 	for {
-		msg := <-broadcast
-		jsondata, err := json.Marshal(msg)
+		msg := <-messageChan
+		err := handleMessageContext(user, client, msg)
 		if err != nil {
-			fmt.Printf("handleMessage %v", err)
-			continue
+			log.Printf("handleMessage %v", err)
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 1.0*time.Second)
-		defer cancel()
-		client.Write(ctx, websocket.MessageText, jsondata)
 	}
 }
