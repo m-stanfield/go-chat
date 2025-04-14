@@ -77,7 +77,6 @@ export function HomePage() {
       selected: server.ServerId === serverId,
     }));
     setServerNavItem(serverNavItems);
-    navigate(`/servers/${server.ServerId}`);
   }, [serverId, servers, navigate]);
 
   return (
