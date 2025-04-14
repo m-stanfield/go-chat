@@ -561,7 +561,7 @@ func (r *DBService) GetServer(serverid Id) (Server, error) {
 
 func (r *DBService) GetMessage(messageid Id) (Message, error) {
 	rows, err := r.conn.Query(
-		"SELECT messageid, channelid, userid, contents, timestamp, editted, edittimestamp FROM ChannelMessageTable WHERE messageid = ? ",
+		"SELECT m.messageid, m.channelid, m.userid, m.contents, m.timestamp, m.editted, m.edittimestamp, c.serverid FROM ChannelMessageTable m JOIN ChannelTable c on m.channelid = c.channelid WHERE m.messageid = ?",
 		messageid,
 	)
 	if err != nil {
@@ -580,6 +580,7 @@ func (r *DBService) GetMessage(messageid Id) (Message, error) {
 			&message.Timestamp,
 			&message.Editted,
 			&message.EdittedTimeStamp,
+			&message.ServerId,
 		)
 		if err != nil {
 			return Message{}, err
@@ -614,9 +615,10 @@ func (r *DBService) AddMessage(channelid Id, userid Id, message string) (Id, err
 	return Id(id), nil
 }
 
+// "SELECT m.messageid, m.channelid, m.userid, m.contents, m.timestamp, m.editted, m.edittimestamp, c.serverid FROM ChannelMessageTable m JOIN ChannelServeTable c ON m.channelid = c.channelid WHERE m.channelid = ? ORDER BY m.timestamp DESC LIMIT ?",
 func (r *DBService) GetMessagesInChannel(channelid Id, number uint) ([]Message, error) {
 	rows, err := r.conn.Query(
-		"SELECT messageid, channelid, userid, contents, timestamp, editted, edittimestamp FROM ChannelMessageTable WHERE channelid = ? ORDER BY timestamp DESC LIMIT ?",
+		"SELECT m.messageid, m.channelid, m.userid, m.contents, m.timestamp, m.editted, m.edittimestamp, c.serverid FROM ChannelMessageTable m JOIN ChannelTable c on m.channelid = c.channelid WHERE m.channelid = ? ORDER BY m.timestamp DESC LIMIT ?",
 		channelid,
 		number,
 	)
@@ -635,6 +637,7 @@ func (r *DBService) GetMessagesInChannel(channelid Id, number uint) ([]Message, 
 			&message.Timestamp,
 			&message.Editted,
 			&message.EdittedTimeStamp,
+			&message.ServerId,
 		)
 		if err != nil {
 			return []Message{}, err

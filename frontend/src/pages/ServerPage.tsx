@@ -100,6 +100,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                 const newMessage: MessageData = {
                     message_id: json.messageid,
                     channel_id: json.channelid,
+                    server_id: json.serverid,
                     message: json.message,
                     date: new Date(json.date),
                     author: json.username ?? "User " + json.userid,
@@ -130,9 +131,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
                             label: "View",
                             onClick: () => {
                                 // add navigation to server 2 here
-                                //
-                                console.log("implementing navigation later");
-                                // navigate(`/servers/2`);
+                                navigate(`/servers/2`);
                             },
                         },
                     });

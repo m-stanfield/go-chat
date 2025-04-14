@@ -38,7 +38,7 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 
 func main() {
 	log.Println("Starting server...")
-	server := server.NewServer()
+	server := server.NewServer(true)
 
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)

@@ -64,6 +64,7 @@ type Channel struct {
 type Message struct {
 	MessageId        Id
 	UserId           Id
+	ServerId         Id
 	ChannelId        Id
 	Contents         string
 	Timestamp        time.Time

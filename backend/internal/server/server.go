@@ -150,7 +150,7 @@ type Server struct {
 	db Service
 }
 
-func NewServer() *http.Server {
+func NewServer(logserver bool) *http.Server {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
 	fmt.Printf("opening on port %d", port)
 	db := NewDB()
@@ -169,7 +169,7 @@ func NewServer() *http.Server {
 	// Declare Server config
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", NewServer.port),
-		Handler:      NewServer.RegisterRoutes(),
+		Handler:      NewServer.RegisterRoutes(logserver),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,

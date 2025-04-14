@@ -1,6 +1,7 @@
 export type MessageData = {
     message_id: number;
     channel_id: number;
+    server_id: number;
     author: string;
     author_id: number;
     date: Date;
