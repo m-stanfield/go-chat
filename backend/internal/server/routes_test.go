@@ -26,7 +26,7 @@ func setupTest(tb testing.TB) (*TestServer, func(tb testing.TB)) {
 	}
 
 	s := Server{port: port, db: server}
-	httpserver := httptest.NewServer(s.RegisterRoutes())
+	httpserver := httptest.NewServer(s.RegisterRoutes(false))
 	return &TestServer{server: httpserver}, func(tb testing.TB) {
 		server.Close()
 	}

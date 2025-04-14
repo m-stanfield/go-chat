@@ -19,7 +19,7 @@ export function HomePage() {
   const auth = useAuth();
   const navigate = useNavigate();
   const { serverId: serverIdStr } = useParams<{ serverId: string }>();
-  const serverId = serverIdStr ? parseInt(serverIdStr) : undefined;
+  const serverId = serverIdStr ? parseInt(serverIdStr) : -1;
   const [currentServerId, setCurrentServerId] = useState<number | null>(null);
   const [serverNaveItem, setServerNavItem] = useState<ServerNavItem[]>([]);
   const [servers, setServers] = useState<ServerData[]>([]);
@@ -93,7 +93,7 @@ export function HomePage() {
           </div>
           <div className="flex flex-grow flex-col overflow-hidden">
             <div className="flex h-full w-full">
-              <ServerPage server_id={parseInt(serverId || "")} number_of_messages={25} />
+              <ServerPage server_id={serverId} number_of_messages={25} />
             </div>
           </div>
         </div>

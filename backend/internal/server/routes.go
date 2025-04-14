@@ -25,6 +25,7 @@ type ServerMessage struct {
 	UserId    database.Id `json:"userid"`
 	MessageID database.Id `json:"messageid"`
 	ChannelId database.Id `json:"channelid"`
+	ServerId  database.Id `json:"serverid"`
 	Message   string      `json:"message"`
 	Date      string      `json:"date"`
 }
@@ -41,7 +42,7 @@ type SubmittedMessage struct {
 	Message   string      `json:"message"`
 }
 
-func (s *Server) RegisterRoutes() http.Handler {
+func (s *Server) RegisterRoutes(logserver bool) http.Handler {
 	go s.handleIncomingMessages(incomingChannel)
 	mux := http.NewServeMux()
 
@@ -90,8 +91,12 @@ func (s *Server) RegisterRoutes() http.Handler {
 		s.WithAuthUser(s.DeleteMessage),
 	)
 
+	handler := http.Handler(mux)
+	if logserver {
+		handler = s.logEndpoint(handler)
+	}
 	// Wrap the mux with CORS middleware
-	return s.corsMiddleware(s.logEndpoint(mux))
+	return s.corsMiddleware(handler)
 }
 
 // redirect so I only have to remember one port during development
@@ -1187,6 +1192,7 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 			tempmsgs[i] = ServerMessage{
 				UserId:    dbmsg.UserId,
 				MessageID: dbmsg.MessageId,
+				ServerId:  serverid,
 				ChannelId: dbmsg.ChannelId,
 				Message:   dbmsg.Contents,
 				Date:      dbmsg.Timestamp.Format(time.UnixDate),
@@ -1337,6 +1343,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		msg := ServerMessage{
 			UserId:    dbmsg.UserId,
 			MessageID: messageid,
+			ServerId:  dbmsg.ServerId,
 			ChannelId: dbmsg.ChannelId,
 			Message:   dbmsg.Contents,
 			Date:      dbmsg.Timestamp.Format(time.UnixDate),
