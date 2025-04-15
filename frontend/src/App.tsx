@@ -8,6 +8,8 @@ function App() {
   return (
     <main className="h-screen w-screen bg-background">
       <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
         <Route
           path="/"
           element={
@@ -16,8 +18,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
         <Route
           path="/servers/:serverId"
           element={
