@@ -1289,7 +1289,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		delete(clients, userinfo.UserId)
 		log.Printf("new connected for %d. deleted previous channel", userinfo.UserId)
 	}
-	clients[userinfo.UserId] = make(chan ServerMessage, 0)
+	clients[userinfo.UserId] = make(chan ServerMessage)
 	defer func() {
 		if _, ok := clients[userinfo.UserId]; ok {
 			close(clients[userinfo.UserId])
@@ -1396,7 +1396,11 @@ func (s *Server) handleMessages(
 	messageChan chan ServerMessage,
 ) {
 	for {
-		msg := <-messageChan
+		msg, ok := <-messageChan
+		if !ok {
+			log.Printf("handleMessages: channel closed for user %d", user)
+			break
+		}
 		err := handleMessageContext(user, client, msg)
 		if err != nil {
 			log.Printf("handleMessage %v", err)
