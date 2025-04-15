@@ -1375,9 +1375,6 @@ func (s *Server) handleIncomingMessages(messages chan ServerMessage) {
 }
 
 func handleMessageContext(user database.Id, client *websocket.Conn, msg ServerMessage) error {
-	if user == msg.UserId {
-		log.Printf("skipping message to self %d", user)
-	}
 	log.Printf("sending message to %d", user)
 	jsondata, err := json.Marshal(msg)
 	if err != nil {
