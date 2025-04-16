@@ -44,6 +44,9 @@ export function HomePage() {
         const retrievedServers = await serverApi.fetchUserServers(auth.authState.user.id);
         // Set the selected server if serverId is provided
         setServers(retrievedServers);
+        if ((currentServerId === null || currentServerId === -1) && retrievedServers.length > 0) {
+          navigate(`/servers/${retrievedServers[0].ServerId}`, { replace: true });
+        }
       } catch (error) {
         console.error("Error fetching servers:", error);
       }
