@@ -25,6 +25,23 @@ interface ServerIconResponse {
     ImageUrl: string | undefined;
 }
 
+export const postChannel = async (
+    serverId: number,
+    channelName: string
+): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/servers/${serverId}/channels`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ channelName }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to create channel: ${response.statusText}`);
+    }
+}
 export const fetchServerMessages = async (
     serverId: number,
     messageCount: number
