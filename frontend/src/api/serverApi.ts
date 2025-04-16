@@ -6,8 +6,8 @@ const BASE_URL = "/api";
 interface RawMessageData {
     messageid: number;
     channelid: number;
+    serverid: number;
     userid: number;
-    username?: string;
     date: Date;
     message: string;
 }
@@ -46,8 +46,8 @@ export const fetchServerMessages = async (
         const message: MessageData = {
             message_id: msg.messageid,
             channel_id: msg.channelid,
-
-            author: msg.username ? msg.username : "User" + msg.userid,
+            server_id: msg.serverid,
+            author: "User" + msg.userid,
             author_id: msg.userid,
             date: new Date(msg.date),
             message: msg.message,
