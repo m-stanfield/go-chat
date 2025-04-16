@@ -538,20 +538,21 @@ func (s *Server) CreateChannel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	userid, err := getUserIdFromContext(r)
+	_, err := getUserIdFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	channel_data := struct {
-		ChannelName string `json:"channelname"`
+		ServerId    database.Id `json:"serverid"`
+		ChannelName string      `json:"channelname"`
 	}{}
 	err = json.NewDecoder(r.Body).Decode(&channel_data)
 	if err != nil {
 		http.Error(w, "error: unable to parse request", http.StatusBadRequest)
 		return
 	}
-	channelid, err := s.db.AddChannel(userid, channel_data.ChannelName)
+	channelid, err := s.db.AddChannel(channel_data.ServerId, channel_data.ChannelName)
 	if err != nil {
 		http.Error(w, "error: unable to create channel", http.StatusBadRequest)
 		return
