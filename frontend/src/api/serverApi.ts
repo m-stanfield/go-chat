@@ -43,6 +43,26 @@ export const postChannel = async (
     }
     return response;
 }
+
+export const postServers = async (
+    serverName: string,
+    imageUrl: string
+): Promise<Response> => {
+    const response = await fetch(`${BASE_URL}/servers`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ serverName, imageUrl }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to create server: ${response.statusText}`);
+    }
+    return response;
+}
+
 export const fetchServerMessages = async (
     serverId: number,
     messageCount: number
