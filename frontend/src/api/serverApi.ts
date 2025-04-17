@@ -80,6 +80,9 @@ export const fetchServerMessages = async (
     }
 
     const data = await response.json();
+    if (!data["messages"]) {
+        return [];
+    }
     const messageDataArray: MessageData[] = data["messages"].map((msg: RawMessageData) => {
         const message: MessageData = {
             message_id: msg.messageid,
@@ -111,6 +114,9 @@ export const fetchChannels = async (serverId: number): Promise<Channel[]> => {
     }
 
     const data = await response.json();
+    if (!data["channels"]) {
+        return [];
+    }
     const channelInfoArray: Channel[] = data["channels"].map((channel: RawChannelData) => {
         return {
             ChannelId: channel.ChannelId,
