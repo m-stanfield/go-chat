@@ -49,28 +49,6 @@ export function AppSidebar({ items }: SidebarMenuItemProps) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-
-              <SidebarMenuItem key="toast-button">
-                <SidebarMenuButton asChild>
-                  <Button
-                    onClick={() =>
-                      toast("Event has been created", {
-                        description: "Sunday, December 03, 2023 at 9:00 AM",
-                        action: {
-                          label: "Undo",
-                          onClick: () => {
-                            // generate random number between 0 and 1
-                            const randomNumber = Math.random();
-                            navigate(`/servers/${randomNumber > 0.5 ? 1 : 2}`);
-                          },
-                        },
-                      })
-                    }
-                  >
-                    Toast
-                  </Button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
