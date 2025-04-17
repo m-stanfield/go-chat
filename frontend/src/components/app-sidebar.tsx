@@ -16,6 +16,8 @@ import { useAuth } from "@/AuthContext";
 import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { ChevronUp, User2 } from "lucide-react";
 import { DropdownMenuContent } from "./ui/dropdown-menu";
+import { postServers } from "@/api/serverApi";
+import { CreateServerDialog } from "./CreateServerDialog";
 
 interface SidebarMenuItem {
   title: string;
@@ -25,9 +27,10 @@ interface SidebarMenuItem {
 }
 interface SidebarMenuItemProps {
   items: SidebarMenuItem[];
+  onServerCreate: () => void;
 }
 
-export function AppSidebar({ items }: SidebarMenuItemProps) {
+export function AppSidebar({ items, onServerCreate }: SidebarMenuItemProps) {
   const navigate = useNavigate();
   const auth = useAuth();
   return (
@@ -47,8 +50,14 @@ export function AppSidebar({ items }: SidebarMenuItemProps) {
                       <span>{item.title}</span>
                     </div>
                   </SidebarMenuButton>
+
                 </SidebarMenuItem>
               ))}
+              <SidebarMenuButton asChild
+                className="align-bottom my-1"
+              >
+                <CreateServerDialog onServerCreated={onServerCreate} />
+              </SidebarMenuButton>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -65,7 +74,10 @@ export function AppSidebar({ items }: SidebarMenuItemProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" className="w-[--radix-popper-anchor-width]">
                 <DropdownMenuItem>
-                  <SidebarMenuButton asChild>
+
+                  <SidebarMenuButton asChild
+                    className="my-1"
+                  >
                     <Button
                       onClick={() => {
                         auth.logout();
