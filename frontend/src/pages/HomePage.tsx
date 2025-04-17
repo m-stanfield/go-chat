@@ -31,27 +31,27 @@ export function HomePage() {
     });
   }, []);
 
+  const fetchServers = async () => {
+    if (auth.authState.user === null) {
+      setCurrentName("");
+      setCurrentServerId(null);
+      setServers([]);
+      return;
+    }
+
+    try {
+      const retrievedServers = await serverApi.fetchUserServers(auth.authState.user.id);
+      // Set the selected server if serverId is provided
+      setServers(retrievedServers);
+      if ((currentServerId === null || currentServerId === -1) && retrievedServers.length > 0) {
+        navigate(`/servers/${retrievedServers[0].ServerId}`, { replace: true });
+      }
+    } catch (error) {
+      console.error("Error fetching servers:", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchServers = async () => {
-      if (auth.authState.user === null) {
-        setCurrentName("");
-        setCurrentServerId(null);
-        setServers([]);
-        return;
-      }
-
-      try {
-        const retrievedServers = await serverApi.fetchUserServers(auth.authState.user.id);
-        // Set the selected server if serverId is provided
-        setServers(retrievedServers);
-        if ((currentServerId === null || currentServerId === -1) && retrievedServers.length > 0) {
-          navigate(`/servers/${retrievedServers[0].ServerId}`, { replace: true });
-        }
-      } catch (error) {
-        console.error("Error fetching servers:", error);
-      }
-    };
-
     fetchServers();
   }, [auth.authState.user]);
 
@@ -86,7 +86,7 @@ export function HomePage() {
     <div className="flex h-full w-full">
       <Toaster />
       <SidebarProvider>
-        <AppSidebar items={serverNaveItem} />
+        <AppSidebar items={serverNaveItem} onServerCreate={fetchServers} />
         <div className="flex flex-grow flex-col">
           <div className="sticky top-0 z-10 flex bg-background px-2 py-4 shadow-sm">
             <div className="flex items-center justify-between">
