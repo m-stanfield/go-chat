@@ -53,8 +53,8 @@ export function CreateServerDialog({ onServerCreated }: CreateServerDialogProps)
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button className="bg-slate-700">+ Channel</Button>
+            <DialogTrigger asChild className="bg-slate-700">
+                <Button>New Server</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <form onSubmit={handleSubmit}>
