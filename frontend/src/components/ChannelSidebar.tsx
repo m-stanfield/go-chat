@@ -3,11 +3,13 @@ import { Channel } from "@/types/channel";
 interface ChannelSidebarProps {
     channels: Channel[];
     selectedChannelId: number;
+    serverid: number;
     onChannelSelect: (channelId: number) => void;
 }
 
 export default function ChannelSidebar({
     channels,
+    serverid,
     selectedChannelId,
     onChannelSelect,
 }: ChannelSidebarProps) {
