@@ -28,7 +28,7 @@ interface ServerIconResponse {
 export const postChannel = async (
     serverId: number,
     channelName: string
-): Promise<void> => {
+): Promise<Response> => {
     const response = await fetch(`${BASE_URL}/servers/${serverId}/channels`, {
         method: "POST",
         headers: {
@@ -41,6 +41,7 @@ export const postChannel = async (
     if (!response.ok) {
         throw new Error(`Failed to create channel: ${response.statusText}`);
     }
+    return response;
 }
 export const fetchServerMessages = async (
     serverId: number,
