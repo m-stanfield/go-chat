@@ -94,7 +94,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     ws.current.onopen = () => {
       console.log("opening ws", Date.now() - startTime);
     };
-    ws.current.onmessage = function (event: MessageEvent) {
+    ws.current.onmessage = function(event: MessageEvent) {
       console.log("ws message", Date.now() - startTime);
       const json = JSON.parse(event.data);
       try {
@@ -166,6 +166,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
       <div className="flex flex-shrink-0">
         <ChannelSidebar
           channels={channels}
+          serverid={server_id}
           selectedChannelId={channelId}
           onChannelSelect={onChannelSelect}
         />
