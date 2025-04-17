@@ -115,6 +115,19 @@ func (s *DBService) Close() error {
 	return s.db.Close()
 }
 
+func (r *DBService) AddUserToServer(userid Id, serverid Id, nickname string) error {
+	_, err := r.conn.Exec(
+		"INSERT INTO UsersServerTable ( userid, serverid, nickname) VALUES ( ?, ?, ?)",
+		userid,
+		serverid,
+		nickname,
+	)
+	if err != nil {
+		return fmt.Errorf("add user - userid: %d err: %w", userid, err)
+	}
+	return err
+}
+
 func (r *DBService) CreateServer(ownerid Id, servername string) (Id, error) {
 	d, err := r.conn.Exec(
 		"INSERT INTO ServerTable (servername, ownerid) VALUES (?, ?)",
