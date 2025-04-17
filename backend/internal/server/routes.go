@@ -904,6 +904,15 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) addUserToServer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	// do a not implemented warning
+	http.Error(w, "not implemented", http.StatusNotImplemented)
+}
+
 func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -942,6 +951,14 @@ func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to create server", http.StatusBadRequest)
 		return
 	}
+
+	// TODO: add proper user name here
+	err = s.db.AddUserToServer(userid, serverid, "")
+	if err != nil {
+		http.Error(w, "unable to add user to server", http.StatusBadRequest)
+		return
+	}
+
 	resp := map[string]interface{}{
 		"serverid": serverid,
 	}
