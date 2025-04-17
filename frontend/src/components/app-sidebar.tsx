@@ -53,17 +53,17 @@ export function AppSidebar({ items, onServerCreate }: SidebarMenuItemProps) {
 
                 </SidebarMenuItem>
               ))}
-              <SidebarMenuButton asChild
-                className="align-bottom my-1"
-              >
-                <CreateServerDialog onServerCreated={onServerCreate} />
-              </SidebarMenuButton>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuButton asChild
+            className="flex align-bottom my-1"
+          >
+            <CreateServerDialog onServerCreated={onServerCreate} />
+          </SidebarMenuButton>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
