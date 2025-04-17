@@ -37,6 +37,7 @@ type ServerService interface {
 	DeleteServer(serverid database.Id) error
 	UpdateServerName(serverid database.Id, servername string) error
 	IsUserInServer(userid database.Id, serverid database.Id) (bool, error)
+	AddUserToServer(serverid database.Id, userid database.Id, nickname string) error
 }
 
 type ChannelService interface {
