@@ -32,7 +32,11 @@ export default function ChannelSidebar({
                 </ul>
             </div>
             <div className="flex flex-col align-bottom mt-4">
-                <CreateChannelDialog serverid={serverid} />
+                <CreateChannelDialog serverid={serverid} >
+                    <button className="flex items-center justify-center rounded bg-blue-600 p-2 text-white hover:bg-blue-700">
+                        Create Channel
+                    </button>
+                </CreateChannelDialog>
             </div>
 
         </div>

@@ -20,8 +20,9 @@ import { postChannel } from "@/api/serverApi"
 interface CreateChannelDialogProps {
     onChannelCreated?: () => void;
     serverid: number;
+    children: React.ReactNode;
 }
-export function CreateChannelDialog({ onChannelCreated, serverid }: CreateChannelDialogProps) {
+export function CreateChannelDialog({ onChannelCreated, serverid, children }: CreateChannelDialogProps) {
     const [open, setOpen] = useState(false)
     const [channelName, setChannelName] = useState("")
     const [isLoading, setIsLoading] = useState(false)
@@ -55,7 +56,7 @@ export function CreateChannelDialog({ onChannelCreated, serverid }: CreateChanne
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-slate-700">+ Channel</Button>
+                {children}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <form onSubmit={handleSubmit}>
