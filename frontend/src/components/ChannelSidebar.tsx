@@ -1,5 +1,6 @@
 import { Channel } from "@/types/channel";
 import { CreateChannelDialog } from "./CreateChannelDialog";
+import { Button } from "./ui/button";
 
 interface ChannelSidebarProps {
     channels: Channel[];
@@ -33,9 +34,9 @@ export default function ChannelSidebar({
             </div>
             <div className="flex flex-col align-bottom mt-4">
                 <CreateChannelDialog serverid={serverid} >
-                    <button className="flex items-center justify-center rounded bg-blue-600 p-2 text-white hover:bg-blue-700">
+                    <Button>
                         Create Channel
-                    </button>
+                    </Button>
                 </CreateChannelDialog>
             </div>
 
