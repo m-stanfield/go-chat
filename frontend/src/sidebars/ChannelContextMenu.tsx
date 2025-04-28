@@ -1,3 +1,5 @@
+"use client"
+
 import type React from "react"
 
 import { useState } from "react"
@@ -9,19 +11,18 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { postChannel } from "@/api/serverApi"
+import { postServers } from "@/api/serverApi"
 
-interface CreateChannelDialogProps {
-    onChannelCreated?: () => void;
-    serverid: number;
-    open: boolean;
-    setOpen: (open: boolean) => void;
+interface CreateServerDialogProps {
+    onServerCreated?: () => void;
 }
-export function CreateChannelDialog({ onChannelCreated, serverid, open, setOpen }: CreateChannelDialogProps) {
-    const [channelName, setChannelName] = useState("")
+export function CreateServerDialog({ onServerCreated }: CreateServerDialogProps) {
+    const [open, setOpen] = useState(false)
+    const [serverName, setServerName] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -33,7 +34,7 @@ export function CreateChannelDialog({ onChannelCreated, serverid, open, setOpen 
 
         try {
             // Perform API call to create channel
-            const response = await postChannel(serverid, channelName);
+            const response = await postServers(serverName, "");
 
 
             if (!response.ok) {
@@ -41,8 +42,8 @@ export function CreateChannelDialog({ onChannelCreated, serverid, open, setOpen 
             }
             // Reset form and close dialog on success
             setOpen(false)
-            onChannelCreated?.()
-            setChannelName("")
+            onServerCreated?.()
+            setServerName("")
         } catch (err) {
             setError(err instanceof Error ? err.message : "An unknown error occurred")
         } finally {
@@ -52,11 +53,14 @@ export function CreateChannelDialog({ onChannelCreated, serverid, open, setOpen 
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild className="bg-slate-700">
+                <Button>New Server</Button>
+            </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
-                        <DialogTitle>Create Channel</DialogTitle>
-                        <DialogDescription>Enter a name for your new channel. Click create when you're done.</DialogDescription>
+                        <DialogTitle>Create Server</DialogTitle>
+                        <DialogDescription>Enter a name for your new server. Click create when you're done.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
@@ -65,8 +69,8 @@ export function CreateChannelDialog({ onChannelCreated, serverid, open, setOpen 
                             </Label>
                             <Input
                                 id="name"
-                                value={channelName}
-                                onChange={(e) => setChannelName(e.target.value)}
+                                value={serverName}
+                                onChange={(e) => setServerName(e.target.value)}
                                 className="col-span-3"
                                 placeholder="general"
                                 required
@@ -76,7 +80,7 @@ export function CreateChannelDialog({ onChannelCreated, serverid, open, setOpen 
                     </div>
                     <DialogFooter>
                         <Button type="submit" disabled={isLoading}>
-                            {isLoading ? "Creating..." : "Create Channel"}
+                            {isLoading ? "Creating..." : "Create server"}
                         </Button>
                     </DialogFooter>
                 </form>
