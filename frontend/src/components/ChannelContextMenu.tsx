@@ -9,13 +9,15 @@ import {
 interface ChannelSidebarContextMenuProps {
     channelId: number;
     children: React.ReactNode;
+
+    className?: string;
 };
-export default function ChannelSidebarContextMenu({ channelId, children }: ChannelSidebarContextMenuProps) {
+export default function ChannelSidebarContextMenu({ channelId, children, className }: ChannelSidebarContextMenuProps) {
 
     console.log("ChannelSidebarContextMenu", channelId);
 
     return (
-        <>
+        <div className={className}>
             <ContextMenu>
                 <ContextMenuTrigger>
                     {children}
@@ -27,6 +29,6 @@ export default function ChannelSidebarContextMenu({ channelId, children }: Chann
                     <ContextMenuItem>Subscription</ContextMenuItem>
                 </ContextMenuContent>
             </ContextMenu>
-        </>
+        </div>
     );
 }
