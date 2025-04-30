@@ -38,11 +38,6 @@ export default function ChannelSidebar({
                         ))}
                     </ul>
                 </div >
-                <div className="flex flex-col align-bottom mt-4">
-                    <Button onClick={() => setOpen(true)} >
-                        Create Channel
-                    </Button>
-                </div>
 
             </div >
         </>
