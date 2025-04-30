@@ -2,6 +2,7 @@ import { Channel } from "@/types/channel";
 import { CreateChannelDialog } from "./CreateChannelDialog";
 import { Button } from "./ui/button";
 import { useState } from "react";
+import ChannelSidebarContextMenu from "./ChannelContextMenu";
 
 interface ChannelSidebarProps {
     channels: Channel[];
@@ -24,14 +25,16 @@ export default function ChannelSidebar({
             <div className="flex flex-grow items-start mb-4 overflow-y-auto overflow-x-hidden">
                 <ul className="space-y-2">
                     {channels.map((channel) => (
-                        <li
-                            key={channel.ChannelId}
-                            className={`cursor-pointer rounded p-2 hover:bg-gray-700 ${channel.ChannelId === selectedChannelId ? "bg-gray-700" : ""
-                                }`}
-                            onClick={() => onChannelSelect(channel.ChannelId)}
-                        >
-                            # {channel.ChannelName}
-                        </li>
+                        <ChannelSidebarContextMenu channelId={channel.ChannelId}>
+                            <li
+                                key={channel.ChannelId}
+                                onClick={() => onChannelSelect(channel.ChannelId)}
+                                className={`flex flex-grow cursor-pointer rounded p-2 hover:bg-gray-600 ${channel.ChannelId === selectedChannelId ? "bg-gray-700" : ""}`}
+                            >
+                                # {channel.ChannelName}
+                            </li>
+
+                        </ChannelSidebarContextMenu >
                     ))}
                 </ul>
             </div>
