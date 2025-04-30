@@ -1,8 +1,6 @@
-"use client"
-
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -20,10 +18,10 @@ import { postChannel } from "@/api/serverApi"
 interface CreateChannelDialogProps {
     onChannelCreated?: () => void;
     serverid: number;
-    children: React.ReactNode;
+    open: boolean;
+    setOpen: (open: boolean) => void;
 }
-export function CreateChannelDialog({ onChannelCreated, serverid, children }: CreateChannelDialogProps) {
-    const [open, setOpen] = useState(false)
+export function CreateChannelDialog({ onChannelCreated, serverid, open, setOpen }: CreateChannelDialogProps) {
     const [channelName, setChannelName] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -45,19 +43,21 @@ export function CreateChannelDialog({ onChannelCreated, serverid, children }: Cr
             // Reset form and close dialog on success
             setOpen(false)
             onChannelCreated?.()
-            setChannelName("")
         } catch (err) {
             setError(err instanceof Error ? err.message : "An unknown error occurred")
         } finally {
             setIsLoading(false)
         }
     }
+    useEffect(() => {
+        if (open) {
+            setChannelName("")
+            setError(null)
+        }
+    }, [open])
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                {children}
-            </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
