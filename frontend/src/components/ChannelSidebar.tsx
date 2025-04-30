@@ -1,6 +1,5 @@
 import { Channel } from "@/types/channel";
 import { CreateChannelDialog } from "./CreateChannelDialog";
-import { Button } from "./ui/button";
 import { useState } from "react";
 import ChannelSidebarContextMenu from "./ChannelContextMenu";
 
