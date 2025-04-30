@@ -7,6 +7,7 @@ import { Channel } from "@/types/channel";
 import { useAuth } from "@/AuthContext";
 import { toast } from "sonner";
 import { useNavigate, useParams } from "react-router-dom";
+import SidebarContextMenu from "@/components/SidebarContextMenu";
 
 interface ServerPageProps {
   server_id: number;
@@ -163,14 +164,14 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
 
   return (
     <div className="flex flex-grow">
-      <div className="flex flex-shrink-0">
+      <SidebarContextMenu className="flex flex-shrink-0">
         <ChannelSidebar
           channels={channels}
           serverid={server_id}
           selectedChannelId={channelId}
           onChannelSelect={onChannelSelect}
         />
-      </div>
+      </SidebarContextMenu>
       <div className="flex flex-grow">
         <ChatPage
           channel_id={channelId}
