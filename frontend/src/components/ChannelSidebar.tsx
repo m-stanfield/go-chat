@@ -25,19 +25,17 @@ export default function ChannelSidebar({
             <div className="flex flex-grow items-start mb-4 overflow-y-auto overflow-x-hidden">
                 <ul className="space-y-2">
                     {channels.map((channel) => (
-                        <ChannelSidebarContextMenu channelId={channel.ChannelId}>
+                        <ChannelSidebarContextMenu key={channel.ChannelId} channelId={channel.ChannelId} >
                             <li
-                                key={channel.ChannelId}
                                 onClick={() => onChannelSelect(channel.ChannelId)}
-                                className={`flex flex-grow cursor-pointer rounded p-2 hover:bg-gray-600 ${channel.ChannelId === selectedChannelId ? "bg-gray-700" : ""}`}
+                                className={`flex  flex-grow cursor-pointer rounded p-2 hover:bg-gray-600 ${channel.ChannelId === selectedChannelId ? "bg-gray-700" : ""}`}
                             >
                                 # {channel.ChannelName}
                             </li>
-
-                        </ChannelSidebarContextMenu >
+                        </ChannelSidebarContextMenu>
                     ))}
                 </ul>
-            </div>
+            </div >
             <div className="flex flex-col align-bottom mt-4">
                 <CreateChannelDialog serverid={serverid} open={open} setOpen={setOpen} />
                 <Button onClick={() => setOpen(true)} >
@@ -45,6 +43,6 @@ export default function ChannelSidebar({
                 </Button>
             </div>
 
-        </div>
+        </div >
     );
 }
