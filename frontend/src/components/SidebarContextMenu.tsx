@@ -43,11 +43,6 @@ export default function SidebarContextMenu({ serverid, children, className }: Si
         try {
             // Perform API call to create channel
             const response = await postChannel(serverid, channelName);
-
-
-            if (!response.ok) {
-                throw new Error(`Failed to create channel: ${response.statusText}`)
-            }
             // Reset form and close dialog on success
             setDialogOpen(false)
         } catch (err) {
