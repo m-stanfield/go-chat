@@ -69,10 +69,9 @@ export default function SidebarContextMenu({ serverid, children, className, onCh
 
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Are you absolutely sure?</DialogTitle>
+                    <DialogTitle>Create New Channel</DialogTitle>
                     <DialogDescription>
-                        This action cannot be undone. Are you sure you want to permanently
-                        delete this file?
+                        Enter a name for your new channel. Click create when you're done.
                     </DialogDescription>
                 </DialogHeader>
 
