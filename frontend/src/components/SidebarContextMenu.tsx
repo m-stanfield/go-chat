@@ -15,22 +15,17 @@ import { Label } from "@/components/ui/label"
 import { CreateChannelResponse, postChannel } from "@/api/serverApi"
 
 import { useState } from "react"
-import {
-    ContextMenuContent,
-    ContextMenu,
-    ContextMenuItem,
-    ContextMenuTrigger,
-} from "@/components/ui/context-menu"
 
 interface SidebarContextMenuProps {
     children: React.ReactNode;
     serverid: number;
+    open: boolean;
+    setOpen: (open: boolean) => void;
     className?: string;
     onChannelCreated?: (Channel: CreateChannelResponse) => void;
 };
-export default function SidebarContextMenu({ serverid, children, className, onChannelCreated }: SidebarContextMenuProps) {
+export default function SidebarContextMenu({ serverid, children, className, onChannelCreated, open, setOpen }: SidebarContextMenuProps) {
 
-    const [dialogOpen, setDialogOpen] = useState(false)
     const [channelName, setChannelName] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -43,7 +38,7 @@ export default function SidebarContextMenu({ serverid, children, className, onCh
             // Perform API call to create channel
             const response = await postChannel(serverid, channelName);
             // Reset form and close dialog on success
-            setDialogOpen(false)
+            setOpen(false)
             onChannelCreated?.(response)
         } catch (err) {
             setError(err instanceof Error ? err.message : "An unknown error occurred")
@@ -53,20 +48,10 @@ export default function SidebarContextMenu({ serverid, children, className, onCh
     }
 
     return (
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <ContextMenu modal={false}>
-                <ContextMenuTrigger >
-                    <div className={className}>
-                        {children}
-                    </div>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                    <ContextMenuItem onSelect={() => setDialogOpen(true)}>
-                        Create Channel
-                    </ContextMenuItem>
-                </ContextMenuContent>
-            </ContextMenu>
-
+        <Dialog open={open} onOpenChange={setOpen}>
+            <div className={className}>
+                {children}
+            </div>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Create New Channel</DialogTitle>

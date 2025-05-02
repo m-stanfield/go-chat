@@ -16,7 +16,7 @@ export default function ChannelSidebar({
 
     return (
         <>
-            <div className="flex flex-grow flex-col w-48 bg-gray-800 p-4 text-white">
+            <div className="flex flex-grow h-full flex-col w-48 bg-gray-800 p-4 text-white">
                 <h2 className="mb-4 text-xl font-bold">Channels</h2>
                 <div className="flex flex-grow items-start mb-4 overflow-y-auto overflow-x-hidden">
                     <ul className="space-y-2">
