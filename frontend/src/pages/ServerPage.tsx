@@ -164,7 +164,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
 
   return (
     <div className="flex flex-grow">
-      <SidebarContextMenu serverid={server_id} className="flex flex-shrink-0">
+      <SidebarContextMenu serverid={server_id} className="flex w-full h-full">
         <ChannelSidebar
           channels={channels}
           serverid={server_id}
