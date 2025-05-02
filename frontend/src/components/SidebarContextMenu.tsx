@@ -73,11 +73,8 @@ export default function SidebarContextMenu({ serverid, children, className }: Si
                     </div>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                    <ContextMenuItem>Open</ContextMenuItem>
-                    <ContextMenuItem>Download</ContextMenuItem>
-                    {/* Open Dialog by setting state */}
                     <ContextMenuItem onSelect={() => setDialogOpen(true)}>
-                        Delete
+                        Create Channel
                     </ContextMenuItem>
                 </ContextMenuContent>
             </ContextMenu>
