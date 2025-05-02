@@ -9,7 +9,6 @@ import {
 interface ChannelSidebarContextMenuProps {
     channelId: number;
     children: React.ReactNode;
-
     className?: string;
 };
 export default function ChannelSidebarContextMenu({ channelId, children, className }: ChannelSidebarContextMenuProps) {
@@ -23,10 +22,7 @@ export default function ChannelSidebarContextMenu({ channelId, children, classNa
                     {children}
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                    <ContextMenuItem>Profile</ContextMenuItem>
-                    <ContextMenuItem>Billing</ContextMenuItem>
-                    <ContextMenuItem>Team</ContextMenuItem>
-                    <ContextMenuItem>Subscription</ContextMenuItem>
+                    <ContextMenuItem>Channel ID: {channelId}</ContextMenuItem>
                 </ContextMenuContent>
             </ContextMenu>
         </div>
