@@ -19,16 +19,20 @@ interface RawChannelData {
     Timestamp: Date;
 }
 
-interface ServerIconResponse {
+export interface ServerIconResponse {
     ServerId: number;
     ServerName: string;
     ImageUrl: string | undefined;
 }
 
+export interface CreateChannelResponse {
+    channelId: number;
+}
+
 export const postChannel = async (
     serverId: number,
     channelName: string
-): Promise<Response> => {
+): Promise<CreateChannelResponse> => {
     const response = await fetch(`${BASE_URL}/servers/${serverId}/channels`, {
         method: "POST",
         headers: {
@@ -41,7 +45,14 @@ export const postChannel = async (
     if (!response.ok) {
         throw new Error(`Failed to create channel: ${response.statusText}`);
     }
-    return response;
+    const data = await response.json();
+    if (!data["channelid"]) {
+        throw new Error("Invalid response from server");
+    }
+    const channelId: CreateChannelResponse = {
+        channelId: data["channelid"],
+    };
+    return channelId;
 }
 
 export const postServers = async (
