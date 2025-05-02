@@ -1,4 +1,11 @@
 import { SyntheticEvent, useEffect, useRef, useState } from "react";
+
+import {
+  ContextMenuContent,
+  ContextMenu,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
 import { fetchServerMessages, fetchChannels, CreateChannelResponse } from "../api/serverApi";
 import ChatPage from "@/components/ChatWindow";
 import { MessageData } from "@/components/Message";
@@ -166,15 +173,28 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     onChannelSelect(newChannel.channelId);
   }
 
+  const [open, setOpen] = useState(false)
+
   return (
     <div className="flex flex-grow">
-      <SidebarContextMenu serverid={server_id} className="flex w-full h-full" onChannelCreated={onChannelCreated}>
-        <ChannelSidebar
-          channels={channels}
-          serverid={server_id}
-          selectedChannelId={channelId}
-          onChannelSelect={onChannelSelect}
-        />
+      <SidebarContextMenu serverid={server_id} className="flex h-full" onChannelCreated={onChannelCreated} open={open} setOpen={setOpen}>
+
+        <ContextMenu modal={false}>
+          <ContextMenuTrigger >
+            <ChannelSidebar
+              channels={channels}
+              serverid={server_id}
+              selectedChannelId={channelId}
+              onChannelSelect={onChannelSelect}
+            />
+
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem onSelect={() => setOpen(true)}>
+              Create Channel
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
       </SidebarContextMenu>
       <div className="flex flex-grow">
         <ChatPage
