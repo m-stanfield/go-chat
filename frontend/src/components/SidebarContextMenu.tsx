@@ -1,7 +1,6 @@
 
 import type React from "react"
 
-import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -13,12 +12,12 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { postChannel } from "@/api/serverApi"
+import { CreateChannelResponse, postChannel } from "@/api/serverApi"
 
 import { useState } from "react"
 import {
-    ContextMenu,
     ContextMenuContent,
+    ContextMenu,
     ContextMenuItem,
     ContextMenuTrigger,
 } from "@/components/ui/context-menu"
@@ -27,9 +26,11 @@ interface SidebarContextMenuProps {
     children: React.ReactNode;
     serverid: number;
     className?: string;
+    onChannelCreated?: (Channel: CreateChannelResponse) => void;
 };
-export default function SidebarContextMenu({ serverid, children, className }: SidebarContextMenuProps) {
+export default function SidebarContextMenu({ serverid, children, className, onChannelCreated }: SidebarContextMenuProps) {
 
+    const [dialogOpen, setDialogOpen] = useState(false)
     const [channelName, setChannelName] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -38,26 +39,18 @@ export default function SidebarContextMenu({ serverid, children, className }: Si
         e.preventDefault()
         setIsLoading(true)
         setError(null)
-
-
         try {
             // Perform API call to create channel
             const response = await postChannel(serverid, channelName);
             // Reset form and close dialog on success
             setDialogOpen(false)
+            onChannelCreated?.(response)
         } catch (err) {
             setError(err instanceof Error ? err.message : "An unknown error occurred")
         } finally {
             setIsLoading(false)
         }
     }
-    useEffect(() => {
-        if (open) {
-            setChannelName("")
-            setError(null)
-        }
-    }, [open])
-    const [dialogOpen, setDialogOpen] = useState(false)
 
     return (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

@@ -1,5 +1,5 @@
 import { SyntheticEvent, useEffect, useRef, useState } from "react";
-import { fetchServerMessages, fetchChannels } from "../api/serverApi";
+import { fetchServerMessages, fetchChannels, CreateChannelResponse } from "../api/serverApi";
 import ChatPage from "@/components/ChatWindow";
 import { MessageData } from "@/components/Message";
 import ChannelSidebar from "@/components/ChannelSidebar";
@@ -162,9 +162,13 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     navigate(`/servers/${server_id}/channels/${newChannelId}`);
   };
 
+  const onChannelCreated = (newChannel: CreateChannelResponse) => {
+    onChannelSelect(newChannel.channelId);
+  }
+
   return (
     <div className="flex flex-grow">
-      <SidebarContextMenu serverid={server_id} className="flex w-full h-full">
+      <SidebarContextMenu serverid={server_id} className="flex w-full h-full" onChannelCreated={onChannelCreated}>
         <ChannelSidebar
           channels={channels}
           serverid={server_id}
