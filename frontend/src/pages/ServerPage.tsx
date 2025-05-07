@@ -76,7 +76,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     t.preventDefault();
     if (inputValue.length === 0) {
       return inputValue;
-    } else if (inputValue.length >= 20) {
+    } else if (inputValue.length >= 1000) {
       return inputValue;
     }
     const stringified = JSON.stringify({

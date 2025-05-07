@@ -49,7 +49,7 @@ function ChatPage({ channel_id, messages, onSubmit }: ChatPageProps) {
                 <MessageSubmitWindow
                     onSubmit={onSubmit}
                     validateMessage={(x) => {
-                        if (x.length > 20) {
+                        if (x.length > 1000) {
                             return "Message is too long";
                         }
                         return "";
