@@ -5,7 +5,7 @@ import { MessageData } from "@/components/Message";
 
 
 type MessageState = {
-    messagesByChannel: Record<string, MessageData[]>
+    messagesByChannel: Record<number, MessageData[]>
     addMessage: (channelId: number, message: MessageData) => void
     removeMessage: (channelId: number, messageId: number) => void
 }
