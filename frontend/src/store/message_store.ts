@@ -4,14 +4,26 @@ import { create } from 'zustand';
 import { MessageData } from "@/components/Message";
 
 
+
 type MessageState = {
     messagesByChannel: Record<number, MessageData[]>
+    setMessagesByChannel: (channelId: number, messages: MessageData[]) => void
     addMessage: (channelId: number, message: MessageData) => void
     removeMessage: (channelId: number, messageId: number) => void
 }
 
 export const useMessageStore = create<MessageState>((set) => ({
     messagesByChannel: {},
+
+    setMessagesByChannel: (channelId: number, messages: MessageData[]) =>
+        set((state) => {
+            return {
+                messagesByChannel: {
+                    ...state.messagesByChannel,
+                    [channelId]: messages,
+                },
+            }
+        }),
 
 
     addMessage: (channelId, message) =>
