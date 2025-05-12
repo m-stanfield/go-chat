@@ -20,6 +20,6 @@ export const useServerStore = create<ServerState>((set) => ({
 
     removeServer: (serverId) =>
         set((state) => ({
-            servers: state.servers.filter((msg) => msg.ServerId !== serverId), // <- check this key
+            servers: state.servers.filter((msg) => msg.ServerId !== serverId),
         })),
 }))
