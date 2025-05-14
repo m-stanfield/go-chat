@@ -3,6 +3,8 @@ import { ServerData } from '@/api';
 
 type ServerState = {
     servers: ServerData[]
+    currentServer: number | null
+    setCurrentServer: (serverId: number | null) => void
     setServers: (servers: ServerData[]) => void
     addServer: (server: ServerData) => void
     removeServer: (serverId: number) => void
@@ -10,6 +12,8 @@ type ServerState = {
 
 export const useServerStore = create<ServerState>((set) => ({
     servers: [],
+    currentServer: null,
+    setCurrentServer: (serverId) => set({ currentServer: serverId }),
 
     setServers: (servers) => set({ servers }),
 
