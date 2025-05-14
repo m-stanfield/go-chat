@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useNavigate, useParams } from "react-router-dom";
 import SidebarContextMenu from "@/components/SidebarContextMenu";
 import { useMessageStore } from "@/store/message_store";
+import { useChannelStore } from "@/store/channel_store";
 
 interface ServerPageProps {
   server_id: number;
@@ -28,7 +29,8 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
   const { channelId: channelIdStr } = useParams<{ channelId: string }>();
   const channelId = channelIdStr ? parseInt(channelIdStr) : -1;
 
-  const [channels, setChannels] = useState<Channel[]>([]);
+  const channels = useChannelStore((state) => state.channels);
+  const setChannels = useChannelStore((state) => state.setChannels);
   // get channel messgages from store
   const setChannelMessages = useMessageStore((state) => state.setMessagesByChannel);
   const addChannelMessage = useMessageStore((state) => state.addMessage);
@@ -62,7 +64,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
 
   useEffect(() => {
     (async () => {
-      const channels = await fetchChannels(server_id);
+      const channels = await fetchChannels(server_id)
       setChannels(channels);
     })();
   }, [server_id]);
