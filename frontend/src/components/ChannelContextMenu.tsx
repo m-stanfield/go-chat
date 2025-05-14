@@ -13,7 +13,6 @@ interface ChannelSidebarContextMenuProps {
 };
 export default function ChannelSidebarContextMenu({ channelId, children, className }: ChannelSidebarContextMenuProps) {
 
-    console.log("ChannelSidebarContextMenu", channelId);
 
     return (
         <div className={className}>
