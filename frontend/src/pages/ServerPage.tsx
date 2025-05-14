@@ -30,7 +30,6 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
 
   const [channels, setChannels] = useState<Channel[]>([]);
   // get channel messgages from store
-  const channelMessages = useMessageStore((state) => state.messagesByChannel);
   const setChannelMessages = useMessageStore((state) => state.setMessagesByChannel);
   const addChannelMessage = useMessageStore((state) => state.addMessage);
   const removeAllMessages = useMessageStore((state) => state.removeAllMessages);
@@ -190,7 +189,6 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
         <ChatPage
           channel_id={channelId}
           onSubmit={onSubmit}
-          messages={channelMessages[channelId] || []}
         />
       </div>
     </div>
