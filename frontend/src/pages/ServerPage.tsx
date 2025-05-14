@@ -15,6 +15,7 @@ import { useAuth } from "@/AuthContext";
 import { toast } from "sonner";
 import { useNavigate, useParams } from "react-router-dom";
 import SidebarContextMenu from "@/components/SidebarContextMenu";
+import { useMessageStore } from "@/store/message_store";
 
 interface ServerPageProps {
   server_id: number;
@@ -28,7 +29,11 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
   const channelId = channelIdStr ? parseInt(channelIdStr) : -1;
 
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [channnelMessages, setChannelMessages] = useState<Map<number, MessageData[]>>(new Map());
+  // get channel messgages from store
+  const channelMessages = useMessageStore((state) => state.messagesByChannel);
+  const setChannelMessages = useMessageStore((state) => state.setMessagesByChannel);
+  const addChannelMessage = useMessageStore((state) => state.addMessage);
+  const removeAllMessages = useMessageStore((state) => state.removeAllMessages);
   useEffect(() => {
     (async () => {
       if (server_id < 0 || !server_id) {
@@ -45,10 +50,13 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
           return map;
         }, new Map());
 
-        setChannelMessages(() => newmap);
+        newmap.forEach((messages, channel_id) => {
+          setChannelMessages(channel_id, messages);
+        })
       } catch (error) {
         console.error("Error fetching messages:", error);
-        setChannelMessages(new Map());
+        removeAllMessages();
+
       }
     })();
   }, [server_id, number_of_messages]);
@@ -119,25 +127,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
         if (!channel_id) {
           return;
         }
-        setChannelMessages((messages) => {
-          const newMessages = new Map(messages); // Create a new Map to avoid mutating the existing state
-          let channel_messages = newMessages.get(channel_id) || [];
-          // Check if the message already exists
-          const isDuplicate = channel_messages.some(
-            (msg) => msg.message_id === newMessage.message_id
-          );
-          if (isDuplicate) {
-            return messages;
-          }
-          channel_messages = [...channel_messages, newMessage];
-          if (channel_messages.length > number_of_messages) {
-            newMessages.set(channel_id, channel_messages.slice(-number_of_messages));
-          } else {
-            newMessages.set(channel_id, channel_messages);
-          }
-          return newMessages;
-        });
-
+        addChannelMessage(channel_id, newMessage);
         if (newMessage.author_id != auth.authState.user?.id) {
           toast(`New message from ${newMessage.author}`, {
             description: newMessage.message,
@@ -200,7 +190,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
         <ChatPage
           channel_id={channelId}
           onSubmit={onSubmit}
-          messages={channnelMessages.get(channelId) || []}
+          messages={channelMessages[channelId] || []}
         />
       </div>
     </div>

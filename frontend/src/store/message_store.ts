@@ -10,6 +10,7 @@ type MessageState = {
     setMessagesByChannel: (channelId: number, messages: MessageData[]) => void
     addMessage: (channelId: number, message: MessageData) => void
     removeMessage: (channelId: number, messageId: number) => void
+    removeAllMessages: () => void
 }
 
 export const useMessageStore = create<MessageState>((set) => ({
@@ -44,6 +45,13 @@ export const useMessageStore = create<MessageState>((set) => ({
                 messagesByChannel: {
                     ...state.messagesByChannel,
                     [channelId]: existingMessages.filter((msg) => msg.message_id !== messageId),
+                },
+            }
+        }),
+    removeAllMessages: () =>
+        set(() => {
+            return {
+                messagesByChannel: {
                 },
             }
         }),
