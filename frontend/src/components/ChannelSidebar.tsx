@@ -1,18 +1,18 @@
-import { Channel } from "@/types/channel";
 import ChannelSidebarContextMenu from "./ChannelContextMenu";
+import { useChannelStore } from "@/store/channel_store";
 
 interface ChannelSidebarProps {
-    channels: Channel[];
     selectedChannelId: number;
     serverid: number;
     onChannelSelect: (channelId: number) => void;
 }
 
 export default function ChannelSidebar({
-    channels,
     selectedChannelId,
     onChannelSelect,
 }: ChannelSidebarProps) {
+
+    const channels = useChannelStore((state) => state.channels);
 
     return (
         <>

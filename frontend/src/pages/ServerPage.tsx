@@ -10,7 +10,6 @@ import { fetchServerMessages, fetchChannels, CreateChannelResponse } from "../ap
 import ChatPage from "@/components/ChatWindow";
 import { MessageData } from "@/components/Message";
 import ChannelSidebar from "@/components/ChannelSidebar";
-import { Channel } from "@/types/channel";
 import { useAuth } from "@/AuthContext";
 import { toast } from "sonner";
 import { useNavigate, useParams } from "react-router-dom";
@@ -161,6 +160,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
   };
 
   const onChannelCreated = (newChannel: CreateChannelResponse) => {
+
     onChannelSelect(newChannel.channelId);
   }
 
@@ -173,7 +173,6 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
         <ContextMenu modal={false}>
           <ContextMenuTrigger >
             <ChannelSidebar
-              channels={channels}
               serverid={server_id}
               selectedChannelId={channelId}
               onChannelSelect={onChannelSelect}
