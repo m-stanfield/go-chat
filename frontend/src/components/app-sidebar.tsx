@@ -14,10 +14,12 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/AuthContext";
 import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { ChevronUp, User2 } from "lucide-react";
+import { ChevronUp, Home, User2 } from "lucide-react";
 import { DropdownMenuContent } from "./ui/dropdown-menu";
-import { postServers } from "@/api/serverApi";
 import { CreateServerDialog } from "./CreateServerDialog";
+import { useEffect, useState } from "react";
+import { ServerData } from "@/api";
+import { useServerStore } from "@/store/server_store";
 
 interface SidebarMenuItem {
   title: string;
@@ -26,13 +28,26 @@ interface SidebarMenuItem {
   selected: boolean;
 }
 interface SidebarMenuItemProps {
-  items: SidebarMenuItem[];
+  serverId: number | null;
   onServerCreate: () => void;
 }
 
-export function AppSidebar({ items, onServerCreate }: SidebarMenuItemProps) {
+export function AppSidebar({ serverId, onServerCreate }: SidebarMenuItemProps) {
   const navigate = useNavigate();
   const auth = useAuth();
+
+  const servers = useServerStore((state) => state.servers);
+
+  const [serverNavItem, setServerNavItem] = useState<SidebarMenuItem[]>([]);
+  useEffect(() => {
+    const serverNavItems = servers.map((server: ServerData) => ({
+      title: server.ServerName,
+      url: `/servers/${server.ServerId}`,
+      icon: Home,
+      selected: server.ServerId === serverId,
+    }));
+    setServerNavItem(serverNavItems);
+  }, [servers, serverId]);
   return (
     <Sidebar>
       <SidebarContent>
@@ -40,7 +55,7 @@ export function AppSidebar({ items, onServerCreate }: SidebarMenuItemProps) {
           <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {serverNavItem.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild onClick={() => navigate(item.url)}>
                     <div

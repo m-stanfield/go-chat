@@ -1,19 +1,13 @@
 import { Toaster } from "sonner";
-import { Home } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/AuthContext";
-import { serverApi, ServerData } from "@/api";
+import { serverApi } from "@/api";
 import { useNavigate, useParams } from "react-router-dom";
 import ServerPage from "./ServerPage";
+import { useServerStore } from "@/store/server_store";
 
-interface ServerNavItem {
-  title: string;
-  url: string;
-  icon: React.FC;
-  selected: boolean;
-}
 
 export function HomePage() {
   const auth = useAuth();
@@ -21,8 +15,8 @@ export function HomePage() {
   const { serverId: serverIdStr } = useParams<{ serverId: string }>();
   const serverId = serverIdStr ? parseInt(serverIdStr) : -1;
   const [currentServerId, setCurrentServerId] = useState<number | null>(null);
-  const [serverNaveItem, setServerNavItem] = useState<ServerNavItem[]>([]);
-  const [servers, setServers] = useState<ServerData[]>([]);
+  const servers = useServerStore((state) => state.servers);
+  const setServers = useServerStore((state) => state.setServers);
   const [currentName, setCurrentName] = useState<string>("");
 
   useEffect(() => {
@@ -73,20 +67,13 @@ export function HomePage() {
     }
     setCurrentServerId(server.ServerId);
     setCurrentName(server?.ServerName || "");
-    const serverNavItems = servers.map((server: ServerData) => ({
-      title: server.ServerName,
-      url: `/servers/${server.ServerId}`,
-      icon: Home,
-      selected: server.ServerId === serverId,
-    }));
-    setServerNavItem(serverNavItems);
   }, [serverId, servers, navigate]);
 
   return (
     <div className="flex h-full w-full">
       <Toaster />
       <SidebarProvider>
-        <AppSidebar items={serverNaveItem} onServerCreate={fetchServers} />
+        <AppSidebar serverId={currentServerId} onServerCreate={fetchServers} />
         <div className="flex flex-grow flex-col">
           <div className="sticky top-0 z-10 flex bg-background px-2 py-4 shadow-sm">
             <div className="flex items-center justify-between">
