@@ -16,10 +16,15 @@ import (
 )
 
 var (
-	clients         = make(map[database.Id]chan ServerMessage, 0)
-	incomingChannel = make(chan ServerMessage)
+	clients         = make(map[database.Id]chan ServerResponseMessage, 0)
+	incomingChannel = make(chan ServerResponseMessage)
 	startTime       = time.Now()
 )
+
+type ServerResponseMessage struct {
+	Message_type string      `json:"message_type"`
+	Payload      interface{} `json:"payload"`
+}
 
 type ServerMessage struct {
 	UserId    database.Id `json:"userid"`
@@ -904,7 +909,7 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) addUserToServer(w http.ResponseWriter, r *http.Request) {
+func (s *Server) AddUserToServer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -1312,14 +1317,10 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		delete(clients, userinfo.UserId)
 		log.Printf("new connected for %d. deleted previous channel", userinfo.UserId)
 	}
-	clients[userinfo.UserId] = make(chan ServerMessage)
-	defer func() {
-		if _, ok := clients[userinfo.UserId]; ok {
-			close(clients[userinfo.UserId])
-			delete(clients, userinfo.UserId)
-		}
-		log.Printf("deleted channel for user %d", userinfo.UserId)
-	}()
+
+	user_client := make(chan ServerResponseMessage)
+
+	clients[userinfo.UserId] = user_client
 	go s.handleMessages(userinfo.UserId, socket, clients[userinfo.UserId])
 
 	fmt.Printf("starting websocket loop: %d ms",
@@ -1382,13 +1383,14 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			Message:   dbmsg.Contents,
 			Date:      dbmsg.Timestamp.Format(time.UnixDate),
 		}
-		incomingChannel <- msg
+		server_msg := ServerResponseMessage{Message_type: "message", Payload: msg}
+		incomingChannel <- server_msg
 	}
 
 	log.Printf("websocketHandler: closing channel for user %d", userinfo.UserId)
 }
 
-func (s *Server) handleIncomingMessages(messages chan ServerMessage) {
+func (s *Server) handleIncomingMessages(messages chan ServerResponseMessage) {
 	for {
 		message := <-messages
 		for _, ch := range clients {
@@ -1397,7 +1399,11 @@ func (s *Server) handleIncomingMessages(messages chan ServerMessage) {
 	}
 }
 
-func handleMessageContext(user database.Id, client *websocket.Conn, msg ServerMessage) error {
+func handleMessageContext(
+	user database.Id,
+	client *websocket.Conn,
+	msg ServerResponseMessage,
+) error {
 	log.Printf("sending message to %d", user)
 	jsondata, err := json.Marshal(msg)
 	if err != nil {
@@ -1413,7 +1419,7 @@ func handleMessageContext(user database.Id, client *websocket.Conn, msg ServerMe
 func (s *Server) handleMessages(
 	user database.Id,
 	client *websocket.Conn,
-	messageChan chan ServerMessage,
+	messageChan chan ServerResponseMessage,
 ) {
 	for {
 		msg, ok := <-messageChan

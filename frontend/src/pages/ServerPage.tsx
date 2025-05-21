@@ -113,15 +113,21 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     ws.current.onmessage = function(event: MessageEvent) {
       console.log("ws message", Date.now() - startTime);
       const json = JSON.parse(event.data);
+      console.log("ws message", json);
+
+      if (json.message_type !== "message") {
+        return;
+      }
       try {
+        const payload = json.payload;
         const newMessage: MessageData = {
-          message_id: json.messageid,
-          channel_id: json.channelid,
-          server_id: json.serverid,
-          message: json.message,
-          date: new Date(json.date),
-          author: json.username ?? "User " + json.userid,
-          author_id: json.userid,
+          message_id: payload.messageid,
+          channel_id: payload.channelid,
+          server_id: payload.serverid,
+          message: payload.message,
+          date: new Date(payload.date),
+          author: payload.username ?? "User " + payload.userid,
+          author_id: payload.userid,
         };
         const channel_id = newMessage.channel_id;
         if (!channel_id) {
