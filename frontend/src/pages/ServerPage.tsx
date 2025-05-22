@@ -63,8 +63,8 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
 
   useEffect(() => {
     (async () => {
-      const channels = await fetchChannels(server_id)
-      setChannels(channels);
+      const retrieved_channels = await fetchChannels(server_id)
+      setChannels(retrieved_channels);
     })();
   }, [server_id]);
   useEffect(() => {
@@ -134,9 +134,14 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
           return;
         }
         addChannelMessage(channel_id, newMessage);
+        const currentChannels = useChannelStore.getState().channels;
+        const channelName = currentChannels.find((channel) => channel.ChannelId === channel_id)?.ChannelName || "Unknown Channel";
+        const max_message_length = 80;
+        const shortened_message = newMessage.message.length > max_message_length ? newMessage.message.slice(0, max_message_length) + "..." : newMessage.message;
+
         if (newMessage.author_id != auth.authState.user?.id) {
-          toast(`New message from ${newMessage.author}`, {
-            description: newMessage.message,
+          toast(`New message from ${newMessage.author} in ${channelName}`, {
+            description: shortened_message,
             action: {
               label: "View",
               onClick: () => {
