@@ -139,9 +139,6 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
           return;
         }
         addChannelMessage(channel_id, newMessage);
-        if (channelIdRef.current === channel_id) {
-          return;
-        }
         const currentChannels = useChannelStore.getState().channels;
         const channelName = currentChannels.find((channel) => channel.ChannelId === channel_id)?.ChannelName || "Unknown Channel";
         const max_message_length = 80;
