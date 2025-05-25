@@ -1344,18 +1344,19 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// todo add message parsing
-		payload := struct {
-			Message    string      `json:"message"`
-			ChannnelId database.Id `json:"channel_id"`
-		}{
-			Message:    "",
-			ChannnelId: 0,
-		}
-		err = json.Unmarshal(message, &payload)
+		data := struct {
+			Message_type string `json:"message_type"`
+			Payload      struct {
+				Message    string      `json:"message"`
+				ChannnelId database.Id `json:"channel_id"`
+			} `json:"payload"`
+		}{}
+		err = json.Unmarshal(message, &data)
 		if err != nil {
 			fmt.Printf("error getting message from websocket: %e", err)
 			continue
 		}
+		payload := data.Payload
 		if payload.ChannnelId <= 0 {
 			fmt.Printf("websocketHandler: invalid channel id channe_id=%d", payload.ChannnelId)
 			continue
