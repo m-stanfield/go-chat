@@ -111,7 +111,7 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
   useEffect(() => {
     const startTime = Date.now();
     console.log("starting to open websocket", Date.now() - startTime);
-    ws.current = new WebSocket(`ws://localhost:8080/websocket`);
+    ws.current = new WebSocket(import.meta.env.VITE_WEBSOCKET_URL);
     ws.current.onopen = () => {
       console.log("opening ws", Date.now() - startTime);
     };
