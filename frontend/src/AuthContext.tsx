@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (user: User) => {
-    setAuthState((prevState) => {
+    setAuthState(() => {
       return {
         isAuthenticated: true,
         user: { ...user },
