@@ -83,25 +83,6 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
     }
   }, [channelId, channels]);
 
-  const ws = useWebSocket();
-  const onSubmit = (t: SyntheticEvent, inputValue: string): string => {
-    t.preventDefault();
-    if (inputValue.length === 0) {
-      return inputValue;
-    } else if (inputValue.length >= 1000) {
-      return inputValue;
-    }
-    const payload = {
-      channel_id: channelId,
-      message: inputValue,
-    };
-    if (ws === null) {
-      console.log("websocket hasn't be initialized yet");
-      return inputValue;
-    }
-    ws.sendMessage({ message_type: "message", payload: payload });
-    return "";
-  };
 
 
   const onChannelSelect = (newChannelId: number) => {
@@ -141,7 +122,6 @@ function ServerPage({ server_id, number_of_messages }: ServerPageProps) {
       <div className="flex flex-grow">
         <ChatPage
           channel_id={channelId}
-          onSubmit={onSubmit}
         />
       </div>
     </div>

@@ -2,16 +2,36 @@ import MessageSubmitWindow from "./MessageSubmitWindow";
 import { SyntheticEvent, useEffect, useRef } from "react";
 import Message from "./Message";
 import { useMessageStore } from "@/store/message_store";
+import { useWebSocket } from "@/WebsocketContext";
 
 interface ChatPageProps {
     channel_id: number;
-    onSubmit: (t: SyntheticEvent, inputValue: string) => string;
 }
 
-function ChatPage({ channel_id, onSubmit }: ChatPageProps) {
+function ChatPage({ channel_id }: ChatPageProps) {
     const messageEndRef = useRef<HTMLDivElement>(null);
     const messages = useMessageStore((state) => state.messagesByChannel[channel_id]);
 
+
+    const ws = useWebSocket();
+    const onSubmit = (t: SyntheticEvent, inputValue: string): string => {
+        t.preventDefault();
+        if (inputValue.length === 0) {
+            return inputValue;
+        } else if (inputValue.length >= 1000) {
+            return inputValue;
+        }
+        const payload = {
+            channel_id: channel_id,
+            message: inputValue,
+        };
+        if (ws === null) {
+            console.log("websocket hasn't be initialized yet");
+            return inputValue;
+        }
+        ws.sendMessage({ message_type: "message", payload: payload });
+        return "";
+    };
 
     // Scroll to bottom whenever messages change or channel changes
     useEffect(() => {
