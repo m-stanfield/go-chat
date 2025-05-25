@@ -29,7 +29,7 @@ function ChatPage({ channel_id }: ChatPageProps) {
             console.log("websocket hasn't be initialized yet");
             return inputValue;
         }
-        ws.sendMessage({ message_type: "message", payload: payload });
+        ws.sendMessage({ message_type: "channel_message", payload: payload });
         return "";
     };
 
