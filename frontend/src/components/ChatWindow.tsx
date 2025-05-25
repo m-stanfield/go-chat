@@ -50,6 +50,13 @@ function ChatPage({ channel_id }: ChatPageProps) {
         }, 0);
     }, [messages]);
 
+
+    const validateMessage = (x: string) => {
+        if (x.length > 1000) {
+            return "Message is too long";
+        }
+        return "";
+    }
     return (
         <div className="flex h-full w-full flex-col rounded-lg bg-gray-600 p-2">
             <div className="flex flex-1 flex-col overflow-y-scroll">
@@ -70,12 +77,7 @@ function ChatPage({ channel_id }: ChatPageProps) {
             <div className="flex-shrink-0 p-2">
                 <MessageSubmitWindow
                     onSubmit={onSubmit}
-                    validateMessage={(x) => {
-                        if (x.length > 1000) {
-                            return "Message is too long";
-                        }
-                        return "";
-                    }}
+                    validateMessage={validateMessage}
                 />
             </div>
         </div>
