@@ -22,8 +22,8 @@ var (
 )
 
 type ServerResponseMessage struct {
-	Message_type string      `json:"message_type"`
-	Payload      interface{} `json:"payload"`
+	Message_type string `json:"message_type"`
+	Payload      any    `json:"payload"`
 }
 
 type ServerMessage struct {
@@ -1293,6 +1293,11 @@ func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type rawChannelMessage struct {
+	channel_id database.Id
+	message    string
+}
+
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	passinfo, err := getUserIdFromContext(r)
 	if err != nil {
@@ -1323,7 +1328,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	clients[userinfo.UserId] = user_client
 	go s.handleMessages(userinfo.UserId, socket, clients[userinfo.UserId])
 
-	fmt.Printf("starting websocket loop: %d ms",
+	fmt.Printf("starting websocket loop: %d ms\n",
 		time.Since(startTime).Milliseconds(),
 	)
 	newerr := websocket.CloseError{}
@@ -1335,44 +1340,68 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			} else if newerr.Code == websocket.StatusNoStatusRcvd {
 				fmt.Println("socket closed due to not getting a response")
 			} else {
-				fmt.Printf("websocketHandler error: %v", err)
+				fmt.Printf("websocketHandler error: %v\n", err)
 			}
 			break
 		} else if err != nil {
-			fmt.Printf("error getting message from websocket: %v", err)
+			fmt.Printf("error getting message from websocket: %v\n", err)
 			break
 		}
+		fmt.Printf("websocket message: %s\n", message)
 
 		// todo add message parsing
-		data := struct {
-			Message_type string `json:"message_type"`
-			Payload      struct {
-				Message    string      `json:"message"`
-				ChannnelId database.Id `json:"channel_id"`
-			} `json:"payload"`
-		}{}
+		data := ServerResponseMessage{}
 		err = json.Unmarshal(message, &data)
 		if err != nil {
-			fmt.Printf("error getting message from websocket: %e", err)
+			fmt.Printf("error getting message from websocket: %e\n", err)
 			continue
 		}
-		payload := data.Payload
-		if payload.ChannnelId <= 0 {
-			fmt.Printf("websocketHandler: invalid channel id channe_id=%d", payload.ChannnelId)
+		if data.Message_type != "channel_message" {
+			fmt.Printf("websocketHandler: invalid message type %s\n\n", data.Message_type)
 			continue
 		}
-		if len(payload.Message) > 1000 {
-			fmt.Printf("format error: length of message to large length=%d", len(payload.Message))
+		paymap, ok := data.Payload.(map[string]interface{})
+
+		if !ok {
+			fmt.Printf("websocketHandler: invalid payload type %T\n", data.Payload)
 			continue
 		}
-		messageid, err := s.db.AddMessage(payload.ChannnelId, userinfo.UserId, payload.Message)
+		channelidstr, ok := paymap["channel_id"]
+		if !ok {
+			fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
+			continue
+		}
+		channelidfloat, ok := channelidstr.(float64)
+		if !ok {
+			fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
+			continue
+		}
+		var channelid database.Id
+		channelid = database.Id(channelidfloat)
 		if err != nil {
-			fmt.Printf("error saving message: %e", err)
+			fmt.Printf("websocketHandler: invalid channel id %s\n", channelidstr)
+			continue
+		}
+		payload := rawChannelMessage{
+			channel_id: database.Id(channelid),
+			message:    paymap["message"].(string),
+		}
+		if payload.channel_id <= 0 {
+			fmt.Printf("websocketHandler: invalid channel id channe_id=%d\n", payload.channel_id)
+			continue
+		}
+		if len(payload.message) > 1000 {
+			fmt.Printf("format error: length of message to large length=%d\n", len(payload.message))
+			continue
+		}
+		messageid, err := s.db.AddMessage(payload.channel_id, userinfo.UserId, payload.message)
+		if err != nil {
+			fmt.Printf("error saving message: %e\n", err)
 			continue
 		}
 		dbmsg, err := s.db.GetMessage(messageid)
 		if err != nil {
-			fmt.Printf("error saving message: %e", err)
+			fmt.Printf("error saving message: %e\n", err)
 			continue
 		}
 
