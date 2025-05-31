@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"context"
+	"errors"
 	"log"
 	"sync"
 )
@@ -23,74 +24,78 @@ type (
 		receive chan IncomingMessage
 		send    chan []byte
 		cancel  context.CancelFunc
-		onClose func(*webSocketClient)
+		closed  bool
 	}
 )
 
-func newWebSocketClient(Id uint64, conn WebSocketConnection, onClose func(*webSocketClient),
+func newWebSocketClient(
+	Id uint64,
+	conn WebSocketConnection,
+	incoming chan IncomingMessage,
 ) *webSocketClient {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	send := make(chan []byte)
-	receive := make(chan IncomingMessage)
 	client := webSocketClient{
 		ID:      Id,
 		conn:    conn,
 		cancel:  cancel,
 		send:    send,
-		receive: receive,
-		onClose: onClose,
+		receive: incoming,
+		closed:  false,
 	}
 	go client.read(ctx)
 	go client.write(ctx)
 	return &client
 }
 
-func (c *webSocketClient) close() {
-	c.conn.Close(StatusNormalClosure, "") // TODO: determine proper status
+func (c *webSocketClient) close(status StatusCode) error {
+	if c.closed {
+		return errors.New("client already closed")
+	}
+	err := c.conn.Close(status, "") // TODO: determine proper status
+	if err != nil {
+		return err
+	}
 	c.cancel()
 	close(c.receive)
-	c.onClose(c)
+	return nil
 }
 
 func (c *webSocketClient) read(ctx context.Context) {
-	defer c.close()
 	for {
-		select {
-		case <-ctx.Done():
+		messageType, message, err := c.conn.Read(ctx)
+		if err != nil {
+			c.close(StatusAbnormalClosure)
+			log.Printf("Client %d read error: %v", c.ID, err)
 			return
-		default:
-			messageType, message, err := c.conn.Read(ctx)
-			if err != nil {
-				log.Printf("Client %d read error: %v", c.ID, err)
-				return
-			}
+		}
 
-			if messageType == MessageBinary || messageType == MessageText {
-				log.Printf("Received from client %d (%d bytes): %s", c.ID, len(message), message)
-				msg := IncomingMessage{
-					Id:      c.ID,
-					Payload: message,
-				}
-				c.receive <- msg
+		if messageType == MessageBinary || messageType == MessageText {
+			log.Printf("Received from client %d (%d bytes): %s", c.ID, len(message), message)
+			msg := IncomingMessage{
+				Id:      c.ID,
+				Payload: message,
 			}
+			c.receive <- msg
 		}
 	}
 }
 
 func (c *webSocketClient) write(ctx context.Context) {
-	defer c.close()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case msg, ok := <-c.send:
 			if !ok {
+				c.close(StatusNormalClosure)
 				return
 			}
 			err := c.conn.Write(ctx, MessageText, msg)
 			if err != nil {
 				log.Printf("Client %d write error: %v", c.ID, err)
+				c.close(StatusAbnormalClosure)
 				return
 			}
 		}
@@ -98,62 +103,41 @@ func (c *webSocketClient) write(ctx context.Context) {
 }
 
 type WebSocketManager struct {
-	clients    map[uint64]*webSocketClient
-	register   chan *webSocketClient
-	deregister chan uint64
-	mutex      sync.RWMutex
+	clients map[uint64]*webSocketClient
+	mutex   sync.RWMutex
 }
 
-func (m *WebSocketManager) NewConnection(Id uint64, conn WebSocketConnection) {
-	onClose := func(wsc *webSocketClient) {
-		m.deregister <- wsc.ID
-	}
-	client := newWebSocketClient(Id, conn, onClose)
-	m.register <- client
-}
-
-func (m *WebSocketManager) CloseConnection(id uint64) bool {
+func (m *WebSocketManager) NewConnection(
+	Id uint64,
+	conn WebSocketConnection,
+) chan IncomingMessage {
+	incoming := make(chan IncomingMessage, 100) // Buffered channel for incoming messages
+	client := newWebSocketClient(Id, conn, incoming)
 	m.mutex.Lock()
-	client, ok := m.clients[id]
-	if ok {
-		delete(m.clients, id)
-	}
-	m.mutex.Unlock()
-	if ok {
-		// splitting into second to allow lock to be held as short as possible
-		client.close()
-	}
-	return ok
+	defer m.mutex.Unlock()
+	m.clients[client.ID] = client
+	log.Printf("Client %d registered. Total clients: %d", client.ID, len(m.clients))
+	return incoming
 }
 
-func (m *WebSocketManager) Run() {
-	for {
-		select {
-		case client := <-m.register:
-			m.mutex.Lock()
-			m.clients[client.ID] = client
-			m.mutex.Unlock()
-			log.Printf("Client %d registered. Total clients: %d", client.ID, len(m.clients))
-		case removeId := <-m.deregister:
-			m.mutex.Lock()
-			client, ok := m.clients[removeId]
-			if !ok {
-				continue
-			}
-			delete(m.clients, removeId)
-			m.mutex.Unlock()
+func (m *WebSocketManager) CloseConnection(id uint64) {
+	// remove later, redundant with Deregistre
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
-			close(client.send)
-			client.close()
-			log.Printf("Client %d unregistered. Total clients: %d", client.ID, len(m.clients))
-		}
+	client, ok := m.clients[id]
+	if !ok {
+		return
 	}
+	delete(m.clients, id)
+	close(client.send)
+	log.Printf("Client %d unregistered. Total clients: %d", client.ID, len(m.clients))
 }
 
 func (m *WebSocketManager) SendToClient(Id uint64, message []byte) bool {
 	m.mutex.RLock()
+	defer m.mutex.RUnlock()
 	client, ok := m.clients[Id]
-	m.mutex.RUnlock()
 	if !ok {
 		log.Printf("Client %d not found.", Id)
 		return false
