@@ -1,11 +1,9 @@
-package server
+package websocket
 
 import (
 	"context"
 	"log"
 	"sync"
-
-	"github.com/coder/websocket"
 )
 
 type IncomingMessage struct {
@@ -13,16 +11,23 @@ type IncomingMessage struct {
 	Payload []byte
 }
 
-type webSocketClient struct {
-	ID      uint64
-	conn    *websocket.Conn
-	receive chan IncomingMessage
-	send    chan []byte
-	cancel  context.CancelFunc
-	onClose func(*webSocketClient)
-}
+type (
+	WebSocketConnection interface {
+		Close(StatusCode, string) error
+		Read(context.Context) (MessageType, []byte, error)
+		Write(context.Context, MessageType, []byte) error
+	}
+	webSocketClient struct {
+		ID      uint64
+		conn    WebSocketConnection
+		receive chan IncomingMessage
+		send    chan []byte
+		cancel  context.CancelFunc
+		onClose func(*webSocketClient)
+	}
+)
 
-func newWebSocketClient(Id uint64, conn *websocket.Conn, onClose func(*webSocketClient),
+func newWebSocketClient(Id uint64, conn WebSocketConnection, onClose func(*webSocketClient),
 ) *webSocketClient {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -42,7 +47,7 @@ func newWebSocketClient(Id uint64, conn *websocket.Conn, onClose func(*webSocket
 }
 
 func (c *webSocketClient) close() {
-	c.conn.Close(websocket.StatusNormalClosure, "") // TODO: determine proper status
+	c.conn.Close(StatusNormalClosure, "") // TODO: determine proper status
 	c.cancel()
 	close(c.receive)
 	c.onClose(c)
@@ -61,7 +66,7 @@ func (c *webSocketClient) read(ctx context.Context) {
 				return
 			}
 
-			if messageType == websocket.MessageBinary || messageType == websocket.MessageText {
+			if messageType == MessageBinary || messageType == MessageText {
 				log.Printf("Received from client %d (%d bytes): %s", c.ID, len(message), message)
 				msg := IncomingMessage{
 					Id:      c.ID,
@@ -83,7 +88,7 @@ func (c *webSocketClient) write(ctx context.Context) {
 			if !ok {
 				return
 			}
-			err := c.conn.Write(ctx, websocket.MessageText, msg)
+			err := c.conn.Write(ctx, MessageText, msg)
 			if err != nil {
 				log.Printf("Client %d write error: %v", c.ID, err)
 				return
@@ -99,7 +104,7 @@ type WebSocketManager struct {
 	mutex      sync.RWMutex
 }
 
-func (m *WebSocketManager) NewConnection(Id uint64, conn *websocket.Conn) {
+func (m *WebSocketManager) NewConnection(Id uint64, conn WebSocketConnection) {
 	onClose := func(wsc *webSocketClient) {
 		m.deregister <- wsc.ID
 	}
