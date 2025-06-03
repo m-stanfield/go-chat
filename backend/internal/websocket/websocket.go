@@ -66,8 +66,13 @@ func (c *webSocketClient) read(ctx context.Context) {
 	for {
 		messageType, message, err := c.conn.Read(ctx)
 		if err != nil {
-			c.close(StatusAbnormalClosure)
-			log.Printf("Client %d read error: %v", c.ID, err)
+			if errors.Is(err, context.Canceled) {
+				log.Printf("Client %d read cancelled", c.ID)
+				return
+			} else {
+				log.Printf("Client %d read error: %v", c.ID, err)
+				c.close(StatusAbnormalClosure)
+			}
 			return
 		}
 
