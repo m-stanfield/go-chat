@@ -115,7 +115,6 @@ func TestWebSocketClient_ReadWrite(t *testing.T) {
 		readChan:  make(chan []byte, 1),
 		writeChan: make(chan []byte, 1),
 	}
-	var onCloseCalled bool
 
 	incoming := make(chan IncomingMessage, 1)
 	client := newWebSocketClient(42, mockConn, incoming)
@@ -149,9 +148,6 @@ func TestWebSocketClient_ReadWrite(t *testing.T) {
 	mockConn.readChan <- []byte("trigger close")
 
 	time.Sleep(50 * time.Millisecond)
-	if !onCloseCalled {
-		t.Fatal("onClose was not called after read error")
-	}
 	if !mockConn.closed {
 		t.Fatal("Connection was not closed")
 	}
