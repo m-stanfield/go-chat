@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -151,8 +150,7 @@ type Server struct {
 	db Service
 }
 
-func NewServer(logserver bool) *http.Server {
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
+func NewServer(logserver bool, port int) *http.Server {
 	fmt.Printf("opening on port %d", port)
 	db := NewDB()
 

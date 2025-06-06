@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -38,7 +40,9 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 
 func main() {
 	log.Println("Starting server...")
-	server := server.NewServer(true)
+
+	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	server := server.NewServer(true, port)
 
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)
