@@ -12,6 +12,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 
 	"go-chat-react/internal/database"
+	"go-chat-react/internal/websocket"
 )
 
 type UserService interface {
@@ -145,9 +146,10 @@ func NewDB() *database.DBService {
 }
 
 type Server struct {
-	port int
-
-	db Service
+	port           int
+	client_sockets map[database.Id][]string
+	ws_manager     *websocket.WebSocketManager
+	db             Service
 }
 
 func NewServer(logserver bool, port int) *http.Server {
@@ -155,7 +157,9 @@ func NewServer(logserver bool, port int) *http.Server {
 	db := NewDB()
 
 	NewServer := &Server{
-		port: port,
+		port:           port,
+		client_sockets: make(map[database.Id][]string),
+		ws_manager:     websocket.NewWebSocketManager(),
 
 		db: db,
 	}
