@@ -146,10 +146,10 @@ func NewDB() *database.DBService {
 }
 
 type Server struct {
-	port           int
-	client_sockets map[database.Id][]string
-	ws_manager     *websocket.WebSocketManager
-	db             Service
+	port                int
+	sessions_in_channel map[database.Id]map[string]bool
+	ws_manager          *websocket.WebSocketManager
+	db                  Service
 }
 
 func NewServer(logserver bool, port int) *http.Server {
@@ -157,9 +157,9 @@ func NewServer(logserver bool, port int) *http.Server {
 	db := NewDB()
 
 	NewServer := &Server{
-		port:           port,
-		client_sockets: make(map[database.Id][]string),
-		ws_manager:     websocket.NewWebSocketManager(),
+		port:                port,
+		sessions_in_channel: make(map[database.Id]map[string]bool),
+		ws_manager:          websocket.NewWebSocketManager(),
 
 		db: db,
 	}
