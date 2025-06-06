@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,17 +9,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/coder/websocket"
-
 	"go-chat-react/internal/database"
-	ws "go-chat-react/internal/websocket"
+	"go-chat-react/internal/websocket"
 )
 
-var (
-	clients         = make(map[database.Id]chan ServerResponseMessage, 0)
-	incomingChannel = make(chan ServerResponseMessage)
-	startTime       = time.Now()
-)
+var startTime = time.Now()
 
 type ServerResponseMessage struct {
 	Message_type string `json:"message_type"`
@@ -49,7 +42,6 @@ type SubmittedMessage struct {
 }
 
 func (s *Server) RegisterRoutes(logserver bool) http.Handler {
-	go s.handleIncomingMessages(incomingChannel)
 	mux := http.NewServeMux()
 
 	// Register routes
@@ -257,7 +249,7 @@ func (s *Server) GetChannelMembers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp := map[string]interface{}{"users": newusers}
+	resp := map[string]any{"users": newusers}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
@@ -568,7 +560,7 @@ func (s *Server) CreateChannel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error: unable to create channel", http.StatusBadRequest)
 		return
 	}
-	resp := map[string]interface{}{
+	resp := map[string]any{
 		"channelid": channelid,
 	}
 	jsonResp, err := json.Marshal(resp)
@@ -650,7 +642,7 @@ func (s *Server) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error: unable to create message", http.StatusBadRequest)
 		return
 	}
-	resp := map[string]interface{}{
+	resp := map[string]any{
 		"messageid": messageid,
 	}
 	jsonResp, err := json.Marshal(resp)
@@ -712,7 +704,7 @@ func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
 	}
-	resp := map[string]interface{}{"messages": messages}
+	resp := map[string]any{"messages": messages}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
@@ -824,7 +816,7 @@ func (s *Server) sessionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := map[string]interface{}{
+	resp := map[string]any{
 		"userid":   userid,
 		"username": user.UserName,
 	}
@@ -883,7 +875,7 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := map[string]interface{}{
+	resp := map[string]any{
 		"userid": userid,
 	}
 
@@ -965,7 +957,7 @@ func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := map[string]interface{}{
+	resp := map[string]any{
 		"serverid": serverid,
 	}
 
@@ -1029,7 +1021,7 @@ func (s *Server) createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := map[string]interface{}{
+	resp := map[string]any{
 		"userid": userid,
 	}
 
@@ -1084,7 +1076,7 @@ func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
 	}
-	resp := map[string]interface{}{"channels": channels}
+	resp := map[string]any{"channels": channels}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
@@ -1117,7 +1109,7 @@ func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
 	}
-	resp := map[string]interface{}{"servers": servers}
+	resp := map[string]any{"servers": servers}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
@@ -1230,7 +1222,7 @@ func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) {
 		messages = append(messages, tempmsgs...)
 
 	}
-	resp := map[string]interface{}{"serverid": serverid, "messages": messages}
+	resp := map[string]any{"serverid": serverid, "messages": messages}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
@@ -1254,7 +1246,7 @@ func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
 	}
-	resp := map[string]interface{}{"users": users, "serverid": serverid}
+	resp := map[string]any{"users": users, "serverid": serverid}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
@@ -1311,7 +1303,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, err := ws.NewCoderWebSocketConnection(w, r)
+	conn, err := websocket.NewCoderWebSocketConnection(w, r)
 	if err != nil {
 		log.Printf("error creating websocket connection: %v\n", err)
 		http.Error(w, "error creating websocket connection", http.StatusInternalServerError)
@@ -1330,110 +1322,96 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 				log.Printf("websocketHandler: incoming channel closed for user %d", userinfo.UserId)
 				return
 			}
-			// todo add message parsing
-			data := ServerResponseMessage{}
-			err = json.Unmarshal(msg.Payload, &data)
+			byte_data, err := s.ProcessMessage(userinfo.UserId, msg)
 			if err != nil {
-				fmt.Printf("error getting message from websocket: %e\n", err)
-				continue
-			}
-			if data.Message_type != "channel_message" {
-				fmt.Printf("websocketHandler: invalid message type %s\n\n", data.Message_type)
-				continue
-			}
-			paymap, ok := data.Payload.(map[string]interface{})
-
-			if !ok {
-				fmt.Printf("websocketHandler: invalid payload type %T\n", data.Payload)
-				continue
-			}
-			channelidstr, ok := paymap["channel_id"]
-			if !ok {
-				fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
-				continue
-			}
-			channelidfloat, ok := channelidstr.(float64)
-			if !ok {
-				fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
-				continue
-			}
-			var channelid database.Id
-			channelid = database.Id(channelidfloat)
-			if err != nil {
-				fmt.Printf("websocketHandler: invalid channel id %s\n", channelidstr)
-				continue
-			}
-			payload := rawChannelMessage{
-				channel_id: database.Id(channelid),
-				message:    paymap["message"].(string),
-			}
-			if payload.channel_id <= 0 {
-				fmt.Printf(
-					"websocketHandler: invalid channel id channe_id=%d\n",
-					payload.channel_id,
+				log.Printf(
+					"websocketHandler: error processing message for user %d: %v",
+					userinfo.UserId,
+					err,
 				)
 				continue
 			}
-			if len(payload.message) > 1000 {
-				fmt.Printf(
-					"format error: length of message to large length=%d\n",
-					len(payload.message),
-				)
-				continue
-			}
-			messageid, err := s.db.AddMessage(payload.channel_id, userinfo.UserId, payload.message)
-			if err != nil {
-				fmt.Printf("error saving message: %e\n", err)
-				continue
-			}
-			dbmsg, err := s.db.GetMessage(messageid)
-			if err != nil {
-				fmt.Printf("error saving message: %e\n", err)
-				continue
-			}
-
-			smsg := ServerMessage{
-				UserId:    dbmsg.UserId,
-				MessageID: messageid,
-				ServerId:  dbmsg.ServerId,
-				ChannelId: dbmsg.ChannelId,
-				Message:   dbmsg.Contents,
-				Date:      dbmsg.Timestamp.Format(time.UnixDate),
-			}
-			server_msg := ServerResponseMessage{Message_type: "message", Payload: smsg}
-			byte_data, err := json.Marshal(server_msg)
-			if err != nil {
-				fmt.Printf("error marshalling message: %e\n", err)
-				continue
-			}
-			log.Printf("websocketHandler: sending message to user %d", userinfo.UserId)
 			s.ws_manager.SendToClient(id, byte_data)
 		}
 	}
 }
 
-func (s *Server) handleIncomingMessages(messages chan ServerResponseMessage) {
-	for {
-		message := <-messages
-		for _, ch := range clients {
-			ch <- message
-		}
-	}
-}
-
-func handleMessageContext(
-	user database.Id,
-	client *websocket.Conn,
-	msg ServerResponseMessage,
-) error {
-	log.Printf("sending message to %d", user)
-	jsondata, err := json.Marshal(msg)
+func (s *Server) ProcessMessage(
+	userid database.Id,
+	msg websocket.IncomingMessage,
+) ([]byte, error) {
+	// todo add message parsing
+	data := ServerResponseMessage{}
+	err := json.Unmarshal(msg.Payload, &data)
 	if err != nil {
-		return err
+		fmt.Printf("error getting message from websocket: %e\n", err)
+		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 1.0*time.Second)
-	defer cancel()
-	err = client.Write(ctx, websocket.MessageText, jsondata)
-	log.Printf("message sent %d", user)
-	return err
+	if data.Message_type != "channel_message" {
+		fmt.Printf("websocketHandler: invalid message type %s\n\n", data.Message_type)
+		return nil, err
+	}
+	paymap, ok := data.Payload.(map[string]any)
+
+	if !ok {
+		fmt.Printf("websocketHandler: invalid payload type %T\n", data.Payload)
+		return nil, err
+	}
+	channelidstr, ok := paymap["channel_id"]
+	if !ok {
+		fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
+		return nil, err
+	}
+	channelidfloat, ok := channelidstr.(float64)
+	if !ok {
+		fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
+		return nil, err
+	}
+	var channelid database.Id
+	channelid = database.Id(channelidfloat)
+	payload := rawChannelMessage{
+		channel_id: database.Id(channelid),
+		message:    paymap["message"].(string),
+	}
+	if payload.channel_id <= 0 {
+		fmt.Printf(
+			"websocketHandler: invalid channel id channe_id=%d\n",
+			payload.channel_id,
+		)
+		return nil, err
+	}
+	if len(payload.message) > 1000 {
+		fmt.Printf(
+			"format error: length of message to large length=%d\n",
+			len(payload.message),
+		)
+		return nil, err
+	}
+	messageid, err := s.db.AddMessage(payload.channel_id, userid, payload.message)
+	if err != nil {
+		fmt.Printf("error saving message: %e\n", err)
+		return nil, err
+	}
+	dbmsg, err := s.db.GetMessage(messageid)
+	if err != nil {
+		fmt.Printf("error saving message: %e\n", err)
+		return nil, err
+	}
+
+	smsg := ServerMessage{
+		UserId:    dbmsg.UserId,
+		MessageID: messageid,
+		ServerId:  dbmsg.ServerId,
+		ChannelId: dbmsg.ChannelId,
+		Message:   dbmsg.Contents,
+		Date:      dbmsg.Timestamp.Format(time.UnixDate),
+	}
+	server_msg := ServerResponseMessage{Message_type: "message", Payload: smsg}
+	byte_data, err := json.Marshal(server_msg)
+	if err != nil {
+		fmt.Printf("error marshalling message: %e\n", err)
+		return nil, err
+	}
+	log.Printf("websocketHandler: sending message to user %d", userid)
+	return byte_data, nil
 }
