@@ -43,7 +43,7 @@ func (m *mockWebSocketConnection) Write(
 // Test registration and deregistration in WebSocketManager
 func TestWebSocketManager_RegisterAndDeregister(t *testing.T) {
 	manager := &WebSocketManager{
-		clients: make(map[uint64]*webSocketClient),
+		clients: make(map[string]*webSocketClient),
 	}
 
 	mockConn := &mockWebSocketConnection{
@@ -51,7 +51,7 @@ func TestWebSocketManager_RegisterAndDeregister(t *testing.T) {
 		writeChan: make(chan []byte),
 	}
 
-	clientID := uint64(1)
+	clientID := "test-client-1"
 	manager.NewConnection(clientID, mockConn)
 
 	// Wait for registration
@@ -78,7 +78,7 @@ func TestWebSocketManager_RegisterAndDeregister(t *testing.T) {
 // Test SendToClient logic
 func TestWebSocketManager_SendToClient(t *testing.T) {
 	manager := &WebSocketManager{
-		clients: make(map[uint64]*webSocketClient),
+		clients: make(map[string]*webSocketClient),
 	}
 
 	mockConn := &mockWebSocketConnection{
@@ -86,7 +86,7 @@ func TestWebSocketManager_SendToClient(t *testing.T) {
 		writeChan: make(chan []byte, 1), // buffered to avoid deadlock
 	}
 
-	clientID := uint64(2)
+	clientID := "test-client-2"
 	manager.NewConnection(clientID, mockConn)
 
 	time.Sleep(50 * time.Millisecond)
@@ -117,7 +117,7 @@ func TestWebSocketClient_ReadWrite(t *testing.T) {
 	}
 
 	incoming := make(chan IncomingMessage, 1)
-	client := newWebSocketClient(42, mockConn, incoming)
+	client := newWebSocketClient("42", mockConn, incoming)
 
 	// Simulate sending a message
 	mockConn.readChan <- []byte("incoming")
@@ -156,9 +156,9 @@ func TestWebSocketClient_ReadWrite(t *testing.T) {
 // Test SendToClient with missing client
 func TestWebSocketManager_SendToMissingClient(t *testing.T) {
 	manager := &WebSocketManager{
-		clients: make(map[uint64]*webSocketClient),
+		clients: make(map[string]*webSocketClient),
 	}
-	ok := manager.SendToClient(999, []byte("test"))
+	ok := manager.SendToClient("999", []byte("test"))
 	if ok {
 		t.Fatal("Expected SendToClient to return false for missing client")
 	}
