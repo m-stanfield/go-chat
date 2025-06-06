@@ -51,8 +51,7 @@ func TestWebSocketManager_RegisterAndDeregister(t *testing.T) {
 		writeChan: make(chan []byte),
 	}
 
-	clientID := "test-client-1"
-	manager.NewConnection(clientID, mockConn)
+	clientID, _ := manager.NewConnection(mockConn)
 
 	// Wait for registration
 	time.Sleep(50 * time.Millisecond)
@@ -86,8 +85,7 @@ func TestWebSocketManager_SendToClient(t *testing.T) {
 		writeChan: make(chan []byte, 1), // buffered to avoid deadlock
 	}
 
-	clientID := "test-client-2"
-	manager.NewConnection(clientID, mockConn)
+	clientID, _ := manager.NewConnection(mockConn)
 
 	time.Sleep(50 * time.Millisecond)
 

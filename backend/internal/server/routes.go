@@ -13,6 +13,7 @@ import (
 	"github.com/coder/websocket"
 
 	"go-chat-react/internal/database"
+	ws "go-chat-react/internal/websocket"
 )
 
 var (
@@ -1310,114 +1311,105 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opts := websocket.AcceptOptions{InsecureSkipVerify: true}
-	socket, err := websocket.Accept(w, r, &opts)
+	conn, err := ws.NewCoderWebSocketConnection(w, r)
 	if err != nil {
-		http.Error(w, "Failed to open websocket", http.StatusInternalServerError)
+		log.Printf("error creating websocket connection: %v\n", err)
+		http.Error(w, "error creating websocket connection", http.StatusInternalServerError)
 		return
 	}
-	defer socket.Close(websocket.StatusGoingAway, "Server closing websocket")
-	if _, ok := clients[userinfo.UserId]; ok {
-		close(clients[userinfo.UserId])
-		delete(clients, userinfo.UserId)
-		log.Printf("new connected for %d. deleted previous channel", userinfo.UserId)
-	}
-
-	user_client := make(chan ServerResponseMessage)
-
-	clients[userinfo.UserId] = user_client
-	go s.handleMessages(userinfo.UserId, socket, clients[userinfo.UserId])
+	id, incoming := s.ws_manager.NewConnection(conn)
+	defer s.ws_manager.CloseConnection(id)
 
 	fmt.Printf("starting websocket loop: %d ms\n",
 		time.Since(startTime).Milliseconds(),
 	)
-	newerr := websocket.CloseError{}
 	for {
-		_, message, err := socket.Read(r.Context())
-		if errors.As(err, &newerr) {
-			if newerr.Code == websocket.StatusGoingAway {
-				fmt.Println("socket closed by user with status go away")
-			} else if newerr.Code == websocket.StatusNoStatusRcvd {
-				fmt.Println("socket closed due to not getting a response")
-			} else {
-				fmt.Printf("websocketHandler error: %v\n", err)
+		select {
+		case msg, ok := <-incoming:
+			if !ok {
+				log.Printf("websocketHandler: incoming channel closed for user %d", userinfo.UserId)
+				return
 			}
-			break
-		} else if err != nil {
-			fmt.Printf("error getting message from websocket: %v\n", err)
-			break
-		}
-		fmt.Printf("websocket message: %s\n", message)
+			// todo add message parsing
+			data := ServerResponseMessage{}
+			err = json.Unmarshal(msg.Payload, &data)
+			if err != nil {
+				fmt.Printf("error getting message from websocket: %e\n", err)
+				continue
+			}
+			if data.Message_type != "channel_message" {
+				fmt.Printf("websocketHandler: invalid message type %s\n\n", data.Message_type)
+				continue
+			}
+			paymap, ok := data.Payload.(map[string]interface{})
 
-		// todo add message parsing
-		data := ServerResponseMessage{}
-		err = json.Unmarshal(message, &data)
-		if err != nil {
-			fmt.Printf("error getting message from websocket: %e\n", err)
-			continue
-		}
-		if data.Message_type != "channel_message" {
-			fmt.Printf("websocketHandler: invalid message type %s\n\n", data.Message_type)
-			continue
-		}
-		paymap, ok := data.Payload.(map[string]interface{})
+			if !ok {
+				fmt.Printf("websocketHandler: invalid payload type %T\n", data.Payload)
+				continue
+			}
+			channelidstr, ok := paymap["channel_id"]
+			if !ok {
+				fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
+				continue
+			}
+			channelidfloat, ok := channelidstr.(float64)
+			if !ok {
+				fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
+				continue
+			}
+			var channelid database.Id
+			channelid = database.Id(channelidfloat)
+			if err != nil {
+				fmt.Printf("websocketHandler: invalid channel id %s\n", channelidstr)
+				continue
+			}
+			payload := rawChannelMessage{
+				channel_id: database.Id(channelid),
+				message:    paymap["message"].(string),
+			}
+			if payload.channel_id <= 0 {
+				fmt.Printf(
+					"websocketHandler: invalid channel id channe_id=%d\n",
+					payload.channel_id,
+				)
+				continue
+			}
+			if len(payload.message) > 1000 {
+				fmt.Printf(
+					"format error: length of message to large length=%d\n",
+					len(payload.message),
+				)
+				continue
+			}
+			messageid, err := s.db.AddMessage(payload.channel_id, userinfo.UserId, payload.message)
+			if err != nil {
+				fmt.Printf("error saving message: %e\n", err)
+				continue
+			}
+			dbmsg, err := s.db.GetMessage(messageid)
+			if err != nil {
+				fmt.Printf("error saving message: %e\n", err)
+				continue
+			}
 
-		if !ok {
-			fmt.Printf("websocketHandler: invalid payload type %T\n", data.Payload)
-			continue
+			smsg := ServerMessage{
+				UserId:    dbmsg.UserId,
+				MessageID: messageid,
+				ServerId:  dbmsg.ServerId,
+				ChannelId: dbmsg.ChannelId,
+				Message:   dbmsg.Contents,
+				Date:      dbmsg.Timestamp.Format(time.UnixDate),
+			}
+			server_msg := ServerResponseMessage{Message_type: "message", Payload: smsg}
+			byte_data, err := json.Marshal(server_msg)
+			if err != nil {
+				fmt.Printf("error marshalling message: %e\n", err)
+				continue
+			}
+			log.Printf("websocketHandler: sending message to user %d", userinfo.UserId)
+			s.ws_manager.SendToClient(id, byte_data)
 		}
-		channelidstr, ok := paymap["channel_id"]
-		if !ok {
-			fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
-			continue
-		}
-		channelidfloat, ok := channelidstr.(float64)
-		if !ok {
-			fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
-			continue
-		}
-		var channelid database.Id
-		channelid = database.Id(channelidfloat)
-		if err != nil {
-			fmt.Printf("websocketHandler: invalid channel id %s\n", channelidstr)
-			continue
-		}
-		payload := rawChannelMessage{
-			channel_id: database.Id(channelid),
-			message:    paymap["message"].(string),
-		}
-		if payload.channel_id <= 0 {
-			fmt.Printf("websocketHandler: invalid channel id channe_id=%d\n", payload.channel_id)
-			continue
-		}
-		if len(payload.message) > 1000 {
-			fmt.Printf("format error: length of message to large length=%d\n", len(payload.message))
-			continue
-		}
-		messageid, err := s.db.AddMessage(payload.channel_id, userinfo.UserId, payload.message)
-		if err != nil {
-			fmt.Printf("error saving message: %e\n", err)
-			continue
-		}
-		dbmsg, err := s.db.GetMessage(messageid)
-		if err != nil {
-			fmt.Printf("error saving message: %e\n", err)
-			continue
-		}
-
-		msg := ServerMessage{
-			UserId:    dbmsg.UserId,
-			MessageID: messageid,
-			ServerId:  dbmsg.ServerId,
-			ChannelId: dbmsg.ChannelId,
-			Message:   dbmsg.Contents,
-			Date:      dbmsg.Timestamp.Format(time.UnixDate),
-		}
-		server_msg := ServerResponseMessage{Message_type: "message", Payload: msg}
-		incomingChannel <- server_msg
 	}
-
-	log.Printf("websocketHandler: closing channel for user %d", userinfo.UserId)
 }
 
 func (s *Server) handleIncomingMessages(messages chan ServerResponseMessage) {
@@ -1444,22 +1436,4 @@ func handleMessageContext(
 	err = client.Write(ctx, websocket.MessageText, jsondata)
 	log.Printf("message sent %d", user)
 	return err
-}
-
-func (s *Server) handleMessages(
-	user database.Id,
-	client *websocket.Conn,
-	messageChan chan ServerResponseMessage,
-) {
-	for {
-		msg, ok := <-messageChan
-		if !ok {
-			log.Printf("handleMessages: channel closed for user %d", user)
-			break
-		}
-		err := handleMessageContext(user, client, msg)
-		if err != nil {
-			log.Printf("handleMessage %v", err)
-		}
-	}
 }
