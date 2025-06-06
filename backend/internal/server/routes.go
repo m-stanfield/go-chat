@@ -1302,6 +1302,11 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error fetching user", http.StatusInternalServerError)
 		return
 	}
+	servers, err := s.db.GetServersOfUser(userinfo.UserId)
+	if err != nil {
+		http.Error(w, "error fetching channels of user", http.StatusInternalServerError)
+		return
+	}
 
 	conn, err := websocket.NewCoderWebSocketConnection(w, r)
 	if err != nil {
@@ -1310,7 +1315,26 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, incoming := s.ws_manager.NewConnection(conn)
-	defer s.ws_manager.CloseConnection(id)
+	for _, channel := range servers {
+		if _, ok := s.sessions_in_channel[channel.ServerId]; !ok {
+			s.sessions_in_channel[channel.ServerId] = make(map[string]bool)
+		}
+		s.sessions_in_channel[channel.ServerId][id] = true
+	}
+	defer func() {
+		s.ws_manager.CloseConnection(id)
+
+		for _, channel := range servers {
+			if _, ok := s.sessions_in_channel[channel.ServerId]; !ok {
+				continue
+			}
+			// TODO: Add some kind of mutex lock
+			delete(s.sessions_in_channel[channel.ServerId], id)
+			if len(s.sessions_in_channel[channel.ServerId]) == 0 {
+				delete(s.sessions_in_channel, channel.ServerId)
+			}
+		}
+	}()
 
 	fmt.Printf("starting websocket loop: %d ms\n",
 		time.Since(startTime).Milliseconds(),
@@ -1322,7 +1346,7 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 				log.Printf("websocketHandler: incoming channel closed for user %d", userinfo.UserId)
 				return
 			}
-			byte_data, err := s.ProcessMessage(userinfo.UserId, msg)
+			serverid, byte_data, err := s.ProcessMessage(userinfo.UserId, msg)
 			if err != nil {
 				log.Printf(
 					"websocketHandler: error processing message for user %d: %v",
@@ -1331,7 +1355,9 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 				)
 				continue
 			}
-			s.ws_manager.SendToClient(id, byte_data)
+			for k := range s.sessions_in_channel[serverid] {
+				s.ws_manager.SendToClient(k, byte_data)
+			}
 		}
 	}
 }
@@ -1339,33 +1365,33 @@ func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ProcessMessage(
 	userid database.Id,
 	msg websocket.IncomingMessage,
-) ([]byte, error) {
+) (database.Id, []byte, error) {
 	// todo add message parsing
 	data := ServerResponseMessage{}
 	err := json.Unmarshal(msg.Payload, &data)
 	if err != nil {
 		fmt.Printf("error getting message from websocket: %e\n", err)
-		return nil, err
+		return 0, nil, err
 	}
 	if data.Message_type != "channel_message" {
 		fmt.Printf("websocketHandler: invalid message type %s\n\n", data.Message_type)
-		return nil, err
+		return 0, nil, err
 	}
 	paymap, ok := data.Payload.(map[string]any)
 
 	if !ok {
 		fmt.Printf("websocketHandler: invalid payload type %T\n", data.Payload)
-		return nil, err
+		return 0, nil, err
 	}
 	channelidstr, ok := paymap["channel_id"]
 	if !ok {
 		fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
-		return nil, err
+		return 0, nil, err
 	}
 	channelidfloat, ok := channelidstr.(float64)
 	if !ok {
 		fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
-		return nil, err
+		return 0, nil, err
 	}
 	var channelid database.Id
 	channelid = database.Id(channelidfloat)
@@ -1378,24 +1404,24 @@ func (s *Server) ProcessMessage(
 			"websocketHandler: invalid channel id channe_id=%d\n",
 			payload.channel_id,
 		)
-		return nil, err
+		return 0, nil, err
 	}
 	if len(payload.message) > 1000 {
 		fmt.Printf(
 			"format error: length of message to large length=%d\n",
 			len(payload.message),
 		)
-		return nil, err
+		return 0, nil, err
 	}
 	messageid, err := s.db.AddMessage(payload.channel_id, userid, payload.message)
 	if err != nil {
 		fmt.Printf("error saving message: %e\n", err)
-		return nil, err
+		return 0, nil, err
 	}
 	dbmsg, err := s.db.GetMessage(messageid)
 	if err != nil {
 		fmt.Printf("error saving message: %e\n", err)
-		return nil, err
+		return 0, nil, err
 	}
 
 	smsg := ServerMessage{
@@ -1410,8 +1436,8 @@ func (s *Server) ProcessMessage(
 	byte_data, err := json.Marshal(server_msg)
 	if err != nil {
 		fmt.Printf("error marshalling message: %e\n", err)
-		return nil, err
+		return 0, nil, err
 	}
 	log.Printf("websocketHandler: sending message to user %d", userid)
-	return byte_data, nil
+	return dbmsg.ServerId, byte_data, nil
 }
