@@ -8,7 +8,6 @@ import (
 )
 
 type IncomingMessage struct {
-	Id      uint64
 	Payload []byte
 }
 
@@ -19,7 +18,7 @@ type (
 		Write(context.Context, MessageType, []byte) error
 	}
 	webSocketClient struct {
-		ID      uint64
+		ID      string
 		conn    WebSocketConnection
 		receive chan IncomingMessage
 		send    chan []byte
@@ -29,7 +28,7 @@ type (
 )
 
 func newWebSocketClient(
-	Id uint64,
+	Id string,
 	conn WebSocketConnection,
 	incoming chan IncomingMessage,
 ) *webSocketClient {
@@ -67,19 +66,18 @@ func (c *webSocketClient) read(ctx context.Context) {
 		messageType, message, err := c.conn.Read(ctx)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
-				log.Printf("Client %d read cancelled", c.ID)
+				log.Printf("Client %s read cancelled", c.ID)
 				return
 			} else {
-				log.Printf("Client %d read error: %v", c.ID, err)
+				log.Printf("Client %s read error: %v", c.ID, err)
 				c.close(StatusAbnormalClosure)
 			}
 			return
 		}
 
 		if messageType == MessageBinary || messageType == MessageText {
-			log.Printf("Received from client %d (%d bytes): %s", c.ID, len(message), message)
+			log.Printf("Received from client %s (%d bytes): %s", c.ID, len(message), message)
 			msg := IncomingMessage{
-				Id:      c.ID,
 				Payload: message,
 			}
 			c.receive <- msg
@@ -99,7 +97,7 @@ func (c *webSocketClient) write(ctx context.Context) {
 			}
 			err := c.conn.Write(ctx, MessageText, msg)
 			if err != nil {
-				log.Printf("Client %d write error: %v", c.ID, err)
+				log.Printf("Client %s write error: %v", c.ID, err)
 				c.close(StatusAbnormalClosure)
 				return
 			}
@@ -108,12 +106,12 @@ func (c *webSocketClient) write(ctx context.Context) {
 }
 
 type WebSocketManager struct {
-	clients map[uint64]*webSocketClient
+	clients map[string]*webSocketClient
 	mutex   sync.RWMutex
 }
 
 func (m *WebSocketManager) NewConnection(
-	Id uint64,
+	Id string,
 	conn WebSocketConnection,
 ) chan IncomingMessage {
 	incoming := make(chan IncomingMessage, 100) // Buffered channel for incoming messages
@@ -121,37 +119,36 @@ func (m *WebSocketManager) NewConnection(
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.clients[client.ID] = client
-	log.Printf("Client %d registered. Total clients: %d", client.ID, len(m.clients))
+	log.Printf("Client %s registered. Total clients: %d", client.ID, len(m.clients))
 	return incoming
 }
 
-func (m *WebSocketManager) CloseConnection(id uint64) {
+func (m *WebSocketManager) CloseConnection(id string) {
 	// remove later, redundant with Deregistre
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-
 	client, ok := m.clients[id]
 	if !ok {
 		return
 	}
 	delete(m.clients, id)
 	close(client.send)
-	log.Printf("Client %d unregistered. Total clients: %d", client.ID, len(m.clients))
+	log.Printf("Client %s unregistered. Total clients: %d", client.ID, len(m.clients))
 }
 
-func (m *WebSocketManager) SendToClient(Id uint64, message []byte) bool {
+func (m *WebSocketManager) SendToClient(Id string, message []byte) bool {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 	client, ok := m.clients[Id]
 	if !ok {
-		log.Printf("Client %d not found.", Id)
+		log.Printf("Client %s not found.", Id)
 		return false
 	}
 	select {
 	case client.send <- message:
 		return true
 	default:
-		log.Printf("Client %d send channel full, dropping message.", Id)
+		log.Printf("Client %s send channel full, dropping message.", Id)
 		return false
 	}
 }
