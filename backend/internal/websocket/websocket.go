@@ -110,6 +110,13 @@ type WebSocketManager struct {
 	mutex   sync.RWMutex
 }
 
+func NewWebSocketManager() *WebSocketManager {
+	return &WebSocketManager{
+		clients: make(map[string]*webSocketClient),
+		mutex:   sync.RWMutex{},
+	}
+}
+
 func (m *WebSocketManager) NewConnection(
 	Id string,
 	conn WebSocketConnection,
