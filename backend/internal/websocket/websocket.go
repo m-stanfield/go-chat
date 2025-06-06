@@ -51,15 +51,18 @@ func newWebSocketClient(
 }
 
 func (c *webSocketClient) close(status StatusCode) error {
+	// TODO: find correct ordering of close operations. how to handle closing channel vs connetion
 	if c.closed {
 		return errors.New("client already closed")
 	}
+
+	c.cancel()
+	close(c.receive)
+	log.Printf("Client %s closed with status %d", c.ID, status)
 	err := c.conn.Close(status, "") // TODO: determine proper status
 	if err != nil {
 		return err
 	}
-	c.cancel()
-	close(c.receive)
 	return nil
 }
 
@@ -69,6 +72,7 @@ func (c *webSocketClient) read(ctx context.Context) {
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				log.Printf("Client %s read cancelled", c.ID)
+				c.close(StatusNormalClosure)
 			} else {
 				log.Printf("Client %s read error: %v", c.ID, err)
 				c.close(StatusAbnormalClosure)
