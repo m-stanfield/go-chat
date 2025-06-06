@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 type IncomingMessage struct {
@@ -67,7 +69,6 @@ func (c *webSocketClient) read(ctx context.Context) {
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				log.Printf("Client %s read cancelled", c.ID)
-				return
 			} else {
 				log.Printf("Client %s read error: %v", c.ID, err)
 				c.close(StatusAbnormalClosure)
@@ -118,16 +119,16 @@ func NewWebSocketManager() *WebSocketManager {
 }
 
 func (m *WebSocketManager) NewConnection(
-	Id string,
 	conn WebSocketConnection,
-) chan IncomingMessage {
+) (string, chan IncomingMessage) {
+	Id := uuid.New().String()
 	incoming := make(chan IncomingMessage, 100) // Buffered channel for incoming messages
 	client := newWebSocketClient(Id, conn, incoming)
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.clients[client.ID] = client
 	log.Printf("Client %s registered. Total clients: %d", client.ID, len(m.clients))
-	return incoming
+	return Id, incoming
 }
 
 func (m *WebSocketManager) CloseConnection(id string) {
