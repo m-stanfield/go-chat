@@ -1,0 +1,3029 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>api: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">go-chat-react/cmd/api/main.go (0.0%)</option>
+				
+				<option value="file1">go-chat-react/internal/database/database.go (72.0%)</option>
+				
+				<option value="file2">go-chat-react/internal/database/types.go (85.7%)</option>
+				
+				<option value="file3">go-chat-react/internal/server/middleware.go (52.9%)</option>
+				
+				<option value="file4">go-chat-react/internal/server/route_helpers.go (32.5%)</option>
+				
+				<option value="file5">go-chat-react/internal/server/routes.go (41.4%)</option>
+				
+				<option value="file6">go-chat-react/internal/server/routes_transforms.go (100.0%)</option>
+				
+				<option value="file7">go-chat-react/internal/server/server.go (33.3%)</option>
+				
+				<option value="file8">go-chat-react/internal/websocket/coder_websocket.go (0.0%)</option>
+				
+				<option value="file9">go-chat-react/internal/websocket/websocket.go (84.4%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "context"
+        "fmt"
+        "log"
+        "net/http"
+        "os"
+        "os/signal"
+        "strconv"
+        "syscall"
+        "time"
+
+        "go-chat-react/internal/server"
+)
+
+func gracefulShutdown(apiServer *http.Server, done chan bool) <span class="cov0" title="0">{
+        // Create context that listens for the interrupt signal from the OS.
+        ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+        defer stop()
+
+        // Listen for the interrupt signal.
+        &lt;-ctx.Done()
+
+        log.Println("shutting down gracefully, press Ctrl+C again to force")
+
+        // The context is used to inform the server it has 5 seconds to finish
+        // the request it is currently handling
+        ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+        defer cancel()
+        if err := apiServer.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Server forced to shutdown with error: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">log.Println("Server exiting")
+
+        // Notify the main goroutine that the shutdown is complete
+        done &lt;- true</span>
+}
+
+func main() <span class="cov0" title="0">{
+        log.Println("Starting server...")
+
+        port, _ := strconv.Atoi(os.Getenv("PORT"))
+        server := server.NewServer(true, port)
+
+        // Create a done channel to signal when the shutdown is complete
+        done := make(chan bool, 1)
+
+        // Run graceful shutdown in a separate goroutine
+        go gracefulShutdown(server, done)
+
+        err := server.ListenAndServe()
+        if err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                panic(fmt.Sprintf("http server error: %s", err))</span>
+        }
+
+        // Wait for the graceful shutdown to complete
+        <span class="cov0" title="0">&lt;-done
+        log.Println("Graceful shutdown complete.")</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package database
+
+import (
+        "context"
+        "database/sql"
+        "errors"
+        "fmt"
+        "strconv"
+        "time"
+
+        _ "github.com/joho/godotenv/autoload"
+        "github.com/mattn/go-sqlite3"
+        _ "github.com/mattn/go-sqlite3"
+)
+
+type dbConn interface {
+        Query(query string, args ...any) (*sql.Rows, error)
+        QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+        QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+        Exec(query string, args ...any) (sql.Result, error)
+        ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+type AtomitcDBService struct {
+        service  *DBService
+        commit   func() error
+        rollback func() error
+}
+
+func (a *AtomitcDBService) Service() *DBService <span class="cov1" title="1">{
+        return a.service
+}</span>
+
+func (a *AtomitcDBService) Commit() error <span class="cov0" title="0">{
+        return a.commit()
+}</span>
+
+func (a *AtomitcDBService) Rollback() error <span class="cov1" title="1">{
+        return a.rollback()
+}</span>
+
+type DBService struct {
+        db   *sql.DB
+        conn dbConn
+}
+
+func New(db *sql.DB) *DBService <span class="cov0" title="0">{
+        return &amp;DBService{db: db, conn: db}
+}</span>
+
+func (r *DBService) DeleteUserSessionToken(userid Id) error <span class="cov2" title="2">{
+        random_token := "TODO_FIND_METHODALATER"
+        expire := time.Now().Add(-24 * time.Hour)
+        result, err := r.conn.Exec(
+                "UPDATE UserLoginTable SET token = ?, token_expire_time = ? WHERE userid=? ",
+                random_token,
+                expire,
+                userid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov2" title="2">rowsAffected, err := result.RowsAffected()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("error getting rows affected: %w", err)
+        }</span>
+        <span class="cov2" title="2">if rowsAffected == 0 </span><span class="cov1" title="1">{
+                return ErrRecordNotFound
+        }</span>
+
+        <span class="cov1" title="1">return nil</span>
+}
+
+func (r *DBService) ValidateUserLoginInfo(userid Id, password string) (bool, error) <span class="cov1" title="1">{
+        user, err := r.GetUserLoginInfo(userid)
+        if err != nil </span><span class="cov0" title="0">{
+                return false, err
+        }</span>
+        <span class="cov1" title="1">return comparePassword(user, password), nil</span>
+}
+
+func (db *DBService) withTx(tx *sql.Tx) *DBService <span class="cov1" title="1">{
+        return &amp;DBService{db: db.db, conn: tx}
+}</span>
+
+func (r *DBService) Atomic(ctx context.Context, opts *sql.TxOptions) (*AtomitcDBService, error) <span class="cov1" title="1">{
+        tx, err := r.db.BeginTx(ctx, opts)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;AtomitcDBService{}, err
+        }</span>
+        <span class="cov1" title="1">commit := func() error </span><span class="cov0" title="0">{
+                return tx.Commit()
+        }</span>
+
+        <span class="cov1" title="1">rollback := func() error </span><span class="cov1" title="1">{
+                return tx.Rollback()
+        }</span>
+        <span class="cov1" title="1">a := r.withTx(tx)
+        return &amp;AtomitcDBService{service: a, commit: commit, rollback: rollback}, nil</span>
+}
+
+func hashPassword(password string, salt string) string <span class="cov3" title="3">{
+        return (password + salt)
+}</span>
+
+func comparePassword(userinfo UserLoginInfo, password string) bool <span class="cov1" title="1">{
+        return hashPassword(password, userinfo.Salt) == userinfo.PasswordHash
+}</span>
+
+// Close closes the database connection.
+// It logs a message indicating the disconnection from the specific database.
+// If the connection is successfully closed, it returns nil.
+// If an error occurs while closing the connection, it returns the error.
+func (s *DBService) Close() error <span class="cov10" title="29">{
+        return s.db.Close()
+}</span>
+
+func (r *DBService) AddUserToServer(userid Id, serverid Id, nickname string) error <span class="cov0" title="0">{
+        _, err := r.conn.Exec(
+                "INSERT INTO UsersServerTable ( userid, serverid, nickname) VALUES ( ?, ?, ?)",
+                userid,
+                serverid,
+                nickname,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("add user - userid: %d err: %w", userid, err)
+        }</span>
+        <span class="cov0" title="0">return err</span>
+}
+
+func (r *DBService) CreateServer(ownerid Id, servername string) (Id, error) <span class="cov1" title="1">{
+        d, err := r.conn.Exec(
+                "INSERT INTO ServerTable (servername, ownerid) VALUES (?, ?)",
+                servername,
+                ownerid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf(
+                        "add server - servername: %s ownerid: %d err: %w",
+                        servername,
+                        ownerid,
+                        err,
+                )
+        }</span>
+        <span class="cov1" title="1">id, err := d.LastInsertId()
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+        <span class="cov1" title="1">if id &lt; 0 </span><span class="cov0" title="0">{
+                return 0, ErrNegativeRowIndex
+        }</span>
+        <span class="cov1" title="1">return Id(id), nil</span>
+}
+
+func (r *DBService) DeleteMessage(messageid Id) error <span class="cov1" title="1">{
+        a, err := r.conn.Exec("DELETE FROM ChannelMessageTable WHERE messageid = ?", messageid)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov1" title="1">rowsAffected, err := a.RowsAffected()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("error getting rows affected: %w", err)
+        }</span>
+        <span class="cov1" title="1">if rowsAffected == 0 </span><span class="cov0" title="0">{
+                return ErrRecordNotFound
+        }</span>
+        <span class="cov1" title="1">return nil</span>
+}
+
+func (r *DBService) UpdateMessage(messageid Id, message string) error <span class="cov1" title="1">{
+        _, err := r.conn.Exec(
+                "UPDATE ChannelMessageTable SET contents = ? WHERE messageid=? ",
+                message,
+                messageid,
+        )
+        return err
+}</span>
+
+func (r *DBService) GetUserIDFromUserName(username string) (Id, error) <span class="cov1" title="1">{
+        rows, err := r.conn.Query("SELECT userid FROM UserTable WHERE username = ?", username)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+        <span class="cov1" title="1">defer rows.Close()
+        count := 0
+        var userid Id
+        for rows.Next() </span><span class="cov1" title="1">{
+                count += 1
+                if count &gt; 1 </span><span class="cov0" title="0">{
+                        return 0, ErrMultipleRecords
+                }</span>
+                <span class="cov1" title="1">err := rows.Scan(&amp;userid)
+                if err != nil </span><span class="cov0" title="0">{
+                        return 0, err
+                }</span>
+        }
+        <span class="cov1" title="1">if count == 0 </span><span class="cov0" title="0">{
+                return 0, ErrRecordNotFound
+        }</span>
+        <span class="cov1" title="1">return userid, nil</span>
+}
+
+func (r *DBService) UpdateUserSessionToken(userid Id) (string, time.Time, error) <span class="cov2" title="2">{
+        token := "token" + strconv.FormatUint(uint64(userid), 10)
+        expire := time.Now().Add(24 * time.Hour)
+        _, err := r.conn.Exec(
+                "UPDATE UserLoginTable SET token = ?, token_expire_time = ? WHERE userid=? ",
+                token,
+                expire,
+                userid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return "", expire, err
+        }</span>
+        <span class="cov2" title="2">return token, expire, nil</span>
+}
+
+func (r *DBService) GetUserLoginInfo(userid Id) (UserLoginInfo, error) <span class="cov2" title="2">{
+        rows, err := r.conn.Query(
+                "SELECT userid, passwordhash, salt, token, token_expire_time FROM UserLoginTable WHERE userid = ?",
+                userid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return UserLoginInfo{}, err
+        }</span>
+        <span class="cov2" title="2">defer rows.Close()
+        count := 0
+        var user UserLoginInfo
+        for rows.Next() </span><span class="cov2" title="2">{
+                count += 1
+                if count &gt; 1 </span><span class="cov0" title="0">{
+                        return UserLoginInfo{}, ErrMultipleRecords
+                }</span>
+                <span class="cov2" title="2">err := rows.Scan(
+                        &amp;user.UserId,
+                        &amp;user.PasswordHash,
+                        &amp;user.Salt,
+                        &amp;user.Token,
+                        &amp;user.TokenExpireTime,
+                )
+                if err != nil </span><span class="cov0" title="0">{
+                        return UserLoginInfo{}, err
+                }</span>
+        }
+        <span class="cov2" title="2">if count == 0 </span><span class="cov0" title="0">{
+                return UserLoginInfo{}, ErrRecordNotFound
+        }</span>
+        <span class="cov2" title="2">return user, nil</span>
+}
+
+func (r *DBService) GetUserLoginInfoFromToken(token string) (UserLoginInfo, error) <span class="cov1" title="1">{
+        rows, err := r.conn.Query(
+                "SELECT userid, passwordhash, salt, token, token_expire_time FROM UserLoginTable WHERE token = ?",
+                token,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return UserLoginInfo{}, err
+        }</span>
+        <span class="cov1" title="1">defer rows.Close()
+        count := 0
+        var user UserLoginInfo
+        for rows.Next() </span><span class="cov1" title="1">{
+                count += 1
+                if count &gt; 1 </span><span class="cov0" title="0">{
+                        return UserLoginInfo{}, ErrMultipleRecords
+                }</span>
+                <span class="cov1" title="1">err := rows.Scan(
+                        &amp;user.UserId,
+                        &amp;user.PasswordHash,
+                        &amp;user.Salt,
+                        &amp;user.Token,
+                        &amp;user.TokenExpireTime,
+                )
+                if err != nil </span><span class="cov0" title="0">{
+                        return UserLoginInfo{}, err
+                }</span>
+        }
+        <span class="cov1" title="1">if count == 0 </span><span class="cov0" title="0">{
+                return UserLoginInfo{}, ErrRecordNotFound
+        }</span>
+        <span class="cov1" title="1">return user, nil</span>
+}
+
+func (r *DBService) GetUser(userid Id) (User, error) <span class="cov5" title="5">{
+        rows, err := r.conn.Query("SELECT userid, username FROM UserTable WHERE userid = ?", userid)
+        if errors.Is(err, sql.ErrNoRows) </span><span class="cov0" title="0">{
+                return User{}, ErrRecordNotFound
+        }</span>
+        <span class="cov5" title="5">if err != nil </span><span class="cov0" title="0">{
+                return User{}, err
+        }</span>
+        <span class="cov5" title="5">defer rows.Close()
+        count := 0
+        var user User
+        for rows.Next() </span><span class="cov4" title="4">{
+                count += 1
+                if count &gt; 1 </span><span class="cov0" title="0">{
+                        return User{}, ErrMultipleRecords
+                }</span>
+                <span class="cov4" title="4">err := rows.Scan(&amp;user.UserId, &amp;user.UserName)
+                if err != nil </span><span class="cov0" title="0">{
+                        return User{}, err
+                }</span>
+        }
+        <span class="cov5" title="5">if count == 0 </span><span class="cov1" title="1">{
+                return User{}, ErrRecordNotFound
+        }</span>
+        <span class="cov4" title="4">return user, nil</span>
+}
+
+func (r *DBService) CreateUser(username string, password string) (Id, error) <span class="cov2" title="2">{
+        d, err := r.conn.Exec("INSERT INTO UserTable (username) VALUES (?)", username)
+        var sqliteErr sqlite3.Error
+        if errors.As(err, &amp;sqliteErr) &amp;&amp; sqliteErr.Code == sqlite3.ErrConstraint &amp;&amp;
+                sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique </span><span class="cov0" title="0">{
+                return 0, ErrRecordAlreadyExists
+        }</span>
+        <span class="cov2" title="2">if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("add user - username: %s err: %w", username, err)
+        }</span>
+        <span class="cov2" title="2">id, err := d.LastInsertId()
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+        <span class="cov2" title="2">if id &lt; 0 </span><span class="cov0" title="0">{
+                return 0, ErrNegativeRowIndex
+        }</span>
+        <span class="cov2" title="2">random_salt := "salt" + strconv.FormatUint(uint64(id), 10)
+        hashed_password := hashPassword(password, random_salt)
+        _, err = r.conn.Exec(
+                "INSERT INTO UserLoginTable (userid, passwordhash, salt, token) VALUES ( ?, ?, ?, ?)",
+                id,
+                hashed_password,
+                random_salt,
+                "",
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+
+        <span class="cov2" title="2">return Id(id), nil</span>
+}
+
+func (r *DBService) UpdateUserName(userid Id, username string) error <span class="cov2" title="2">{
+        _, err := r.conn.Exec("UPDATE UserTable SET username = ? WHERE userid=? ", username, userid)
+        return err
+}</span>
+
+func (r *DBService) UpdateServerName(serverid Id, servername string) error <span class="cov1" title="1">{
+        _, err := r.conn.Exec(
+                "UPDATE ServerTable SET servername = ? WHERE serverid=? ",
+                servername,
+                serverid,
+        )
+        return err
+}</span>
+
+func (r *DBService) GetRecentUsernames(userid Id, number uint) ([]UsernameLogEntry, error) <span class="cov2" title="2">{
+        rows, err := r.conn.Query(
+                "SELECT userid, username, timestamp FROM UserNameLogTable WHERE userid = ? ORDER BY timestamp DESC LIMIT ?",
+                userid,
+                number,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return []UsernameLogEntry{}, err
+        }</span>
+        <span class="cov2" title="2">defer rows.Close()
+        var names []UsernameLogEntry
+        for rows.Next() </span><span class="cov3" title="3">{
+                var name UsernameLogEntry
+                err := rows.Scan(&amp;name.UserId, &amp;name.Username, &amp;name.Timestamp)
+                if err != nil </span><span class="cov0" title="0">{
+                        return []UsernameLogEntry{}, err
+                }</span>
+                <span class="cov3" title="3">names = append(names, name)</span>
+        }
+        <span class="cov2" title="2">return names, nil</span>
+}
+
+func (r *DBService) GetUsersOfServer(serverid Id) ([]User, error) <span class="cov1" title="1">{
+        rows, err := r.conn.Query(
+                "SELECT U.userid, U.username FROM UsersServerTable as US INNER JOIN UserTable as U ON US.userid = U.userid WHERE US.serverid = ?",
+                serverid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return []User{}, err
+        }</span>
+        <span class="cov1" title="1">defer rows.Close()
+        var names []User
+        for rows.Next() </span><span class="cov2" title="2">{
+                var name User
+                err := rows.Scan(&amp;name.UserId, &amp;name.UserName)
+                if err != nil </span><span class="cov0" title="0">{
+                        return []User{}, err
+                }</span>
+                <span class="cov2" title="2">names = append(names, name)</span>
+        }
+        <span class="cov1" title="1">return names, nil</span>
+}
+
+func (r *DBService) DeleteServer(serverid Id) error <span class="cov0" title="0">{
+        _, err := r.conn.Exec("DELETE FROM ServerTable WHERE serverid = ?", serverid)
+        return err
+}</span>
+
+func (r *DBService) GetServersOfUser(userid Id) ([]Server, error) <span class="cov1" title="1">{
+        rows, err := r.conn.Query(
+                "SELECT S.serverid, S.ownerid, S.servername FROM UsersServerTable as U INNER JOIN ServerTable as S ON U.serverid = S.serverid WHERE U.userid = ?",
+                userid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return []Server{}, err
+        }</span>
+        <span class="cov1" title="1">defer rows.Close()
+        var servers []Server
+        for rows.Next() </span><span class="cov2" title="2">{
+                var s Server
+                err := rows.Scan(&amp;s.ServerId, &amp;s.OwnerId, &amp;s.ServerName)
+                if err != nil </span><span class="cov0" title="0">{
+                        return []Server{}, err
+                }</span>
+                <span class="cov2" title="2">servers = append(servers, s)</span>
+        }
+        <span class="cov1" title="1">return servers, nil</span>
+}
+
+func (r *DBService) GetChannelsOfServer(serverid Id) ([]Channel, error) <span class="cov1" title="1">{
+        rows, err := r.conn.Query(
+                "SELECT channelid, serverid, channelname, timestamp FROM ChannelTable WHERE serverid = ?",
+                serverid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return []Channel{}, err
+        }</span>
+        <span class="cov1" title="1">defer rows.Close()
+        var servers []Channel
+        for rows.Next() </span><span class="cov2" title="2">{
+                var s Channel
+                err := rows.Scan(&amp;s.ChannelId, &amp;s.ServerId, &amp;s.ChannelName, &amp;s.Timestamp)
+                if err != nil </span><span class="cov0" title="0">{
+                        return []Channel{}, err
+                }</span>
+                <span class="cov2" title="2">servers = append(servers, s)</span>
+        }
+        <span class="cov1" title="1">return servers, nil</span>
+}
+
+func (r *DBService) IsUserInChannel(userid Id, channelid Id) (bool, error) <span class="cov4" title="4">{
+        query := `SELECT COUNT(1) FROM UsersChannelTable WHERE channelid = ? AND userid = ?`
+        var count int
+        err := r.db.QueryRow(query, channelid, userid).Scan(&amp;count)
+        if err != nil </span><span class="cov0" title="0">{
+                return false, err
+        }</span>
+        <span class="cov4" title="4">return count &gt; 0, nil</span>
+}
+
+func (r *DBService) AddUserToChannel(userid Id, channelid Id) error <span class="cov1" title="1">{
+        d, err := r.conn.Exec(
+                "INSERT INTO UsersChannelTable ( userid, channelid) VALUES ( ?, ?)",
+                userid,
+                channelid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("add user - userid: %d err: %w", userid, err)
+        }</span>
+        <span class="cov1" title="1">id, err := d.LastInsertId()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov1" title="1">if id &lt; 0 </span><span class="cov0" title="0">{
+                return ErrNegativeRowIndex
+        }</span>
+        <span class="cov1" title="1">return nil</span>
+}
+
+func (r *DBService) AddChannel(serverid Id, channelname string) (Id, error) <span class="cov1" title="1">{
+        d, err := r.conn.Exec(
+                "INSERT INTO ChannelTable ( serverid, channelname) VALUES ( ?, ?)",
+                serverid,
+                channelname,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("add user - username: %s err: %w", channelname, err)
+        }</span>
+        <span class="cov1" title="1">id, err := d.LastInsertId()
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+        <span class="cov1" title="1">if id &lt; 0 </span><span class="cov0" title="0">{
+                return 0, ErrNegativeRowIndex
+        }</span>
+        <span class="cov1" title="1">return Id(id), nil</span>
+}
+
+func (r *DBService) IsUserInServer(userid Id, serverid Id) (bool, error) <span class="cov3" title="3">{
+        query := `SELECT COUNT(1) FROM UsersServerTable WHERE serverid = ? AND userid = ?`
+        var count int
+        err := r.db.QueryRow(query, serverid, userid).Scan(&amp;count)
+        if err != nil </span><span class="cov0" title="0">{
+                return false, err
+        }</span>
+        <span class="cov3" title="3">return count &gt; 0, nil</span>
+}
+
+func (r *DBService) GetChannel(channelid Id) (Channel, error) <span class="cov4" title="4">{
+        rows, err := r.conn.Query(
+                "SELECT channelid, channelname, serverid, timestamp FROM ChannelTable WHERE channelid = ?",
+                channelid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return Channel{}, err
+        }</span>
+        <span class="cov4" title="4">defer rows.Close()
+        count := 0
+        var channel Channel
+        for rows.Next() </span><span class="cov4" title="4">{
+                count += 1
+                if count &gt; 1 </span><span class="cov0" title="0">{
+                        return Channel{}, ErrMultipleRecords
+                }</span>
+                <span class="cov4" title="4">err := rows.Scan(
+                        &amp;channel.ChannelId,
+                        &amp;channel.ChannelName,
+                        &amp;channel.ServerId,
+                        &amp;channel.Timestamp,
+                )
+                if err != nil </span><span class="cov0" title="0">{
+                        return Channel{}, err
+                }</span>
+        }
+        <span class="cov4" title="4">if count == 0 </span><span class="cov0" title="0">{
+                return Channel{}, ErrRecordNotFound
+        }</span>
+        <span class="cov4" title="4">return channel, nil</span>
+}
+
+func (r *DBService) UpdateChannel(channelid Id, new_server_name string) error <span class="cov1" title="1">{
+        _, err := r.conn.Exec(
+                "UPDATE ChannelTable SET channelname = ? WHERE channelid = ? ",
+                new_server_name,
+                channelid,
+        )
+        return err
+}</span>
+
+func (r *DBService) GetServer(serverid Id) (Server, error) <span class="cov3" title="3">{
+        rows, err := r.conn.Query(
+                "SELECT serverid, ownerid, servername FROM ServerTable WHERE serverid = ? ",
+                serverid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return Server{}, err
+        }</span>
+        <span class="cov3" title="3">defer rows.Close()
+        var server Server
+        server_found := false
+        for rows.Next() </span><span class="cov3" title="3">{
+                server_found = true
+                err := rows.Scan(
+                        &amp;server.ServerId,
+                        &amp;server.OwnerId,
+                        &amp;server.ServerName,
+                )
+                if err != nil </span><span class="cov0" title="0">{
+                        return Server{}, err
+                }</span>
+        }
+        <span class="cov3" title="3">if !server_found </span><span class="cov0" title="0">{
+                return Server{}, ErrRecordNotFound
+        }</span>
+        <span class="cov3" title="3">return server, nil</span>
+}
+
+func (r *DBService) GetMessage(messageid Id) (Message, error) <span class="cov5" title="6">{
+        rows, err := r.conn.Query(
+                "SELECT m.messageid, m.channelid, m.userid, m.contents, m.timestamp, m.editted, m.edittimestamp, c.serverid FROM ChannelMessageTable m JOIN ChannelTable c on m.channelid = c.channelid WHERE m.messageid = ?",
+                messageid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return Message{}, err
+        }</span>
+        <span class="cov5" title="6">defer rows.Close()
+        count := 0
+        var message Message
+        for rows.Next() </span><span class="cov4" title="4">{
+                count += 1
+                err := rows.Scan(
+                        &amp;message.MessageId,
+                        &amp;message.ChannelId,
+                        &amp;message.UserId,
+                        &amp;message.Contents,
+                        &amp;message.Timestamp,
+                        &amp;message.Editted,
+                        &amp;message.EdittedTimeStamp,
+                        &amp;message.ServerId,
+                )
+                if err != nil </span><span class="cov0" title="0">{
+                        return Message{}, err
+                }</span>
+        }
+        <span class="cov5" title="6">if count == 0 </span><span class="cov2" title="2">{
+                return Message{}, ErrRecordNotFound
+        }</span>
+        <span class="cov4" title="4">return message, nil</span>
+}
+
+func (r *DBService) AddMessage(channelid Id, userid Id, message string) (Id, error) <span class="cov3" title="3">{
+        if userid == 0 || channelid == 0 </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("add message - zero userid or channel id")
+        }</span>
+        <span class="cov3" title="3">d, err := r.conn.Exec(
+                "INSERT INTO ChannelMessageTable (userid, channelid, contents) VALUES ( ?, ?, ?)",
+                userid,
+                channelid,
+                message,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("add user - userid: %d err: %w", userid, err)
+        }</span>
+        <span class="cov3" title="3">id, err := d.LastInsertId()
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+        <span class="cov3" title="3">if id &lt; 0 </span><span class="cov0" title="0">{
+                return 0, ErrNegativeRowIndex
+        }</span>
+        <span class="cov3" title="3">return Id(id), nil</span>
+}
+
+// "SELECT m.messageid, m.channelid, m.userid, m.contents, m.timestamp, m.editted, m.edittimestamp, c.serverid FROM ChannelMessageTable m JOIN ChannelServeTable c ON m.channelid = c.channelid WHERE m.channelid = ? ORDER BY m.timestamp DESC LIMIT ?",
+func (r *DBService) GetMessagesInChannel(channelid Id, number uint) ([]Message, error) <span class="cov4" title="4">{
+        rows, err := r.conn.Query(
+                "SELECT m.messageid, m.channelid, m.userid, m.contents, m.timestamp, m.editted, m.edittimestamp, c.serverid FROM ChannelMessageTable m JOIN ChannelTable c on m.channelid = c.channelid WHERE m.channelid = ? ORDER BY m.timestamp DESC LIMIT ?",
+                channelid,
+                number,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return []Message{}, err
+        }</span>
+        <span class="cov4" title="4">defer rows.Close()
+        var messages []Message
+        for rows.Next() </span><span class="cov5" title="5">{
+                var message Message
+                err := rows.Scan(
+                        &amp;message.MessageId,
+                        &amp;message.ChannelId,
+                        &amp;message.UserId,
+                        &amp;message.Contents,
+                        &amp;message.Timestamp,
+                        &amp;message.Editted,
+                        &amp;message.EdittedTimeStamp,
+                        &amp;message.ServerId,
+                )
+                if err != nil </span><span class="cov0" title="0">{
+                        return []Message{}, err
+                }</span>
+                <span class="cov5" title="5">messages = append(messages, message)</span>
+        }
+        <span class="cov4" title="4">return messages, nil</span>
+}
+
+func (r *DBService) GetUsersInChannel(channelid Id) ([]User, error) <span class="cov1" title="1">{
+        rows, err := r.conn.Query(
+                "SELECT U.userid, U.username FROM UsersChannelTable as UC INNER JOIN UserTable as U ON UC.userid = U.userid WHERE UC.channelid = ?",
+                channelid,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return []User{}, err
+        }</span>
+        <span class="cov1" title="1">defer rows.Close()
+        var names []User
+        for rows.Next() </span><span class="cov2" title="2">{
+                var name User
+                err := rows.Scan(&amp;name.UserId, &amp;name.UserName)
+                if err != nil </span><span class="cov0" title="0">{
+                        return []User{}, err
+                }</span>
+                <span class="cov2" title="2">names = append(names, name)</span>
+        }
+        <span class="cov1" title="1">return names, nil</span>
+}
+
+func (r *DBService) RemoveUserFromChannel(channelid Id, userid Id) error <span class="cov0" title="0">{
+        result, err := r.conn.Exec(
+                "DELETE FROM UsersChannelTable WHERE channelid = ? AND userid = ?",
+                channelid,
+                userid,
+        )
+        // check and ensure that at least one row was deleted
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf(
+                        "remove user from channel - channelid: %d userid: %d err: %w",
+                        channelid,
+                        userid,
+                        err,
+                )
+        }</span>
+        <span class="cov0" title="0">rowsAffected, err := result.RowsAffected()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("error getting rows affected: %w", err)
+        }</span>
+        <span class="cov0" title="0">if rowsAffected == 0 </span><span class="cov0" title="0">{
+                return ErrRecordNotFound
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (r *DBService) DeleteChannel(channelid Id) error <span class="cov0" title="0">{
+        a, err := r.conn.Exec("DELETE FROM ChannelTable WHERE channelid = ?", channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov0" title="0">rowsAffected, err := a.RowsAffected()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("error getting rows affected: %w", err)
+        }</span>
+        <span class="cov0" title="0">if rowsAffected == 0 </span><span class="cov0" title="0">{
+                return ErrRecordNotFound
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package database
+
+import (
+        "strconv"
+        "time"
+)
+
+type Id = uint
+
+func ParseIntToID(id int) (Id, error) <span class="cov10" title="7">{
+        if id &lt;= 0 </span><span class="cov7" title="4">{
+                return Id(0), ErrUnsupportedNegativeValue
+        }</span>
+        <span class="cov6" title="3">return Id(id), nil</span>
+}
+
+func ParseStringToID(id string) (Id, error) <span class="cov6" title="3">{
+        intid, err := strconv.Atoi(id)
+        if err != nil </span><span class="cov0" title="0">{
+                return Id(0), ErrParsingValue
+        }</span>
+        <span class="cov6" title="3">return ParseIntToID(intid)</span>
+}
+
+type User struct {
+        UserId   Id
+        UserName string
+}
+
+type UserLoginInfo struct {
+        UserId          Id
+        PasswordHash    string
+        Salt            string
+        Token           string
+        TokenExpireTime time.Time
+}
+
+type UsernameLogEntry struct {
+        UserId    Id
+        Username  string
+        Timestamp time.Time
+}
+
+type UserNicknameLogEntry struct {
+        UserId    Id
+        ServerId  Id
+        Nickname  string
+        Timestamp time.Time
+}
+
+type Server struct {
+        ServerId   Id
+        OwnerId    Id
+        ServerName string
+}
+
+type Channel struct {
+        ChannelId   Id
+        ServerId    Id
+        ChannelName string
+        Timestamp   time.Time
+}
+
+type Message struct {
+        MessageId        Id
+        UserId           Id
+        ServerId         Id
+        ChannelId        Id
+        Contents         string
+        Timestamp        time.Time
+        Editted          *bool
+        EdittedTimeStamp *time.Time
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package server
+
+import (
+        "context"
+        "log"
+        "net/http"
+        "time"
+)
+
+func (s *Server) logEndpoint(next http.Handler) http.Handler <span class="cov0" title="0">{
+        counter := 0
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+                counter = counter + 1
+                start_time := time.Since(startTime)
+                // Proceed with the next handler
+                next.ServeHTTP(w, r)
+                end_time := time.Since(startTime.Add(start_time))
+
+                log.Printf(
+                        "%d Endpoint hit: %s took %d ms\n",
+                        counter,
+                        r.URL,
+                        end_time.Milliseconds(),
+                )
+        }</span>)
+}
+
+func (s *Server) WithAuthUser(next http.HandlerFunc) http.HandlerFunc <span class="cov10" title="560">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov5" title="26">{
+                cookieName := "token"
+                cookie, err := r.Cookie(cookieName)
+                if err != nil </span><span class="cov0" title="0">{
+                        if err == http.ErrNoCookie </span><span class="cov0" title="0">{
+                                // Handle the case where the cookie is not found
+                                http.Error(w, "Token cookie not found", http.StatusUnauthorized)
+                                return
+                        }</span>
+                        // Handle other potential errors
+                        <span class="cov0" title="0">http.Error(w, "Error retrieving cookie", http.StatusInternalServerError)
+                        return</span>
+                }
+
+                // Access the cookie value
+                <span class="cov5" title="26">token := cookie.Value
+                passwordInfo, err := s.db.GetUserLoginInfoFromToken(token)
+                if err != nil </span><span class="cov1" title="1">{
+                        http.Error(w, "unable to locate password", http.StatusBadRequest)
+                        return
+                }</span>
+
+                <span class="cov5" title="25">if !s.validSession(passwordInfo, token) </span><span class="cov0" title="0">{
+                        http.Error(w, "invalid token", http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov5" title="25">next(w, r.WithContext(context.WithValue(r.Context(), "userid", passwordInfo.UserId)))</span>
+        })
+}
+
+func (s *Server) corsMiddleware(next http.Handler) http.Handler <span class="cov5" title="28">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov7" title="70">{
+                // Set CORS headers
+                w.Header().
+                        Set("Access-Control-Allow-Origin", "localhost")
+                        // Replace "*" with specific origins if needed
+                w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+                w.Header().
+                        Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
+                w.Header().
+                        Set("Access-Control-Allow-Credentials", "true")
+                        // Set to "true" if credentials are required
+
+                // Handle preflight OPTIONS requests
+                if r.Method == http.MethodOptions </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusNoContent)
+                        return
+                }</span>
+
+                // Proceed with the next handler
+                <span class="cov7" title="70">next.ServeHTTP(w, r)</span>
+        })
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package server
+
+import (
+        "errors"
+        "fmt"
+        "net/http"
+        "strconv"
+        "time"
+
+        "go-chat-react/internal/database"
+)
+
+type httpErrorInfo struct {
+        StatusCode int
+        Message    string
+}
+
+type serverVerification struct {
+        Validated bool
+        UserId    database.Id
+        Server    database.Server
+}
+
+func parsePathFromID(r *http.Request, field string) (database.Id, error) <span class="cov10" title="32">{
+        fieldIDStr := r.PathValue(field)
+        fieldID, err := strconv.Atoi(fieldIDStr)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("invalid request: unable to parse %s", field)
+        }</span>
+        <span class="cov10" title="32">if fieldID &lt;= 0 </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("invalid request: valid %s id requires &gt;=0", field)
+        }</span>
+        <span class="cov10" title="32">return database.Id(fieldID), nil</span>
+}
+
+func getUserIdFromContext(r *http.Request) (database.Id, error) <span class="cov9" title="24">{
+        val := r.Context().Value("userid")
+        if val == nil </span><span class="cov0" title="0">{
+                return database.Id(0), errors.New("unable to get userid from context")
+        }</span>
+        <span class="cov9" title="24">userid, ok := val.(database.Id)
+        if !ok </span><span class="cov0" title="0">{
+                return database.Id(0), errors.New("unable to get userid from context")
+        }</span>
+        <span class="cov9" title="24">return userid, nil</span>
+}
+
+func (s *Server) validSession(userinfo database.UserLoginInfo, usertoken string) bool <span class="cov9" title="25">{
+        // if no token has been set
+        if userinfo.Token == "" </span><span class="cov0" title="0">{
+                return false
+        }</span>
+        // if the token has expired
+        <span class="cov9" title="25">if time.Now().After(userinfo.TokenExpireTime) </span><span class="cov0" title="0">{
+                return false
+        }</span>
+        // if the token is not the same as the one in the database
+        <span class="cov9" title="25">return userinfo.Token == usertoken</span>
+}
+
+func (s *Server) GetServerFromRequest(r *http.Request) (database.Server, error) <span class="cov0" title="0">{
+        serverid, err := parsePathFromID(r, "serverid")
+        if err != nil </span><span class="cov0" title="0">{
+                return database.Server{}, errors.New("invalid request: unable to parse server id")
+        }</span>
+        <span class="cov0" title="0">server, err := s.db.GetServer(database.Id(serverid))
+        if err != nil </span><span class="cov0" title="0">{
+                return database.Server{}, errors.New("error: unable to locate server")
+        }</span>
+        <span class="cov0" title="0">return server, nil</span>
+}
+
+func (s *Server) GetChannelFromRequest(r *http.Request) (database.Channel, error) <span class="cov0" title="0">{
+        channelid, err := parsePathFromID(r, "channelid")
+        if err != nil </span><span class="cov0" title="0">{
+                return database.Channel{}, errors.New("invalid request: unable to parse server id")
+        }</span>
+        <span class="cov0" title="0">channel, err := s.db.GetChannel(channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                return database.Channel{}, errors.New("error: unable to locate server")
+        }</span>
+        <span class="cov0" title="0">return channel, nil</span>
+}
+
+func (s *Server) GetServerFromChannel(channelid database.Id) (database.Server, error) <span class="cov0" title="0">{
+        channel, err := s.db.GetChannel(channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                return database.Server{}, err
+        }</span>
+        <span class="cov0" title="0">server, err := s.db.GetServer(channel.ServerId)
+        if err != nil </span><span class="cov0" title="0">{
+                return database.Server{}, err
+        }</span>
+        <span class="cov0" title="0">return server, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package server
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "log"
+        "net/http"
+        "strconv"
+        "time"
+
+        "go-chat-react/internal/database"
+        "go-chat-react/internal/websocket"
+)
+
+var startTime = time.Now()
+
+type ServerResponseMessage struct {
+        Message_type string `json:"message_type"`
+        Payload      any    `json:"payload"`
+}
+
+type ServerMessage struct {
+        UserId    database.Id `json:"userid"`
+        MessageID database.Id `json:"messageid"`
+        ChannelId database.Id `json:"channelid"`
+        ServerId  database.Id `json:"serverid"`
+        Message   string      `json:"message"`
+        Date      string      `json:"date"`
+}
+
+type User struct {
+        UserID   database.Id `json:"userid"`
+        UserName string      `json:"username"`
+}
+
+type SubmittedMessage struct {
+        UserID    string      `json:"userid"`
+        ChannelId database.Id `json:"channelid"`
+        Token     string      `json:"token"`
+        Message   string      `json:"message"`
+}
+
+func (s *Server) RegisterRoutes(logserver bool) http.Handler <span class="cov9" title="28">{
+        mux := http.NewServeMux()
+
+        // Register routes
+
+        mux.HandleFunc("/", s.redirectToReact)
+        mux.HandleFunc("/websocket", s.WithAuthUser(s.websocketHandler))
+
+        mux.HandleFunc("POST /api/auth/login", s.loginHandler)
+        mux.HandleFunc("POST /api/auth/session", s.WithAuthUser(s.sessionHandler))
+        mux.HandleFunc("POST /api/auth/logout", s.WithAuthUser(s.LogoutHandler))
+
+        mux.HandleFunc("POST /api/users", s.createUserHandler)
+        mux.HandleFunc("GET /api/users/{userid}", s.GetUserHandler)
+        mux.HandleFunc("PATCH /api/users/{userid}", s.WithAuthUser(s.UpdateUser))
+        mux.HandleFunc("GET /api/users/{userid}/servers", s.WithAuthUser(s.GetServersOfUser))
+
+        mux.HandleFunc("POST /api/servers", s.WithAuthUser(s.createNewServer))
+        mux.HandleFunc("GET /api/servers/{serverid}", s.GetServerInformation)
+        mux.HandleFunc("PATCH /api/servers/{serverid}", s.WithAuthUser(s.UpdateServer))
+        mux.HandleFunc("DELETE /api/servers/{serverid}", s.WithAuthUser(s.DeleteServer))
+        mux.HandleFunc("GET /api/servers/{serverid}/channels", s.WithAuthUser(s.GetServerChannels))
+        mux.HandleFunc("POST /api/servers/{serverid}/channels", s.WithAuthUser(s.CreateChannel))
+        mux.HandleFunc("GET /api/servers/{serverid}/members", s.WithAuthUser(s.GetServerMembersHandler))
+        mux.HandleFunc("GET /api/servers/{serverid}/messages", s.WithAuthUser(s.GetServerMessages))
+
+        mux.HandleFunc("GET /api/channels/{channelid}", s.WithAuthUser(s.GetChannel))
+        mux.HandleFunc("PATCH /api/channels/{channelid}", s.WithAuthUser(s.UpdateChannel))
+        mux.HandleFunc("DELETE /api/channels/{channelid}", s.WithAuthUser(s.DeleteChannel))
+        mux.HandleFunc("POST /api/channels/{channelid}/members", s.WithAuthUser(s.AddChannelMember))
+        mux.HandleFunc("GET /api/channels/{channelid}/members", s.WithAuthUser(s.GetChannelMembers))
+        mux.HandleFunc(
+                "DELETE /api/channels/{channelid}/members",
+                s.WithAuthUser(s.RemoveChannelMember),
+        )
+
+        mux.HandleFunc("GET /api/channels/{channelid}/messages", s.GetChannelMessages)
+        mux.HandleFunc("POST /api/channels/{channelid}/messages", s.CreateChannelMessage)
+        mux.HandleFunc("GET /api/channels/{channelid}/messages/{messageid}", s.GetMessage)
+        mux.HandleFunc(
+                "PATCH /api/channels/{channelid}/messages/{messageid}",
+                s.WithAuthUser(s.UpdateMessage),
+        )
+        mux.HandleFunc(
+                "DELETE /api/channels/{channelid}/messages/{messageid}",
+                s.WithAuthUser(s.DeleteMessage),
+        )
+
+        handler := http.Handler(mux)
+        if logserver </span><span class="cov0" title="0">{
+                handler = s.logEndpoint(handler)
+        }</span>
+        // Wrap the mux with CORS middleware
+        <span class="cov9" title="28">return s.corsMiddleware(handler)</span>
+}
+
+// redirect so I only have to remember one port during development
+func (s *Server) redirectToReact(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        http.Redirect(w, r, "http://localhost:5173", http.StatusTemporaryRedirect)
+}</span>
+
+func (s *Server) UpdateServer(w http.ResponseWriter, r *http.Request) <span class="cov2" title="2">{
+        userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov2" title="2">serverid, err := parsePathFromID(r, "serverid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">server_info, err := s.db.GetServer(serverid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">if server_info.OwnerId != userid </span><span class="cov1" title="1">{
+                http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">new_server_name := struct {
+                ServerName string `json:"servername"`
+        }{}
+        err = json.NewDecoder(r.Body).Decode(&amp;new_server_name)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">err = s.db.UpdateServerName(serverid, new_server_name.ServerName)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to update server name", http.StatusBadRequest)
+                return
+        }</span>
+}
+
+func (s *Server) DeleteServer(w http.ResponseWriter, r *http.Request) <span class="cov1" title="1">{
+        userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov1" title="1">serverid, err := parsePathFromID(r, "serverid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">server_info, err := s.db.GetServer(serverid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">if server_info.OwnerId != userid </span><span class="cov0" title="0">{
+                http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">err = s.db.DeleteServer(serverid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+                return
+        }</span>
+}
+
+func (s *Server) UpdateChannel(w http.ResponseWriter, r *http.Request) <span class="cov1" title="1">{
+        if r.Method != http.MethodPatch </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov1" title="1">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov1" title="1">channelid, err := parsePathFromID(r, "channelid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">channel_info, err := s.db.GetChannel(channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to locate channel", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">server_info, err := s.db.GetServer(channel_info.ServerId)
+        if server_info.OwnerId != userid </span><span class="cov0" title="0">{
+                http.Error(w, "error: user not owner of channel", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">new_channel_name := struct {
+                UpdatedChannelName string `json:"channelname"`
+        }{}
+        err = json.NewDecoder(r.Body).Decode(&amp;new_channel_name)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">err = s.db.UpdateChannel(channelid, new_channel_name.UpdatedChannelName)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to update channel", http.StatusBadRequest)
+                return
+
+        }</span>
+}
+
+func (s *Server) GetChannelMembers(w http.ResponseWriter, r *http.Request) <span class="cov3" title="3">{
+        if r.Method != http.MethodGet </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov3" title="3">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov3" title="3">channelid, err := parsePathFromID(r, "channelid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov3" title="3">inchannel, err := s.db.IsUserInChannel(userid, channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov3" title="3">if !inchannel </span><span class="cov0" title="0">{
+                http.Error(w, "user not in channel", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov3" title="3">users, err := s.db.GetUsersInChannel(channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "database error", http.StatusInternalServerError)
+                return
+        }</span>
+        // convert users from database.User to server.User
+        <span class="cov3" title="3">newusers := make([]User, len(users))
+        for i, user := range users </span><span class="cov5" title="6">{
+                newusers[i] = User{
+                        UserID:   user.UserId,
+                        UserName: user.UserName,
+                }
+        }</span>
+
+        <span class="cov3" title="3">resp := map[string]any{"users": newusers}
+        jsonResp, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov3" title="3">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) AddChannelMember(w http.ResponseWriter, r *http.Request) <span class="cov1" title="1">{
+        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov1" title="1">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">post_data := struct {
+                UserId string `json:"userid"`
+        }{}
+        err = json.NewDecoder(r.Body).Decode(&amp;post_data)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("error: unable to parse request %s", err)
+                http.Error(w, fmt.Sprintf("error: unable to parse request %s", err), http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">newuserid_str, err := strconv.Atoi(post_data.UserId)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">if newuserid_str &lt;= 0 </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: invalid user id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">newuserid := database.Id(newuserid_str)
+
+        channelid, err := parsePathFromID(r, "channelid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">channel, err := s.db.GetChannel(channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">server_info, err := s.db.GetServer(channel.ServerId)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">if server_info.OwnerId != userid </span><span class="cov0" title="0">{
+                http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">inserver, err := s.db.IsUserInServer(newuserid, server_info.ServerId)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">if !inserver </span><span class="cov0" title="0">{
+                http.Error(w, "user not in server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">err = s.db.AddUserToChannel(newuserid, server_info.ServerId)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to add user to channel", http.StatusBadRequest)
+                return
+        }</span>
+}
+
+func (s *Server) RemoveChannelMember(w http.ResponseWriter, r *http.Request) <span class="cov2" title="2">{
+        if r.Method != http.MethodDelete </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov2" title="2">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        // get serverid for the channel and make sure the user is the owner
+        <span class="cov2" title="2">channelid, err := parsePathFromID(r, "channelid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">channel, err := s.db.GetChannel(channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">server_info, err := s.db.GetServer(channel.ServerId)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to locate server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">if server_info.OwnerId != userid </span><span class="cov0" title="0">{
+
+                http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">post_data := struct {
+                UserId string `json:"userid"`
+        }{}
+        err = json.NewDecoder(r.Body).Decode(&amp;post_data)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("error: unable to parse request %s", err)
+                http.Error(w, fmt.Sprintf("error: unable to parse request %s", err), http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">newuserid_str, err := strconv.Atoi(post_data.UserId)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">if newuserid_str &lt;= 0 </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: invalid user id", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov2" title="2">newuserid := database.Id(newuserid_str)
+        err = s.db.RemoveUserFromChannel(database.Id(channelid), newuserid)
+        if errors.Is(err, database.ErrRecordNotFound) </span><span class="cov1" title="1">{
+                http.Error(w, "user not in channel", http.StatusBadRequest)
+                return
+        }</span> else<span class="cov1" title="1"> if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to remove user from channel", http.StatusBadRequest)
+                return
+        }</span>
+}
+
+func (s *Server) UpdateMessage(w http.ResponseWriter, r *http.Request) <span class="cov2" title="2">{
+        if r.Method != http.MethodPatch </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov2" title="2">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov2" title="2">messageid, err := parsePathFromID(r, "messageid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to parse messageid", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">message, err := s.db.GetMessage(messageid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to fetch message", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">if message.UserId != userid </span><span class="cov0" title="0">{
+                http.Error(w, "error: attempting to modify different user message", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">in_channel, err := s.db.IsUserInChannel(userid, message.ChannelId)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to verify channel permissions", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">if !in_channel </span><span class="cov0" title="0">{
+                http.Error(w, "error: user not in channel", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov2" title="2">message_data := struct {
+                Message string `json:"message"`
+        }{}
+        err = json.NewDecoder(r.Body).Decode(&amp;message_data)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to parse message from body", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">err = s.db.UpdateMessage(message.MessageId, message_data.Message)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: issue while updating message", http.StatusBadRequest)
+                return
+        }</span>
+}
+
+func (s *Server) DeleteMessage(w http.ResponseWriter, r *http.Request) <span class="cov1" title="1">{
+        if r.Method != http.MethodDelete </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov1" title="1">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">messageid, err := parsePathFromID(r, "messageid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to parse messageid", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">message, err := s.db.GetMessage(messageid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to fetch message", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">if message.UserId != userid </span><span class="cov0" title="0">{
+
+                http.Error(w, "error: attempting to modify different user message", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">err = s.db.DeleteMessage(message.MessageId)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: issue while deleting message", http.StatusBadRequest)
+                return
+        }</span>
+}
+
+func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        if r.Method != http.MethodPatch </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov0" title="0">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">user, err := s.db.GetUser(userid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to fetch user", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">err = s.db.UpdateUserName(user.UserId, user.UserName)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to update username", http.StatusBadRequest)
+                return
+        }</span>
+}
+
+func (s *Server) DeleteChannel(w http.ResponseWriter, r *http.Request) <span class="cov1" title="1">{
+        if r.Method != http.MethodDelete </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov1" title="1">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">channelid, err := parsePathFromID(r, "channelid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to parse channelid", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">channel, err := s.db.GetChannel(channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to fetch channel", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">server, err := s.db.GetServer(channel.ServerId)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to fetch server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">if server.OwnerId != userid </span><span class="cov0" title="0">{
+                http.Error(w, "error: user not owner of server", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">err = s.db.DeleteChannel(channel.ChannelId)
+        if errors.Is(err, database.ErrRecordNotFound) </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to locate channel", http.StatusNotFound)
+                return
+        }</span>
+
+        <span class="cov1" title="1">if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to delete channel", http.StatusBadRequest)
+                return
+        }</span>
+}
+
+func (s *Server) CreateChannel(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov0" title="0">_, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">channel_data := struct {
+                ChannelName string `json:"channelname"`
+        }{}
+        err = json.NewDecoder(r.Body).Decode(&amp;channel_data)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">serverid, err := parsePathFromID(r, "serverid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov0" title="0">channelid, err := s.db.AddChannel(serverid, channel_data.ChannelName)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to create channel", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">resp := map[string]any{
+                "channelid": channelid,
+        }
+        jsonResp, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) <span class="cov1" title="1">{
+        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov1" title="1">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">err = s.db.DeleteUserSessionToken(userid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to delete session token", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">cookie := &amp;http.Cookie{
+                Name:     "token", // Replace with your actual cookie name
+                Value:    "",
+                Path:     "/", // Ensure this matches the cookie's original path
+                HttpOnly: true,
+                Secure:   false, // Set to true if your site uses HTTPS
+                SameSite: http.SameSiteStrictMode,
+                Expires:  time.Now().Add(-time.Hour), // Set the expiration time to the past
+                MaxAge:   -1,                         // Set MaxAge to 0 or a negative value to delete the cookie immediately
+        }
+
+        // Set the expired cookie in the response header.
+        http.SetCookie(w, cookie)
+        return</span>
+}
+
+func (s *Server) CreateChannelMessage(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov0" title="0">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">channelid, err := parsePathFromID(r, "channelid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">inchannel, err := s.db.IsUserInChannel(userid, channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">if !inchannel </span><span class="cov0" title="0">{
+                http.Error(w, "user not in channel", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">message_data := struct {
+                Message string `json:"message"`
+        }{}
+        err = json.NewDecoder(r.Body).Decode(&amp;message_data)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to parse request", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">messageid, err := s.db.AddMessage(userid, channelid, message_data.Message)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to create message", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">resp := map[string]any{
+                "messageid": messageid,
+        }
+        jsonResp, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) GetChannelMessages(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        if r.Method != http.MethodGet </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov0" title="0">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov0" title="0">channelid, err := parsePathFromID(r, "channelid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov0" title="0">inchannel, err := s.db.IsUserInChannel(userid, channelid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, fmt.Sprintf("error: %s", err), http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">if !inchannel </span><span class="cov0" title="0">{
+                http.Error(w, "user not in channel", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">count_str := r.URL.Query().Get("count")
+        var count uint = 30
+
+        if count_str != "" </span><span class="cov0" title="0">{
+                tempcount, err := strconv.Atoi(count_str)
+                if err != nil </span><span class="cov0" title="0">{
+                        http.Error(w, "invalid request: unable to parse count", http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov0" title="0">if tempcount &gt; 0 </span><span class="cov0" title="0">{
+                        count = uint(tempcount)
+                }</span> else<span class="cov0" title="0"> {
+                        http.Error(w, "invalid request: invalid count", http.StatusBadRequest)
+                        return
+                }</span>
+        }
+
+        <span class="cov0" title="0">messages, err := s.db.GetMessagesInChannel(channelid, count)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "database error", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">resp := map[string]any{"messages": messages}
+        jsonResp, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) GetChannel(w http.ResponseWriter, r *http.Request) <span class="cov2" title="2">{
+        if r.Method != http.MethodGet </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov2" title="2">_, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov2" title="2">channelid, err := parsePathFromID(r, "channelid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">channel_info, err := s.db.GetChannel(channelid)
+        if errors.Is(err, database.ErrRecordNotFound) </span><span class="cov1" title="1">{
+                http.Error(w, "error: unable to locate channel", http.StatusNotFound)
+                return
+        }</span>
+        <span class="cov1" title="1">if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: unable to locate channel", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">payload := struct {
+                ChannelId   database.Id `json:"channelid"`
+                ServerId    database.Id `json:"serverid"`
+                ChannelName string      `json:"channelname"`
+                Timestamp   time.Time   `json:"timestamp"`
+        }{
+                ChannelId:   channel_info.ChannelId,
+                ServerId:    channel_info.ServerId,
+                ChannelName: channel_info.ChannelName,
+                Timestamp:   channel_info.Timestamp,
+        }
+        jsonResp, err := json.Marshal(payload)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) GetMessage(w http.ResponseWriter, r *http.Request) <span class="cov4" title="4">{
+        if r.Method != http.MethodGet </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov4" title="4">messageid, err := parsePathFromID(r, "messageid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov4" title="4">dbmessage, err := s.db.GetMessage(messageid)
+        if errors.Is(err, database.ErrRecordNotFound) </span><span class="cov1" title="1">{
+                http.Error(w, "error: unable to locate message", http.StatusNotFound)
+                return
+        }</span>
+        <span class="cov3" title="3">if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error: internal server error", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov3" title="3">message := fromDBMessageToSeverMessage(dbmessage)
+        jsonResp, err := json.Marshal(message)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(
+                        w,
+                        "error: internal server error. Unable to process request",
+                        http.StatusBadRequest,
+                )
+        }</span>
+        <span class="cov3" title="3">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) sessionHandler(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov0" title="0">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Unable to get user from context", http.StatusUnauthorized)
+                return
+        }</span>
+
+        <span class="cov0" title="0">user, err := s.db.GetUser(userid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Unable to find user", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov0" title="0">resp := map[string]any{
+                "userid":   userid,
+                "username": user.UserName,
+        }
+
+        jsonResp, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov0" title="0">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) <span class="cov10" title="32">{
+        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+
+        // Parse form data (default for HTML form submission)
+        <span class="cov10" title="32">err := r.ParseForm()
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Unable to parse form", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov10" title="32">loginData := struct {
+                Username string `json:"username"`
+                Password string `json:"password"`
+        }{}
+        err = json.NewDecoder(r.Body).Decode(&amp;loginData)
+        username := loginData.Username
+        password := loginData.Password
+        userid, err := s.db.GetUserIDFromUserName(username)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "unable to locate username", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov10" title="32">valid, err := s.db.ValidateUserLoginInfo(userid, password)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "internal error", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov10" title="32">if !valid </span><span class="cov1" title="1">{
+                http.Error(w, "invalid password", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov9" title="31">token, _, err := s.db.UpdateUserSessionToken(userid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "unable to update session token", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov9" title="31">resp := map[string]any{
+                "userid": userid,
+        }
+
+        // Set a cookie (you can modify the cookie as needed)
+        http.SetCookie(w, &amp;http.Cookie{
+                Name:     "token",
+                Value:    token,
+                Path:     "/",
+                Secure:   false,
+                HttpOnly: true,
+                SameSite: http.SameSiteLaxMode,
+        })
+
+        // Redirect the user to /chat
+        w.Header().Set("Content-Type", "application/json")
+        err = json.NewEncoder(w).Encode(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(
+                        w,
+                        "internal error: unable to send encoded response",
+                        http.StatusInternalServerError,
+                )
+                return
+        }</span>
+}
+
+func (s *Server) AddUserToServer(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        // do a not implemented warning
+        <span class="cov0" title="0">http.Error(w, "not implemented", http.StatusNotImplemented)</span>
+}
+
+func (s *Server) createNewServer(w http.ResponseWriter, r *http.Request) <span class="cov3" title="3">{
+        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov3" title="3">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov3" title="3">err = r.ParseForm()
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Unable to parse form", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov3" title="3">newServerData := struct {
+                ServerName string `json:"servername"`
+        }{}
+        err = json.NewDecoder(r.Body).Decode(&amp;newServerData)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "unable to parse request", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov3" title="3">if len(newServerData.ServerName) &gt; 30 </span><span class="cov1" title="1">{
+                http.Error(w, "server name too long", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">if len(newServerData.ServerName) &lt; 3 </span><span class="cov1" title="1">{
+                http.Error(w, "server name too short", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">serverid, err := s.db.CreateServer(userid, newServerData.ServerName)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "unable to create server", http.StatusBadRequest)
+                return
+        }</span>
+
+        // TODO: add proper user name here
+        <span class="cov1" title="1">err = s.db.AddUserToServer(userid, serverid, "")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "unable to add user to server", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">resp := map[string]any{
+                "serverid": serverid,
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        err = json.NewEncoder(w).Encode(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(
+                        w,
+                        "internal error: unable to send encoded response",
+                        http.StatusInternalServerError,
+                )
+                return
+        }</span>
+
+        <span class="cov1" title="1">return</span>
+}
+
+func (s *Server) createUserHandler(w http.ResponseWriter, r *http.Request) <span class="cov1" title="1">{
+        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+
+        // Parse form data (default for HTML form submission)
+        <span class="cov1" title="1">err := r.ParseForm()
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Unable to parse form", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">loginData := struct {
+                Username string `json:"username"`
+                Password string `json:"password"`
+        }{}
+        err = json.NewDecoder(r.Body).Decode(&amp;loginData)
+        username := loginData.Username
+        password := loginData.Password
+        userid, err := s.db.CreateUser(username, password)
+        if errors.Is(err, database.ErrRecordAlreadyExists) </span><span class="cov0" title="0">{
+                http.Error(w, "user already exists", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "unable to create user", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">valid_user, err := s.db.ValidateUserLoginInfo(userid, password)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "internal error", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">if !valid_user </span><span class="cov0" title="0">{
+                http.Error(w, "invalid password", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">token, _, err := s.db.UpdateUserSessionToken(userid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "unable to update session token", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">resp := map[string]any{
+                "userid": userid,
+        }
+
+        // Set a cookie (you can modify the cookie as needed)
+        http.SetCookie(w, &amp;http.Cookie{
+                Name:     "token",
+                Value:    token,
+                Path:     "/",
+                Secure:   false,
+                HttpOnly: true,
+                SameSite: http.SameSiteLaxMode,
+        })
+
+        // Redirect the user to /chat
+        w.Header().Set("Content-Type", "application/json")
+        err = json.NewEncoder(w).Encode(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(
+                        w,
+                        "internal error: unable to send encoded response",
+                        http.StatusInternalServerError,
+                )
+                return
+        }</span>
+}
+
+func (s *Server) GetServerChannels(w http.ResponseWriter, r *http.Request) <span class="cov1" title="1">{
+        serverid, err := parsePathFromID(r, "serverid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">userinfo, err := s.db.GetUser(userid)
+        isServerMember, err := s.db.IsUserInServer(userinfo.UserId, serverid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "database error", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">if !isServerMember </span><span class="cov0" title="0">{
+                http.Error(w, "user not member of server", http.StatusNetworkAuthenticationRequired)
+                return
+        }</span>
+
+        <span class="cov1" title="1">channels, err := s.db.GetChannelsOfServer(serverid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "database error", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">resp := map[string]any{"channels": channels}
+        jsonResp, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) GetServersOfUser(w http.ResponseWriter, r *http.Request) <span class="cov2" title="2">{
+        userid, err := parsePathFromID(r, "userid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov2" title="2">autheduserid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov2" title="2">if userid != autheduserid </span><span class="cov1" title="1">{
+                http.Error(w, "invalid request: invalid user id", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">servers, err := s.db.GetServersOfUser(userid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "database error", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">resp := map[string]any{"servers": servers}
+        jsonResp, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) GetServerInformation(w http.ResponseWriter, r *http.Request) <span class="cov4" title="4">{
+        serverid, err := parsePathFromID(r, "serverid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov4" title="4">server, err := s.db.GetServer(serverid)
+        if errors.Is(err, database.ErrRecordNotFound) </span><span class="cov1" title="1">{
+                // TODO: figure out proper method for valid resopnse but no data
+                http.Error(w, "server not found", http.StatusNotFound)
+                return
+        }</span>
+        <span class="cov3" title="3">if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to find server", http.StatusNotFound)
+                return
+        }</span>
+
+        <span class="cov3" title="3">jsonstruct := struct {
+                ServerId   database.Id `json:"serverid"`
+                OwnerId    database.Id `json:"ownerid"`
+                ServerName string      `json:"servername"`
+        }{
+                ServerId:   server.ServerId,
+                OwnerId:    server.OwnerId,
+                ServerName: server.ServerName,
+        }
+        jsonResp, err := json.Marshal(jsonstruct)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov3" title="3">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) GetServerMessages(w http.ResponseWriter, r *http.Request) <span class="cov1" title="1">{
+        serverid, err := parsePathFromID(r, "serverid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov1" title="1">count_str := r.URL.Query().Get("count")
+        var count uint = 30
+        if count_str != "" </span><span class="cov0" title="0">{
+                tempcount, err := strconv.Atoi(count_str)
+                if err != nil </span><span class="cov0" title="0">{
+                        http.Error(w, "invalid request: unable to parse count", http.StatusBadRequest)
+                        return
+                }</span>
+                <span class="cov0" title="0">if tempcount &gt; 0 </span><span class="cov0" title="0">{
+                        count = uint(tempcount)
+                }</span> else<span class="cov0" title="0"> {
+                        http.Error(w, "invalid request: invalid count", http.StatusBadRequest)
+                        return
+                }</span>
+        }
+
+        <span class="cov1" title="1">userid, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">isServerMember, err := s.db.IsUserInServer(userid, serverid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "database error", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">if !isServerMember </span><span class="cov0" title="0">{
+                http.Error(w, "user not member of server", http.StatusNetworkAuthenticationRequired)
+                return
+        }</span>
+
+        <span class="cov1" title="1">channels, err := s.db.GetChannelsOfServer(serverid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "database error", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">var messages []ServerMessage
+        for _, channel := range channels </span><span class="cov2" title="2">{
+                db_messages, err := s.db.GetMessagesInChannel(channel.ChannelId, count)
+                if err != nil </span><span class="cov0" title="0">{
+                        http.Error(w, "database error", http.StatusInternalServerError)
+                        return
+                }</span>
+
+                <span class="cov2" title="2">tempmsgs := make([]ServerMessage, len(db_messages))
+                for i, dbmsg := range db_messages </span><span class="cov4" title="4">{
+                        tempmsgs[i] = ServerMessage{
+                                UserId:    dbmsg.UserId,
+                                MessageID: dbmsg.MessageId,
+                                ServerId:  serverid,
+                                ChannelId: dbmsg.ChannelId,
+                                Message:   dbmsg.Contents,
+                                Date:      dbmsg.Timestamp.Format(time.UnixDate),
+                        }
+                }</span>
+                <span class="cov2" title="2">messages = append(messages, tempmsgs...)</span>
+
+        }
+        <span class="cov1" title="1">resp := map[string]any{"serverid": serverid, "messages": messages}
+        jsonResp, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) GetServerMembersHandler(w http.ResponseWriter, r *http.Request) <span class="cov1" title="1">{
+        serverid, err := parsePathFromID(r, "serverid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse server id", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov1" title="1">users, err := s.db.GetUsersOfServer(serverid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "database error", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">resp := map[string]any{"users": users, "serverid": serverid}
+        jsonResp, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov1" title="1">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+func (s *Server) GetUserHandler(w http.ResponseWriter, r *http.Request) <span class="cov3" title="3">{
+        userid, err := parsePathFromID(r, "userid")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "invalid request: unable to parse user id", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov3" title="3">user, err := s.db.GetUser(userid)
+        if errors.Is(err, database.ErrRecordNotFound) </span><span class="cov1" title="1">{
+                http.Error(w, "user not found", http.StatusNotFound)
+                return
+        }</span>
+        <span class="cov2" title="2">if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "database error", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov2" title="2">resp := map[string]string{"username": user.UserName}
+        jsonResp, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov2" title="2">w.Header().Set("Content-Type", "application/json")
+        if _, err := w.Write(jsonResp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Failed to write response: %v", err)
+        }</span>
+}
+
+type rawChannelMessage struct {
+        channel_id database.Id
+        message    string
+}
+
+func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        passinfo, err := getUserIdFromContext(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">userinfo, err := s.db.GetUser(passinfo)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error fetching user", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">servers, err := s.db.GetServersOfUser(userinfo.UserId)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "error fetching channels of user", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov0" title="0">conn, err := websocket.NewCoderWebSocketConnection(w, r)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("error creating websocket connection: %v\n", err)
+                http.Error(w, "error creating websocket connection", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">id, incoming := s.ws_manager.NewConnection(conn)
+        for _, channel := range servers </span><span class="cov0" title="0">{
+                if _, ok := s.sessions_in_channel[channel.ServerId]; !ok </span><span class="cov0" title="0">{
+                        s.sessions_in_channel[channel.ServerId] = make(map[string]bool)
+                }</span>
+                <span class="cov0" title="0">s.sessions_in_channel[channel.ServerId][id] = true</span>
+        }
+        <span class="cov0" title="0">defer func() </span><span class="cov0" title="0">{
+                s.ws_manager.CloseConnection(id)
+
+                for _, channel := range servers </span><span class="cov0" title="0">{
+                        if _, ok := s.sessions_in_channel[channel.ServerId]; !ok </span><span class="cov0" title="0">{
+                                continue</span>
+                        }
+                        // TODO: Add some kind of mutex lock
+                        <span class="cov0" title="0">delete(s.sessions_in_channel[channel.ServerId], id)
+                        if len(s.sessions_in_channel[channel.ServerId]) == 0 </span><span class="cov0" title="0">{
+                                delete(s.sessions_in_channel, channel.ServerId)
+                        }</span>
+                }
+        }()
+
+        <span class="cov0" title="0">fmt.Printf("starting websocket loop: %d ms\n",
+                time.Since(startTime).Milliseconds(),
+        )
+        for </span><span class="cov0" title="0">{
+                select </span>{
+                case msg, ok := &lt;-incoming:<span class="cov0" title="0">
+                        if !ok </span><span class="cov0" title="0">{
+                                log.Printf("websocketHandler: incoming channel closed for user %d", userinfo.UserId)
+                                return
+                        }</span>
+                        <span class="cov0" title="0">serverid, byte_data, err := s.ProcessMessage(userinfo.UserId, msg)
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Printf(
+                                        "websocketHandler: error processing message for user %d: %v",
+                                        userinfo.UserId,
+                                        err,
+                                )
+                                continue</span>
+                        }
+                        <span class="cov0" title="0">for k := range s.sessions_in_channel[serverid] </span><span class="cov0" title="0">{
+                                s.ws_manager.SendToClient(k, byte_data)
+                        }</span>
+                }
+        }
+}
+
+func (s *Server) ProcessMessage(
+        userid database.Id,
+        msg websocket.IncomingMessage,
+) (database.Id, []byte, error) <span class="cov0" title="0">{
+        // todo add message parsing
+        data := ServerResponseMessage{}
+        err := json.Unmarshal(msg.Payload, &amp;data)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("error getting message from websocket: %e\n", err)
+                return 0, nil, err
+        }</span>
+        <span class="cov0" title="0">if data.Message_type != "channel_message" </span><span class="cov0" title="0">{
+                fmt.Printf("websocketHandler: invalid message type %s\n\n", data.Message_type)
+                return 0, nil, err
+        }</span>
+        <span class="cov0" title="0">paymap, ok := data.Payload.(map[string]any)
+
+        if !ok </span><span class="cov0" title="0">{
+                fmt.Printf("websocketHandler: invalid payload type %T\n", data.Payload)
+                return 0, nil, err
+        }</span>
+        <span class="cov0" title="0">channelidstr, ok := paymap["channel_id"]
+        if !ok </span><span class="cov0" title="0">{
+                fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
+                return 0, nil, err
+        }</span>
+        <span class="cov0" title="0">channelidfloat, ok := channelidstr.(float64)
+        if !ok </span><span class="cov0" title="0">{
+                fmt.Printf("websocketHandler: invalid payload %s\n", data.Payload)
+                return 0, nil, err
+        }</span>
+        <span class="cov0" title="0">var channelid database.Id
+        channelid = database.Id(channelidfloat)
+        payload := rawChannelMessage{
+                channel_id: database.Id(channelid),
+                message:    paymap["message"].(string),
+        }
+        if payload.channel_id &lt;= 0 </span><span class="cov0" title="0">{
+                fmt.Printf(
+                        "websocketHandler: invalid channel id channe_id=%d\n",
+                        payload.channel_id,
+                )
+                return 0, nil, err
+        }</span>
+        <span class="cov0" title="0">if len(payload.message) &gt; 1000 </span><span class="cov0" title="0">{
+                fmt.Printf(
+                        "format error: length of message to large length=%d\n",
+                        len(payload.message),
+                )
+                return 0, nil, err
+        }</span>
+        <span class="cov0" title="0">messageid, err := s.db.AddMessage(payload.channel_id, userid, payload.message)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("error saving message: %e\n", err)
+                return 0, nil, err
+        }</span>
+        <span class="cov0" title="0">dbmsg, err := s.db.GetMessage(messageid)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("error saving message: %e\n", err)
+                return 0, nil, err
+        }</span>
+
+        <span class="cov0" title="0">smsg := ServerMessage{
+                UserId:    dbmsg.UserId,
+                MessageID: messageid,
+                ServerId:  dbmsg.ServerId,
+                ChannelId: dbmsg.ChannelId,
+                Message:   dbmsg.Contents,
+                Date:      dbmsg.Timestamp.Format(time.UnixDate),
+        }
+        server_msg := ServerResponseMessage{Message_type: "message", Payload: smsg}
+        byte_data, err := json.Marshal(server_msg)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("error marshalling message: %e\n", err)
+                return 0, nil, err
+        }</span>
+        <span class="cov0" title="0">log.Printf("websocketHandler: sending message to user %d", userid)
+        return dbmsg.ServerId, byte_data, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package server
+
+import (
+        "time"
+
+        "go-chat-react/internal/database"
+)
+
+func fromDBMessageToSeverMessage(message database.Message) ServerMessage <span class="cov10" title="3">{
+        return ServerMessage{
+                UserId:    message.UserId,
+                ChannelId: message.ChannelId,
+                MessageID: message.MessageId,
+                Message:   message.Contents,
+                Date:      message.Timestamp.Format(time.UnixDate),
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package server
+
+import (
+        "context"
+        "database/sql"
+        "fmt"
+        "log"
+        "net/http"
+        "os"
+        "time"
+
+        _ "github.com/joho/godotenv/autoload"
+
+        "go-chat-react/internal/database"
+        "go-chat-react/internal/websocket"
+)
+
+type UserService interface {
+        GetUserIDFromUserName(username string) (database.Id, error)
+        UpdateUserSessionToken(userid database.Id) (string, time.Time, error)
+        DeleteUserSessionToken(userid database.Id) error
+        GetUserLoginInfoFromToken(token string) (database.UserLoginInfo, error)
+        GetUserLoginInfo(userid database.Id) (database.UserLoginInfo, error)
+        ValidateUserLoginInfo(userid database.Id, password string) (bool, error)
+
+        GetUser(userid database.Id) (database.User, error)
+        CreateUser(username string, password string) (database.Id, error)
+        UpdateUserName(userid database.Id, username string) error
+        GetRecentUsernames(userid database.Id, number uint) ([]database.UsernameLogEntry, error)
+}
+
+type ServerService interface {
+        GetUsersOfServer(serverid database.Id) ([]database.User, error)
+        GetServersOfUser(userid database.Id) ([]database.Server, error)
+        GetServer(serverid database.Id) (database.Server, error)
+        CreateServer(ownerid database.Id, servername string) (database.Id, error)
+        DeleteServer(serverid database.Id) error
+        UpdateServerName(serverid database.Id, servername string) error
+        IsUserInServer(userid database.Id, serverid database.Id) (bool, error)
+        AddUserToServer(serverid database.Id, userid database.Id, nickname string) error
+}
+
+type ChannelService interface {
+        AddChannel(serverid database.Id, channelname string) (database.Id, error)
+        DeleteChannel(channelid database.Id) error
+        GetChannel(channelid database.Id) (database.Channel, error)
+        GetChannelsOfServer(serverid database.Id) ([]database.Channel, error)
+        UpdateChannel(channelid database.Id, username string) error
+        AddUserToChannel(channelid database.Id, userid database.Id) error
+        RemoveUserFromChannel(channelid database.Id, userid database.Id) error
+        GetUsersInChannel(channelid database.Id) ([]database.User, error)
+        IsUserInChannel(userid database.Id, channelid database.Id) (bool, error)
+}
+
+type MessageService interface {
+        GetMessage(messageid database.Id) (database.Message, error)
+        GetMessagesInChannel(channelid database.Id, number uint) ([]database.Message, error)
+        AddMessage(channelid database.Id, userid database.Id, message string) (database.Id, error)
+        UpdateMessage(messageid database.Id, message string) error
+        DeleteMessage(messageid database.Id) error
+}
+
+type LifecycleService interface {
+        Close() error
+}
+
+type (
+        AtomicService interface {
+                Service() Service
+                Commit() error
+                Rollback() error
+        }
+
+        Service interface {
+                UserService
+                ServerService
+                ChannelService
+                MessageService
+                LifecycleService
+        }
+)
+
+var (
+        dburl      = os.Getenv("BLUEPRINT_DB_URL")
+        dbInstance *database.DBService
+)
+
+func executeSQLFile(db *sql.DB, filename string) error <span class="cov10" title="56">{
+        data, err := os.ReadFile(filename)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to read file: %w", err)
+        }</span>
+
+        <span class="cov10" title="56">_, err = db.Exec(string(data))
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to execute SQL: %w", err)
+        }</span>
+
+        <span class="cov10" title="56">return nil</span>
+}
+
+func NewInMemoryDB() *database.DBService <span class="cov8" title="28">{
+        db, err := sql.Open("sqlite3", ":memory:")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+
+        <span class="cov8" title="28">err = executeSQLFile(db, "../../schema.sql")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+        <span class="cov8" title="28">err = executeSQLFile(db, "../../mockdata.sql")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+
+        <span class="cov8" title="28">return database.New(db)</span>
+}
+
+func (s *Server) Atomic(
+        ctx context.Context,
+        opts *sql.TxOptions,
+) (*database.AtomitcDBService, error) <span class="cov0" title="0">{
+        a, err := s.Atomic(ctx, opts)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return a, nil</span>
+}
+
+func NewDB() *database.DBService <span class="cov0" title="0">{
+        // Reuse Connection
+        if dbInstance != nil </span><span class="cov0" title="0">{
+                return dbInstance
+        }</span>
+
+        <span class="cov0" title="0">db, err := sql.Open("sqlite3", dburl)
+        if err != nil </span><span class="cov0" title="0">{
+                // This will not be a connection error, but a DSN parse error or
+                // another initialization error.
+                log.Fatal(err)
+        }</span>
+
+        <span class="cov0" title="0">return database.New(db)</span>
+}
+
+type Server struct {
+        port                int
+        sessions_in_channel map[database.Id]map[string]bool
+        ws_manager          *websocket.WebSocketManager
+        db                  Service
+}
+
+func NewServer(logserver bool, port int) *http.Server <span class="cov0" title="0">{
+        fmt.Printf("opening on port %d", port)
+        db := NewDB()
+
+        NewServer := &amp;Server{
+                port:                port,
+                sessions_in_channel: make(map[database.Id]map[string]bool),
+                ws_manager:          websocket.NewWebSocketManager(),
+
+                db: db,
+        }
+        atomicdb, err := db.Atomic(context.Background(), nil)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+
+        <span class="cov0" title="0">atomicdb.Rollback()
+        // Declare Server config
+        server := &amp;http.Server{
+                Addr:         fmt.Sprintf(":%d", NewServer.port),
+                Handler:      NewServer.RegisterRoutes(logserver),
+                IdleTimeout:  time.Minute,
+                ReadTimeout:  10 * time.Second,
+                WriteTimeout: 30 * time.Second,
+        }
+
+        return server</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package websocket
+
+import (
+        "context"
+        "errors"
+        "net/http"
+
+        "github.com/coder/websocket"
+)
+
+type CoderWebSocketConnection struct {
+        conn *websocket.Conn
+}
+
+func NewCoderWebSocketConnection(
+        w http.ResponseWriter,
+        r *http.Request,
+) (*CoderWebSocketConnection, error) <span class="cov0" title="0">{
+        opts := websocket.AcceptOptions{InsecureSkipVerify: true}
+        conn, err := websocket.Accept(w, r, &amp;opts)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errors.New("failed to open websocket connection: " + err.Error())
+        }</span>
+        <span class="cov0" title="0">return &amp;CoderWebSocketConnection{conn: conn}, nil</span>
+}
+
+func (w *CoderWebSocketConnection) Close(code StatusCode, message string) error <span class="cov0" title="0">{
+        return w.conn.Close(websocket.StatusCode(code), message)
+}</span>
+
+func (w *CoderWebSocketConnection) Read(ctx context.Context) (MessageType, []byte, error) <span class="cov0" title="0">{
+        msgType, data, err := w.conn.Read(ctx)
+        return MessageType(msgType), data, err
+}</span>
+
+func (w *CoderWebSocketConnection) Write(
+        ctx context.Context,
+        msgType MessageType,
+        data []byte,
+) error <span class="cov0" title="0">{
+        return w.conn.Write(ctx, websocket.MessageType(msgType), data)
+}</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package websocket
+
+import (
+        "context"
+        "errors"
+        "log"
+        "sync"
+
+        "github.com/google/uuid"
+)
+
+type IncomingMessage struct {
+        Payload []byte
+}
+
+type (
+        WebSocketConnection interface {
+                Close(StatusCode, string) error
+                Read(context.Context) (MessageType, []byte, error)
+                Write(context.Context, MessageType, []byte) error
+        }
+        webSocketClient struct {
+                ID      string
+                conn    WebSocketConnection
+                receive chan IncomingMessage
+                send    chan []byte
+                cancel  context.CancelFunc
+                closed  bool
+        }
+)
+
+func newWebSocketClient(
+        Id string,
+        conn WebSocketConnection,
+        incoming chan IncomingMessage,
+) *webSocketClient <span class="cov7" title="3">{
+        ctx, cancel := context.WithCancel(context.Background())
+
+        send := make(chan []byte)
+        client := webSocketClient{
+                ID:      Id,
+                conn:    conn,
+                cancel:  cancel,
+                send:    send,
+                receive: incoming,
+                closed:  false,
+        }
+        go client.read(ctx)
+        go client.write(ctx)
+        return &amp;client
+}</span>
+
+func (c *webSocketClient) close(status StatusCode) error <span class="cov1" title="1">{
+        // TODO: find correct ordering of close operations. how to handle closing channel vs connetion
+        if c.closed </span><span class="cov0" title="0">{
+                return errors.New("client already closed")
+        }</span>
+
+        <span class="cov1" title="1">c.cancel()
+        close(c.receive)
+        log.Printf("Client %s closed with status %d", c.ID, status)
+        err := c.conn.Close(status, "") // TODO: determine proper status
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov1" title="1">return nil</span>
+}
+
+func (c *webSocketClient) read(ctx context.Context) <span class="cov7" title="3">{
+        for </span><span class="cov8" title="4">{
+                messageType, message, err := c.conn.Read(ctx)
+                if err != nil </span><span class="cov1" title="1">{
+                        if errors.Is(err, context.Canceled) </span><span class="cov0" title="0">{
+                                log.Printf("Client %s read cancelled", c.ID)
+                                // c.close(StatusNormalClosure)
+                        }</span> else<span class="cov1" title="1"> {
+                                log.Printf("Client %s read error: %v", c.ID, err)
+                                c.close(StatusAbnormalClosure)
+                        }</span>
+                        <span class="cov1" title="1">return</span>
+                }
+
+                <span class="cov1" title="1">if messageType == MessageBinary || messageType == MessageText </span><span class="cov1" title="1">{
+                        log.Printf("Received from client %s (%d bytes): %s", c.ID, len(message), message)
+                        msg := IncomingMessage{
+                                Payload: message,
+                        }
+                        c.receive &lt;- msg
+                }</span>
+        }
+}
+
+func (c *webSocketClient) write(ctx context.Context) <span class="cov7" title="3">{
+        for </span><span class="cov10" title="5">{
+                select </span>{
+                case &lt;-ctx.Done():<span class="cov1" title="1">
+                        return</span>
+                case msg, ok := &lt;-c.send:<span class="cov7" title="3">
+                        if !ok </span><span class="cov1" title="1">{
+                                return
+                        }</span>
+                        <span class="cov4" title="2">err := c.conn.Write(ctx, MessageText, msg)
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Printf("Client %s write error: %v", c.ID, err)
+                                c.close(StatusAbnormalClosure)
+                                return
+                        }</span>
+                }
+        }
+}
+
+type WebSocketManager struct {
+        clients map[string]*webSocketClient
+        mutex   sync.RWMutex
+}
+
+func NewWebSocketManager() *WebSocketManager <span class="cov0" title="0">{
+        return &amp;WebSocketManager{
+                clients: make(map[string]*webSocketClient),
+                mutex:   sync.RWMutex{},
+        }
+}</span>
+
+func (m *WebSocketManager) NewConnection(
+        conn WebSocketConnection,
+) (string, chan IncomingMessage) <span class="cov4" title="2">{
+        Id := uuid.New().String()
+        incoming := make(chan IncomingMessage, 100) // Buffered channel for incoming messages
+        client := newWebSocketClient(Id, conn, incoming)
+        m.mutex.Lock()
+        defer m.mutex.Unlock()
+        m.clients[client.ID] = client
+        log.Printf("Client %s registered. Total clients: %d", client.ID, len(m.clients))
+        return Id, incoming
+}</span>
+
+func (m *WebSocketManager) CloseConnection(id string) <span class="cov1" title="1">{
+        // remove later, redundant with Deregistre
+        m.mutex.Lock()
+        defer m.mutex.Unlock()
+        client, ok := m.clients[id]
+        if !ok </span><span class="cov0" title="0">{
+                return
+        }</span>
+        <span class="cov1" title="1">delete(m.clients, id)
+        close(client.send)
+        log.Printf("Client %s unregistered. Total clients: %d", client.ID, len(m.clients))</span>
+}
+
+func (m *WebSocketManager) SendToClient(Id string, message []byte) bool <span class="cov4" title="2">{
+        m.mutex.RLock()
+        defer m.mutex.RUnlock()
+        client, ok := m.clients[Id]
+        if !ok </span><span class="cov1" title="1">{
+                log.Printf("Client %s not found.", Id)
+                return false
+        }</span>
+        <span class="cov1" title="1">select </span>{
+        case client.send &lt;- message:<span class="cov1" title="1">
+                return true</span>
+        default:<span class="cov0" title="0">
+                log.Printf("Client %s send channel full, dropping message.", Id)
+                return false</span>
+        }
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
