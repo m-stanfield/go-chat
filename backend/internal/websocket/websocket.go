@@ -72,7 +72,7 @@ func (c *webSocketClient) read(ctx context.Context) {
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				log.Printf("Client %s read cancelled", c.ID)
-				c.close(StatusNormalClosure)
+				// c.close(StatusNormalClosure)
 			} else {
 				log.Printf("Client %s read error: %v", c.ID, err)
 				c.close(StatusAbnormalClosure)
@@ -97,7 +97,6 @@ func (c *webSocketClient) write(ctx context.Context) {
 			return
 		case msg, ok := <-c.send:
 			if !ok {
-				c.close(StatusNormalClosure)
 				return
 			}
 			err := c.conn.Write(ctx, MessageText, msg)
